@@ -1,0 +1,81 @@
+{
+    "$schema": "node_modules/wrangler/config-schema.json",
+    "account_id": "75321bb4297a25f524624ba0f3f81443",
+    "name": "username-extractor",
+    "main": ".svelte-kit/cloudflare/_worker.js",
+    "compatibility_flags": ["nodejs_compat"],
+    "compatibility_date": "2025-05-29",
+    "assets": {
+        "binding": "ASSETS",
+        "directory": ".svelte-kit/cloudflare"
+    },
+    "observability": {
+        "enabled": true
+    },
+    "limits": {
+        "cpu_ms": 300000
+    },
+    "d1_databases": [
+        {
+            "binding": "DB",
+            "database_name": "username-extractor",
+            "database_id": "71e9227f-62b0-47fe-93db-6fb66aa5b2e1",
+            "migrations_dir": "migrations"
+        }
+    ],
+    "r2_buckets": [
+        {
+            "binding": "R2",
+            "bucket_name": "username-extractor-uploads"
+        }
+    ],
+    "kv_namespaces": [
+        {
+            "binding": "KV",
+            "id": "6efedc2417f6415a863873ff76ddc1e8"
+        }
+    ],
+    "ai": {
+        "binding": "AI"
+    },
+    "queues": {
+        "producers": [
+            {
+                "binding": "QUEUE",
+                "queue": "image-jobs"
+            }
+        ],
+        "consumers": [
+            {
+                "queue": "image-jobs",
+                "max_batch_size": 5,
+                "max_batch_timeout": 5,
+                "max_retries": 3,
+                "dead_letter_queue": "image-jobs-dlq"
+            }
+        ]
+    },
+    "durable_objects": {
+        "bindings": [
+            {
+                "name": "JOB_COORDINATOR",
+                "class_name": "JobCoordinator"
+            }
+        ]
+    },
+    "migrations": [
+        {
+            "tag": "v1",
+            "new_sqlite_classes": ["JobCoordinator"]
+        }
+    ],
+    "analytics_engine_datasets": [
+        {
+            "binding": "ANALYTICS",
+            "dataset": "username_extractor_job_metrics"
+        }
+    ],
+    "triggers": {
+        "crons": ["0 3 * * *"]
+    }
+}

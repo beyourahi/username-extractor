@@ -1,0 +1,75 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@source "./lib/**/*.{js,ts,svelte}";
+@source "./routes/**/*.{js,ts,svelte}";
+
+:root {
+    --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@theme inline {
+    --font-sans: var(--font-sans);
+    --font-mono: var(--font-mono);
+}
+
+/* Forensics aesthetic — dense, mono-leaning, terminal-row friendly.
+   Locked Phase 4 Day 1 per /Users/beyourahi/.claude/plans/docs-web-port-prd-md-spicy-key.md */
+@theme {
+    --color-background: oklch(0.16 0 0);
+    --color-surface: oklch(0.2 0 0);
+    --color-surface-raised: oklch(0.25 0 0);
+    --color-border: oklch(0.27 0 0);
+    --color-border-strong: oklch(0.4 0 0);
+
+    --color-fg: oklch(0.96 0 0);
+    --color-fg-muted: oklch(0.7 0 0);
+    --color-fg-dim: oklch(0.5 0 0);
+
+    /* Tier accent — confidence HIGH (verified, ≥95) */
+    --color-tier-high: oklch(0.72 0.18 162);
+    /* Tier accent — confidence MED (verified, 85–94) */
+    --color-tier-med: oklch(0.78 0.15 95);
+    /* Review tier (<85, needs human eyes) */
+    --color-tier-review: oklch(0.7 0.16 60);
+    /* Failed / invalid */
+    --color-destructive: oklch(0.66 0.21 25);
+
+    /* Notion sync state colors */
+    --color-notion-added: var(--color-tier-high);
+    --color-notion-pending: oklch(0.7 0.05 250);
+    --color-notion-invalid: var(--color-destructive);
+    --color-notion-unconfigured: var(--color-fg-dim);
+}
+
+.scan {
+    @apply transform-gpu transition-all duration-150 ease-out;
+}
+
+*::-webkit-scrollbar {
+    @apply w-2 bg-transparent;
+}
+*::-webkit-scrollbar-thumb {
+    @apply rounded-xl bg-white/20;
+}
+*::-webkit-scrollbar-track {
+    @apply rounded-xl bg-transparent;
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-fg;
+    }
+}
+
+@media (hover: none) and (pointer: coarse) {
+    input,
+    textarea,
+    select {
+        font-size: 1rem;
+    }
+}

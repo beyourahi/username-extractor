@@ -1,0 +1,36 @@
+# Cloudflare
+.wrangler/
+.dev.vars
+worker-configuration.d.ts
+
+# SvelteKit
+.svelte-kit/
+build/
+
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# Debug
+npm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Testing
+/coverage
+
+# Screenshots (per workspace CLAUDE.md)
+tmp_screenshots/
+.playwright-mcp/
