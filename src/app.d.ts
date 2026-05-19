@@ -1,12 +1,15 @@
 /// <reference types="@sveltejs/kit" />
 /// <reference types="@cloudflare/workers-types" />
 
+import type { UserSettings } from "$lib/server/schema";
+
 declare global {
     namespace App {
         interface Locals {
             /** Populated from Cloudflare Access JWT in hooks.server.ts. Null when Access is not yet wired (Phase 0). */
             userId: string | null;
             userEmail: string | null;
+            userSettings?: UserSettings | null;
         }
 
         interface Platform {

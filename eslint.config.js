@@ -32,6 +32,15 @@ export default ts.config(
         }
     },
     {
-        ignores: ["build/", ".svelte-kit/", "dist/", "node_modules/", "scripts/", "worker-configuration.d.ts"]
+        ignores: [
+            "build/",
+            ".svelte-kit/",
+            ".wrangler/",
+            "dist/",
+            "migrations/",
+            "node_modules/",
+            "scripts/",
+            "worker-configuration.d.ts"
+        ]
     }
 );

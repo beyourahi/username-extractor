@@ -8,7 +8,9 @@ import * as schema from "./schema";
  */
 export function getDb(platform: App.Platform | undefined) {
     if (!platform?.env?.DB) {
-        throw new Error("D1 binding 'DB' is not available on platform.env. Ensure wrangler.jsonc declares the binding and you are running via `wrangler dev` or a deployed Worker.");
+        throw new Error(
+            "D1 binding 'DB' is not available on platform.env. Ensure wrangler.jsonc declares the binding and you are running via `wrangler dev` or a deployed Worker."
+        );
     }
     return drizzle(platform.env.DB, { schema });
 }

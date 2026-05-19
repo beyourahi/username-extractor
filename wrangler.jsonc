@@ -12,6 +12,10 @@
     "observability": {
         "enabled": true
     },
+    "vars": {
+        "ACCESS_TEAM_DOMAIN": "beyourahi.cloudflareaccess.com",
+        "ALLOW_DEV_AUTH": "1"
+    },
     "limits": {
         "cpu_ms": 300000
     },

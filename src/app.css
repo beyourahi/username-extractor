@@ -4,47 +4,58 @@
 @source "./lib/**/*.{js,ts,svelte}";
 @source "./routes/**/*.{js,ts,svelte}";
 
-:root {
-    --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
-    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-}
-
-@theme inline {
-    --font-sans: var(--font-sans);
-    --font-mono: var(--font-mono);
-}
-
-/* Forensics aesthetic — dense, mono-leaning, terminal-row friendly.
-   Locked Phase 4 Day 1 per /Users/beyourahi/.claude/plans/docs-web-port-prd-md-spicy-key.md */
 @theme {
-    --color-background: oklch(0.16 0 0);
-    --color-surface: oklch(0.2 0 0);
-    --color-surface-raised: oklch(0.25 0 0);
-    --color-border: oklch(0.27 0 0);
-    --color-border-strong: oklch(0.4 0 0);
+    --font-mono: "JetBrains Mono", "ui-monospace", "SF Mono", Menlo, monospace;
+    --font-sans: "Inter", system-ui, -apple-system, sans-serif;
 
-    --color-fg: oklch(0.96 0 0);
-    --color-fg-muted: oklch(0.7 0 0);
-    --color-fg-dim: oklch(0.5 0 0);
-
-    /* Tier accent — confidence HIGH (verified, ≥95) */
-    --color-tier-high: oklch(0.72 0.18 162);
-    /* Tier accent — confidence MED (verified, 85–94) */
-    --color-tier-med: oklch(0.78 0.15 95);
-    /* Review tier (<85, needs human eyes) */
-    --color-tier-review: oklch(0.7 0.16 60);
-    /* Failed / invalid */
-    --color-destructive: oklch(0.66 0.21 25);
-
-    /* Notion sync state colors */
-    --color-notion-added: var(--color-tier-high);
-    --color-notion-pending: oklch(0.7 0.05 250);
-    --color-notion-invalid: var(--color-destructive);
-    --color-notion-unconfigured: var(--color-fg-dim);
+    /* Forensics palette (dark default) */
+    --color-background: oklch(0.13 0.01 250);
+    --color-surface: oklch(0.18 0.01 250);
+    --color-surface-elevated: oklch(0.22 0.012 250);
+    --color-border: oklch(0.3 0.015 250);
+    --color-foreground: oklch(0.95 0.005 250);
+    --color-foreground-muted: oklch(0.65 0.01 250);
+    --color-accent: oklch(0.78 0.18 145);
+    --color-accent-strong: oklch(0.85 0.2 145);
+    --color-warning: oklch(0.78 0.16 75);
+    --color-danger: oklch(0.65 0.22 25);
+    --color-info: oklch(0.7 0.14 220);
 }
 
-.scan {
-    @apply transform-gpu transition-all duration-150 ease-out;
+html {
+    color-scheme: dark;
+}
+html.light {
+    color-scheme: light;
+}
+html.light {
+    --color-background: oklch(0.98 0 0);
+    --color-surface: oklch(0.95 0 0);
+    --color-surface-elevated: oklch(0.92 0 0);
+    --color-border: oklch(0.85 0 0);
+    --color-foreground: oklch(0.15 0 0);
+    --color-foreground-muted: oklch(0.45 0 0);
+}
+
+body {
+    font-family: var(--font-mono);
+    background: var(--color-background);
+    color: var(--color-foreground);
+}
+
+/* Scan-line motion utility */
+@utility scan-in {
+    animation: scan-line 0.4s ease-out;
+}
+@keyframes scan-line {
+    from {
+        transform: translateX(-8px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }
 
 *::-webkit-scrollbar {
@@ -55,15 +66,6 @@
 }
 *::-webkit-scrollbar-track {
     @apply rounded-xl bg-transparent;
-}
-
-@layer base {
-    * {
-        @apply border-border;
-    }
-    body {
-        @apply bg-background text-fg;
-    }
 }
 
 @media (hover: none) and (pointer: coarse) {
