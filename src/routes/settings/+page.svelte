@@ -32,13 +32,18 @@
     <form method="POST" action="?/save" use:enhanceForm class="flex flex-col gap-6 font-mono text-xs">
         <!-- Extraction -->
         <section class="border-border bg-surface/40 flex flex-col gap-3 rounded border p-4">
-            <h2 class="text-foreground-muted text-[10px] tracking-widest uppercase">extraction</h2>
-            <label class="flex items-center gap-2">
-                <input type="checkbox" name="diagnosticsDefault" bind:checked={$form.diagnosticsDefault} />
+            <h2 class="text-foreground-muted text-[10px] tracking-widest text-balance uppercase">extraction</h2>
+            <label class="flex cursor-pointer items-center gap-2">
+                <input
+                    type="checkbox"
+                    class="cursor-pointer"
+                    name="diagnosticsDefault"
+                    bind:checked={$form.diagnosticsDefault}
+                />
                 <span>save raw model response on every job</span>
             </label>
             <label class="flex flex-col gap-1">
-                <span class="text-foreground-muted tracking-widest uppercase">daily image quota</span>
+                <span class="text-foreground-muted tracking-widest whitespace-nowrap uppercase">daily image quota</span>
                 <input
                     type="number"
                     name="dailyImageQuota"
@@ -48,16 +53,16 @@
                     class="border-border bg-background text-foreground w-40 rounded-sm border px-2 py-1"
                 />
                 {#if $errors.dailyImageQuota}
-                    <span class="text-danger">{$errors.dailyImageQuota}</span>
+                    <span class="text-danger text-pretty">{$errors.dailyImageQuota}</span>
                 {/if}
             </label>
         </section>
 
         <!-- Notion -->
         <section class="border-border bg-surface/40 flex flex-col gap-3 rounded border p-4">
-            <h2 class="text-foreground-muted text-[10px] tracking-widest uppercase">notion</h2>
+            <h2 class="text-foreground-muted text-[10px] tracking-widest text-balance uppercase">notion</h2>
             <label class="flex flex-col gap-1">
-                <span class="text-foreground-muted tracking-widest uppercase">integration token</span>
+                <span class="text-foreground-muted tracking-widest whitespace-nowrap uppercase">integration token</span>
                 <input
                     type="password"
                     name="notionToken"
@@ -65,10 +70,10 @@
                     bind:value={$form.notionToken}
                     class="border-border bg-background text-foreground rounded-sm border px-2 py-1"
                 />
-                <span class="text-foreground-muted/60">leave blank to keep existing token</span>
+                <span class="text-foreground-muted/60 text-pretty">leave blank to keep existing token</span>
             </label>
             <label class="flex flex-col gap-1">
-                <span class="text-foreground-muted tracking-widest uppercase">database id</span>
+                <span class="text-foreground-muted tracking-widest whitespace-nowrap uppercase">database id</span>
                 <input
                     type="text"
                     name="notionDatabaseId"
@@ -76,16 +81,28 @@
                     class="border-border bg-background text-foreground rounded-sm border px-2 py-1"
                 />
             </label>
-            <label class="flex items-center gap-2">
-                <input type="checkbox" name="notionAutoSync" bind:checked={$form.notionAutoSync} />
+            <label class="flex cursor-pointer items-center gap-2">
+                <input
+                    type="checkbox"
+                    class="cursor-pointer"
+                    name="notionAutoSync"
+                    bind:checked={$form.notionAutoSync}
+                />
                 <span>auto-sync verified leads to notion</span>
             </label>
-            <label class="flex items-center gap-2">
-                <input type="checkbox" name="notionSkipValidation" bind:checked={$form.notionSkipValidation} />
+            <label class="flex cursor-pointer items-center gap-2">
+                <input
+                    type="checkbox"
+                    class="cursor-pointer"
+                    name="notionSkipValidation"
+                    bind:checked={$form.notionSkipValidation}
+                />
                 <span>skip instagram profile validation</span>
             </label>
             <label class="flex flex-col gap-1">
-                <span class="text-foreground-muted tracking-widest uppercase">validation delay (ms)</span>
+                <span class="text-foreground-muted tracking-widest whitespace-nowrap uppercase"
+                    >validation delay (ms)</span
+                >
                 <input
                     type="number"
                     name="notionValidationDelayMs"
@@ -101,31 +118,35 @@
             <button
                 type="submit"
                 disabled={$submitting}
-                class="border-accent bg-accent/10 text-accent hover:bg-accent/20 rounded-sm border px-4 py-1 tracking-widest uppercase disabled:opacity-50"
+                class={`border-accent bg-accent/10 text-accent pointer-fine:hover:bg-accent/20 rounded-sm border px-4 py-1 tracking-widest whitespace-nowrap uppercase disabled:opacity-50 ${
+                    $submitting ? "cursor-wait" : "cursor-pointer"
+                }`}
             >
                 {$submitting ? "saving…" : "save"}
             </button>
         </div>
 
         {#if $message}
-            <p class="text-accent">{$message}</p>
+            <p class="text-accent text-pretty">{$message}</p>
         {/if}
     </form>
 
     <!-- Maintenance: dedup -->
     <section class="border-border bg-surface/40 flex flex-col gap-3 rounded border p-4 font-mono text-xs">
-        <h2 class="text-foreground-muted text-[10px] tracking-widest uppercase">maintenance · notion dedup</h2>
-        <p class="text-foreground-muted">
+        <h2 class="text-foreground-muted text-[10px] tracking-widest text-balance uppercase">
+            maintenance · notion dedup
+        </h2>
+        <p class="text-foreground-muted text-pretty">
             scans your notion database, scores duplicate usernames, and archives all but the best entry per group.
         </p>
         <form method="POST" action="?/dedup" use:enhance class="flex flex-wrap items-center gap-3">
-            <label class="flex items-center gap-2">
-                <input type="checkbox" name="dryRun" value="true" checked />
+            <label class="flex cursor-pointer items-center gap-2">
+                <input type="checkbox" class="cursor-pointer" name="dryRun" value="true" checked />
                 <span>dry run · preview only</span>
             </label>
             <button
                 type="submit"
-                class="border-info/40 text-info hover:bg-info/10 rounded-sm border px-3 py-1 tracking-widest uppercase"
+                class="border-info/40 text-info pointer-fine:hover:bg-info/10 cursor-pointer rounded-sm border px-3 py-1 tracking-widest whitespace-nowrap uppercase"
             >
                 run dedup
             </button>
@@ -134,14 +155,14 @@
 
     <!-- Reset -->
     <section class="border-danger/40 bg-danger/5 flex flex-col gap-3 rounded border p-4 font-mono text-xs">
-        <h2 class="text-danger text-[10px] tracking-widest uppercase">danger zone · reset</h2>
-        <p class="text-foreground-muted">
+        <h2 class="text-danger text-[10px] tracking-widest text-balance uppercase">danger zone · reset</h2>
+        <p class="text-foreground-muted text-pretty">
             deletes all settings (including encrypted notion token). leads and jobs are preserved.
         </p>
         <form method="POST" action="?/reset" use:enhance>
             <button
                 type="submit"
-                class="border-danger/40 text-danger hover:bg-danger/10 rounded-sm border px-3 py-1 tracking-widest uppercase"
+                class="border-danger/40 text-danger pointer-fine:hover:bg-danger/10 cursor-pointer rounded-sm border px-3 py-1 tracking-widest whitespace-nowrap uppercase"
                 onclick={(e) => {
                     if (!confirm("reset settings? this cannot be undone.")) e.preventDefault();
                 }}

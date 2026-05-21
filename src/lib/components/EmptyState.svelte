@@ -26,10 +26,10 @@
     {#if icon}
         <div class="text-foreground-muted">{@render icon()}</div>
     {/if}
-    <h2 class="font-mono text-sm font-medium tracking-widest uppercase">
+    <h2 class="font-mono text-sm font-medium tracking-widest text-balance uppercase">
         {title}
     </h2>
-    <p class="text-foreground-muted max-w-md font-mono text-xs leading-relaxed">
+    <p class="text-foreground-muted max-w-md font-mono text-xs leading-relaxed text-pretty">
         {description}
     </p>
     {#if action}

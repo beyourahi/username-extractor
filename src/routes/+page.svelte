@@ -45,23 +45,27 @@
     <PageHeader title="upload" subtitle="drop instagram screenshots — extract usernames at confidence ≥85" />
 
     {#if !notionConfigured}
-        <div class="border-warning/40 bg-warning/10 text-warning rounded border px-3 py-2 font-mono text-xs">
+        <div
+            class="border-warning/40 bg-warning/10 text-warning rounded border px-3 py-2 font-mono text-xs text-pretty"
+        >
             notion not configured · leads will save locally only ·
-            <a href="/settings" class="underline">configure</a>
+            <a href="/settings" class="cursor-pointer underline">configure</a>
         </div>
     {/if}
 
     <UploadDropzone disabled={submitting} onfiles={(f) => (files = f)} />
 
     <div class="flex flex-wrap items-center justify-between gap-3 font-mono text-xs">
-        <label class="text-foreground-muted flex items-center gap-2">
-            <input type="checkbox" bind:checked={diagnostics} disabled={submitting} />
+        <label class="text-foreground-muted flex cursor-pointer items-center gap-2">
+            <input type="checkbox" class="cursor-pointer" bind:checked={diagnostics} disabled={submitting} />
             <span>diagnostics · save raw model response</span>
         </label>
 
         <button
             type="button"
-            class="border-accent bg-accent/10 text-accent hover:bg-accent/20 rounded-sm border px-4 py-1.5 tracking-widest uppercase disabled:cursor-not-allowed disabled:opacity-50"
+            class={`border-accent bg-accent/10 text-accent pointer-fine:hover:bg-accent/20 rounded-sm border px-4 py-1.5 tracking-widest whitespace-nowrap uppercase disabled:opacity-50 ${
+                submitting ? "cursor-wait" : "cursor-pointer disabled:cursor-not-allowed"
+            }`}
             onclick={submit}
             disabled={submitting || files.length === 0}
         >

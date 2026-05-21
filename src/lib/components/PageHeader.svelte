@@ -17,12 +17,12 @@
 
 <header class={cn("border-border flex items-end justify-between gap-4 border-b pb-4", className)}>
     <div class="flex flex-col gap-1">
-        <h1 class="font-mono text-2xl font-medium tracking-tight">
+        <h1 class="font-mono text-2xl font-medium tracking-tight text-balance">
             <span class="text-foreground-muted select-none">::</span>
             {title}
         </h1>
         {#if subtitle}
-            <p class="text-foreground-muted max-w-prose font-mono text-xs">
+            <p class="text-foreground-muted max-w-prose font-mono text-xs text-pretty">
                 {subtitle}
             </p>
         {/if}

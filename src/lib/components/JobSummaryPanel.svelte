@@ -74,20 +74,24 @@
 <div class="border-border bg-border grid grid-cols-3 gap-px border md:grid-cols-5 lg:grid-cols-9">
     {#each tiles as tile (tile.label)}
         <div class="bg-surface flex flex-col gap-1 px-3 py-3 font-mono">
-            <span class="text-foreground-muted text-[10px] tracking-widest uppercase">{tile.label}</span>
-            <span class={`text-lg font-medium ${toneClass[tile.tone ?? "default"]}`}>{tile.value}</span>
+            <span class="text-foreground-muted text-[10px] tracking-widest whitespace-nowrap uppercase"
+                >{tile.label}</span
+            >
+            <span class={`text-lg font-medium whitespace-nowrap ${toneClass[tile.tone ?? "default"]}`}
+                >{tile.value}</span
+            >
         </div>
     {/each}
 </div>
 
 {#if dedup}
     <div class="border-border bg-surface/40 mt-3 rounded border px-3 py-2 font-mono text-xs">
-        <span class="text-foreground-muted">dedup ▸</span>
-        <span class="text-foreground ml-2">groups={dedup.duplicate_groups ?? 0}</span>
-        <span class="text-foreground ml-3">found={dedup.duplicates_found ?? 0}</span>
-        <span class="text-foreground ml-3">removed={dedup.duplicates_removed ?? 0}</span>
+        <span class="text-foreground-muted whitespace-nowrap">dedup ▸</span>
+        <span class="text-foreground ml-2 whitespace-nowrap">groups={dedup.duplicate_groups ?? 0}</span>
+        <span class="text-foreground ml-3 whitespace-nowrap">found={dedup.duplicates_found ?? 0}</span>
+        <span class="text-foreground ml-3 whitespace-nowrap">removed={dedup.duplicates_removed ?? 0}</span>
         {#if dedup.errors}
-            <span class="text-danger ml-3">errors={dedup.errors}</span>
+            <span class="text-danger ml-3 whitespace-nowrap">errors={dedup.errors}</span>
         {/if}
     </div>
 {/if}

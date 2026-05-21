@@ -80,21 +80,21 @@
                     <option value="pending">pending</option>
                     <option value="unconfigured">unconfigured</option>
                 </select>
-                <label class="text-foreground-muted flex items-center gap-1">
-                    <input type="checkbox" name="archived" value="1" checked={data.archived} />
+                <label class="text-foreground-muted flex cursor-pointer items-center gap-1 whitespace-nowrap">
+                    <input type="checkbox" class="cursor-pointer" name="archived" value="1" checked={data.archived} />
                     archived
                 </label>
             {/snippet}
             {#snippet actions()}
                 <button
                     type="submit"
-                    class="border-accent/40 text-accent hover:bg-accent/10 rounded-sm border px-3 py-1 tracking-widest uppercase"
+                    class="border-accent/40 text-accent pointer-fine:hover:bg-accent/10 cursor-pointer rounded-sm border px-3 py-1 tracking-widest whitespace-nowrap uppercase"
                 >
                     apply
                 </button>
                 <a
                     href="/leads"
-                    class="border-border text-foreground-muted hover:bg-surface rounded-sm border px-3 py-1 tracking-widest uppercase"
+                    class="border-border text-foreground-muted pointer-fine:hover:bg-surface cursor-pointer rounded-sm border px-3 py-1 tracking-widest whitespace-nowrap uppercase"
                 >
                     reset
                 </a>
@@ -123,13 +123,13 @@
                 </thead>
                 <tbody>
                     {#each data.leads as lead (lead.id)}
-                        <tr class="border-border/40 hover:bg-surface border-b last:border-b-0">
+                        <tr class="border-border/40 pointer-fine:hover:bg-surface border-b last:border-b-0">
                             <td class="px-3 py-2">
                                 <a
                                     href={lead.igUrl}
                                     target="_blank"
                                     rel="noreferrer"
-                                    class="text-foreground hover:underline"
+                                    class="text-foreground cursor-pointer whitespace-nowrap pointer-fine:hover:underline"
                                 >
                                     @{lead.username}
                                 </a>
@@ -137,17 +137,19 @@
                             <td class="px-3 py-2">
                                 <TierBadge tier={lead.tier as Tier} />
                             </td>
-                            <td class="text-foreground-muted px-3 py-2 text-right">{lead.confidence.toFixed(0)}</td>
+                            <td class="text-foreground-muted px-3 py-2 text-right whitespace-nowrap"
+                                >{lead.confidence.toFixed(0)}</td
+                            >
                             <td class="px-3 py-2">
                                 <NotionBadge status={lead.notionStatus as NotionStatus} />
                             </td>
-                            <td class="text-foreground-muted px-3 py-2">{fmtDate(lead.createdAt)}</td>
+                            <td class="text-foreground-muted px-3 py-2 whitespace-nowrap">{fmtDate(lead.createdAt)}</td>
                             <td class="px-3 py-2">
                                 <div class="flex items-center justify-end gap-1">
                                     {#if lead.notionStatus === "invalid" || lead.notionStatus === "pending"}
                                         <button
                                             type="button"
-                                            class="border-border hover:bg-surface-elevated rounded-sm border px-2 py-0.5 tracking-widest uppercase"
+                                            class="border-border pointer-fine:hover:bg-surface-elevated cursor-pointer rounded-sm border px-2 py-0.5 tracking-widest uppercase"
                                             onclick={() => sendToNotion(lead.id)}
                                             title="retry notion sync"
                                         >
@@ -156,7 +158,7 @@
                                     {:else if !lead.notionStatus || lead.notionStatus === "unconfigured"}
                                         <button
                                             type="button"
-                                            class="border-border hover:bg-surface-elevated rounded-sm border px-2 py-0.5 tracking-widest uppercase"
+                                            class="border-border pointer-fine:hover:bg-surface-elevated cursor-pointer rounded-sm border px-2 py-0.5 tracking-widest uppercase"
                                             onclick={() => sendToNotion(lead.id)}
                                             title="send to notion"
                                         >
@@ -165,7 +167,7 @@
                                     {/if}
                                     <button
                                         type="button"
-                                        class="border-border hover:bg-surface-elevated rounded-sm border px-2 py-0.5 tracking-widest uppercase"
+                                        class="border-border pointer-fine:hover:bg-surface-elevated cursor-pointer rounded-sm border px-2 py-0.5 tracking-widest uppercase"
                                         onclick={() => archive(lead.id)}
                                         title="archive"
                                     >

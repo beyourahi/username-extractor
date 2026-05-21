@@ -40,7 +40,7 @@
 <div class="flex min-h-dvh flex-col">
     <header class="border-border bg-background/95 sticky top-0 z-30 border-b backdrop-blur">
         <nav class="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-3 font-mono">
-            <a href="/" class="text-foreground text-sm font-medium tracking-tight">
+            <a href="/" class="text-foreground cursor-pointer text-sm font-medium tracking-tight whitespace-nowrap">
                 <span class="text-accent">::</span> username-extractor
             </a>
             <ul class="flex items-center gap-1 text-xs tracking-widest uppercase">
@@ -48,7 +48,7 @@
                     <li>
                         <a
                             href={item.href}
-                            class={`hover:text-foreground rounded-sm px-2 py-1 ${
+                            class={`pointer-fine:hover:text-foreground cursor-pointer rounded-sm px-2 py-1 whitespace-nowrap ${
                                 isActive(item.href) ? "text-foreground bg-surface" : "text-foreground-muted"
                             }`}
                         >
@@ -65,7 +65,7 @@
     </main>
 
     <footer
-        class="border-border text-foreground-muted/60 border-t px-6 py-3 text-center font-mono text-[10px] tracking-widest uppercase"
+        class="border-border text-foreground-muted/60 border-t px-6 py-3 text-center font-mono text-[10px] tracking-widest whitespace-nowrap uppercase"
     >
         forensics build · v0.1
     </footer>

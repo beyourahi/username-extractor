@@ -47,7 +47,7 @@
 
 <div
     class={cn(
-        "border-border/60 hover:bg-surface/60 grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b px-3 py-2 font-mono text-xs",
+        "border-border/60 pointer-fine:hover:bg-surface/60 grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b px-3 py-2 font-mono text-xs",
         appearAnimated && "scan-in"
     )}
 >
@@ -56,19 +56,19 @@
     </div>
 
     <div class="flex flex-wrap items-center gap-x-3 gap-y-1 overflow-hidden">
-        <span class="text-foreground-muted truncate" title={item.filename}>{item.filename}</span>
+        <span class="text-foreground-muted cursor-help truncate" title={item.filename}>{item.filename}</span>
         <span class="text-foreground-muted/40 select-none">▸</span>
 
         {#if item.username}
-            <span class="text-foreground font-medium">@{item.username}</span>
+            <span class="text-foreground font-medium whitespace-nowrap">@{item.username}</span>
         {:else if item.error}
-            <span class="text-danger" title={item.error}>{item.error.slice(0, 80)}</span>
+            <span class="text-danger cursor-help text-pretty" title={item.error}>{item.error.slice(0, 80)}</span>
         {:else}
             <span class="text-foreground-muted/60">—</span>
         {/if}
 
         {#if item.confidence !== null && item.confidence !== undefined}
-            <span class="text-foreground-muted">conf={item.confidence.toFixed(0)}</span>
+            <span class="text-foreground-muted whitespace-nowrap">conf={item.confidence.toFixed(0)}</span>
         {/if}
 
         <TierBadge tier={item.tier ?? null} />
@@ -91,7 +91,7 @@
         {#if onRetry && item.status === "failed"}
             <button
                 type="button"
-                class="border-border hover:bg-surface-elevated hover:text-foreground rounded-sm border px-2 py-0.5 font-mono text-[10px] tracking-widest uppercase"
+                class="border-border pointer-fine:hover:bg-surface-elevated pointer-fine:hover:text-foreground cursor-pointer rounded-sm border px-2 py-0.5 font-mono text-[10px] tracking-widest whitespace-nowrap uppercase"
                 onclick={onRetry}
             >
                 retry
@@ -100,7 +100,7 @@
         {#if onViewRaw}
             <button
                 type="button"
-                class="border-border hover:bg-surface-elevated hover:text-foreground rounded-sm border px-2 py-0.5 font-mono text-[10px] tracking-widest uppercase"
+                class="border-border pointer-fine:hover:bg-surface-elevated pointer-fine:hover:text-foreground cursor-pointer rounded-sm border px-2 py-0.5 font-mono text-[10px] tracking-widest whitespace-nowrap uppercase"
                 onclick={onViewRaw}
             >
                 raw

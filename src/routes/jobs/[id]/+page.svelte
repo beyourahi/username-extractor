@@ -131,7 +131,7 @@
             {#if isLive}
                 <button
                     type="button"
-                    class="border-danger/40 text-danger hover:bg-danger/10 rounded-sm border px-3 py-1 font-mono text-[10px] tracking-widest uppercase"
+                    class="border-danger/40 text-danger pointer-fine:hover:bg-danger/10 cursor-pointer rounded-sm border px-3 py-1 font-mono text-[10px] tracking-widest whitespace-nowrap uppercase"
                     onclick={cancel}
                 >
                     cancel
@@ -141,9 +141,11 @@
     </PageHeader>
 
     {#if !notionConfigured}
-        <div class="border-warning/40 bg-warning/10 text-warning rounded border px-3 py-2 font-mono text-xs">
+        <div
+            class="border-warning/40 bg-warning/10 text-warning rounded border px-3 py-2 font-mono text-xs text-pretty"
+        >
             notion not configured · leads stored locally only ·
-            <a href="/settings" class="underline">configure</a>
+            <a href="/settings" class="cursor-pointer underline">configure</a>
         </div>
     {/if}
 
@@ -183,7 +185,7 @@
     </div>
 
     {#if stream?.state.error}
-        <p class="text-danger font-mono text-xs">stream error: {stream.state.error}</p>
+        <p class="text-danger font-mono text-xs text-pretty">stream error: {stream.state.error}</p>
     {/if}
 </div>
 

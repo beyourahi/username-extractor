@@ -57,7 +57,7 @@
     <button
         type="button"
         class={cn(
-            "border-border bg-surface/40 hover:bg-surface flex min-h-[200px] cursor-pointer flex-col items-center justify-center gap-3 rounded border border-dashed px-6 py-12 font-mono text-sm transition-colors",
+            "border-border bg-surface/40 pointer-fine:hover:bg-surface flex min-h-[200px] cursor-pointer flex-col items-center justify-center gap-3 rounded border border-dashed px-6 py-12 font-mono text-sm transition-colors",
             dragOver && "border-accent bg-accent/10",
             disabled && "cursor-not-allowed opacity-50"
         )}
@@ -68,8 +68,8 @@
         {disabled}
     >
         <Upload class="text-foreground-muted h-8 w-8" />
-        <span class="text-foreground text-sm">drop screenshots here</span>
-        <span class="text-foreground-muted text-xs">or click to browse · {accept.replaceAll(".", "")}</span>
+        <span class="text-foreground text-sm text-balance">drop screenshots here</span>
+        <span class="text-foreground-muted text-xs text-pretty">or click to browse · {accept.replaceAll(".", "")}</span>
     </button>
 
     <input bind:this={input} type="file" multiple {accept} class="hidden" onchange={onSelect} {disabled} />
@@ -79,8 +79,12 @@
             <div
                 class="border-border flex items-center justify-between border-b px-3 py-2 font-mono text-[10px] tracking-widest uppercase"
             >
-                <span class="text-foreground-muted">queued · {files.length}</span>
-                <button type="button" class="text-foreground-muted hover:text-foreground" onclick={() => commit([])}>
+                <span class="text-foreground-muted whitespace-nowrap">queued · {files.length}</span>
+                <button
+                    type="button"
+                    class="text-foreground-muted pointer-fine:hover:text-foreground cursor-pointer whitespace-nowrap"
+                    onclick={() => commit([])}
+                >
                     clear
                 </button>
             </div>
@@ -92,7 +96,7 @@
                         <span class="text-foreground-muted truncate">{file.name}</span>
                         <button
                             type="button"
-                            class="text-foreground-muted hover:text-danger ml-2 shrink-0"
+                            class="text-foreground-muted pointer-fine:hover:text-danger ml-2 shrink-0 cursor-pointer"
                             onclick={() => removeAt(idx)}
                             aria-label="remove"
                         >

@@ -40,7 +40,7 @@
             {#snippet action()}
                 <a
                     href="/"
-                    class="border-accent bg-accent/10 text-accent rounded-sm border px-3 py-1 font-mono text-[10px] tracking-widest uppercase"
+                    class="border-accent bg-accent/10 text-accent cursor-pointer rounded-sm border px-3 py-1 font-mono text-[10px] tracking-widest whitespace-nowrap uppercase"
                 >
                     new job
                 </a>
@@ -63,8 +63,8 @@
                 </thead>
                 <tbody>
                     {#each data.jobs as job (job.id)}
-                        <tr class="border-border/40 hover:bg-surface border-b last:border-b-0">
-                            <td class="text-foreground-muted px-3 py-2">{fmtDate(job.createdAt)}</td>
+                        <tr class="border-border/40 pointer-fine:hover:bg-surface border-b last:border-b-0">
+                            <td class="text-foreground-muted px-3 py-2 whitespace-nowrap">{fmtDate(job.createdAt)}</td>
                             <td class="px-3 py-2">
                                 <Badge tone={statusTone(job.status)}>{job.status}</Badge>
                             </td>
@@ -76,7 +76,7 @@
                             <td class="px-3 py-2 text-right">
                                 <a
                                     href={`/jobs/${job.id}`}
-                                    class="border-border hover:bg-surface-elevated rounded-sm border px-2 py-0.5 tracking-widest uppercase"
+                                    class="border-border pointer-fine:hover:bg-surface-elevated cursor-pointer rounded-sm border px-2 py-0.5 tracking-widest whitespace-nowrap uppercase"
                                 >
                                     open
                                 </a>

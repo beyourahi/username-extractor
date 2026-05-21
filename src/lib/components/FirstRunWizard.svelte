@@ -31,45 +31,54 @@
             class="border-border bg-surface fixed top-1/2 left-1/2 z-50 flex w-[min(90vw,520px)] -translate-x-1/2 -translate-y-1/2 flex-col rounded border font-mono shadow-xl"
         >
             <div class="border-border flex items-center justify-between border-b px-4 py-2">
-                <Dialog.Title class="text-foreground text-xs tracking-widest uppercase">
+                <Dialog.Title class="text-foreground text-xs tracking-widest text-balance uppercase">
                     first-run setup · {step === "extract" ? "1 / 2 extraction" : "2 / 2 notion"}
                 </Dialog.Title>
-                <Dialog.Close class="border-border hover:bg-surface-elevated rounded-sm border px-2 py-0.5">
+                <Dialog.Close
+                    class="border-border pointer-fine:hover:bg-surface-elevated cursor-pointer rounded-sm border px-2 py-0.5"
+                >
                     <X class="h-3 w-3" />
                 </Dialog.Close>
             </div>
 
             <form method="POST" action="/settings?/save" class="flex flex-col gap-4 p-4 text-xs">
                 {#if step === "extract"}
-                    <p class="text-foreground-muted leading-relaxed">
+                    <p class="text-foreground-muted leading-relaxed text-pretty">
                         Pick your default flags. You can change these any time from settings.
                     </p>
-                    <label class="text-foreground flex items-center gap-2">
-                        <input type="checkbox" name="diagnosticsDefault" bind:checked={diagnosticsDefault} />
+                    <label class="text-foreground flex cursor-pointer items-center gap-2">
+                        <input
+                            type="checkbox"
+                            class="cursor-pointer"
+                            name="diagnosticsDefault"
+                            bind:checked={diagnosticsDefault}
+                        />
                         <span>diagnostics by default · saves raw model response on every job</span>
                     </label>
                     <div class="flex justify-end gap-2 pt-2">
                         <button
                             type="button"
-                            class="border-border hover:bg-surface-elevated rounded-sm border px-3 py-1 tracking-widest uppercase"
+                            class="border-border pointer-fine:hover:bg-surface-elevated cursor-pointer rounded-sm border px-3 py-1 tracking-widest whitespace-nowrap uppercase"
                             onclick={onclose}
                         >
                             skip
                         </button>
                         <button
                             type="button"
-                            class="border-accent bg-accent/10 text-accent rounded-sm border px-3 py-1 tracking-widest uppercase"
+                            class="border-accent bg-accent/10 text-accent cursor-pointer rounded-sm border px-3 py-1 tracking-widest whitespace-nowrap uppercase"
                             onclick={next}
                         >
                             next
                         </button>
                     </div>
                 {:else}
-                    <p class="text-foreground-muted leading-relaxed">
+                    <p class="text-foreground-muted leading-relaxed text-pretty">
                         Optional. Connect a Notion database to auto-sync verified leads. Skip to extract locally only.
                     </p>
                     <label class="flex flex-col gap-1">
-                        <span class="text-foreground-muted tracking-widest uppercase">integration token</span>
+                        <span class="text-foreground-muted tracking-widest whitespace-nowrap uppercase"
+                            >integration token</span
+                        >
                         <input
                             type="password"
                             name="notionToken"
@@ -79,7 +88,9 @@
                         />
                     </label>
                     <label class="flex flex-col gap-1">
-                        <span class="text-foreground-muted tracking-widest uppercase">database id</span>
+                        <span class="text-foreground-muted tracking-widest whitespace-nowrap uppercase"
+                            >database id</span
+                        >
                         <input
                             type="text"
                             name="notionDatabaseId"
@@ -97,14 +108,14 @@
                     <div class="flex justify-end gap-2 pt-2">
                         <button
                             type="button"
-                            class="border-border hover:bg-surface-elevated rounded-sm border px-3 py-1 tracking-widest uppercase"
+                            class="border-border pointer-fine:hover:bg-surface-elevated cursor-pointer rounded-sm border px-3 py-1 tracking-widest whitespace-nowrap uppercase"
                             onclick={onclose}
                         >
                             skip
                         </button>
                         <button
                             type="submit"
-                            class="border-accent bg-accent/10 text-accent rounded-sm border px-3 py-1 tracking-widest uppercase"
+                            class="border-accent bg-accent/10 text-accent cursor-pointer rounded-sm border px-3 py-1 tracking-widest whitespace-nowrap uppercase"
                         >
                             save
                         </button>
