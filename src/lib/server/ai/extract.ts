@@ -29,10 +29,9 @@ export interface ExtractResult {
     status: "verified" | "review";
 }
 
-/** Default vision model. PRD pins Kimi K2.6 baseline; the actual binding
- *  exposes the `@cf/moonshotai/kimi-k2.x` family. We keep the slash-style
- *  identifier from the PRD and let Workers AI route the alias. */
-const DEFAULT_MODEL: VisionModel = "@cf/moonshot/kimi-k2.6";
+/** Default vision model. PRD pins Kimi K2.6; the Workers AI catalog id is
+ *  `@cf/moonshotai/kimi-k2.6` (the PRD's `@cf/moonshot/...` spelling is a typo). */
+const DEFAULT_MODEL: VisionModel = "@cf/moonshotai/kimi-k2.6";
 
 function toByteArray(input: ArrayBuffer | Uint8Array): number[] {
     const view = input instanceof Uint8Array ? input : new Uint8Array(input);

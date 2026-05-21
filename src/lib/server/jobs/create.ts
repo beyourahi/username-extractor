@@ -45,7 +45,7 @@ export interface CreateJobResult {
 }
 
 const DEFAULT_DAILY_QUOTA = 1000;
-const VLM_MODEL = "@cf/moonshot/kimi-k2.6";
+const VLM_MODEL = "@cf/moonshotai/kimi-k2.6";
 
 function sanitizeFilename(name: string): string {
     return (

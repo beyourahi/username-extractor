@@ -1,6 +1,6 @@
 # Kimi K2.6 — Username extraction benchmark
 
-Tracks accuracy of `@cf/moonshot/kimi-k2.6` (Workers AI) on Instagram profile-screenshot username extraction, the core decision in the PRD §Acceptance criteria.
+Tracks accuracy of `@cf/moonshotai/kimi-k2.6` (Workers AI) on Instagram profile-screenshot username extraction, the core decision in the PRD §Acceptance criteria.
 
 ## Protocol
 

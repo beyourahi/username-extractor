@@ -4,7 +4,7 @@ A web tool for extracting Instagram usernames from batches of profile screenshot
 
 **Stack:** SvelteKit 5 + Bun + Tailwind v4 + Cloudflare Workers + D1 / R2 / KV / Queues / Durable Objects / AI / Analytics.
 
-This is the production web port of the legacy Python CLI at [`extract_usernames`](https://github.com/beyourahi/extract_usernames). The pipeline preserves the algorithmic core (Levenshtein near-duplicate detection, tier-based confidence, Notion smart dedup) while moving from PyTorch + EasyOCR + local Ollama to a single Workers AI call per image (`@cf/moonshot/kimi-k2.6`).
+This is the production web port of the legacy Python CLI at [`extract_usernames`](https://github.com/beyourahi/extract_usernames). The pipeline preserves the algorithmic core (Levenshtein near-duplicate detection, tier-based confidence, Notion smart dedup) while moving from PyTorch + EasyOCR + local Ollama to a single Workers AI call per image (`@cf/moonshotai/kimi-k2.6`).
 
 ## Local development
 
