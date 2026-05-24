@@ -5,6 +5,7 @@
     "type": "module",
     "scripts": {
         "dev": "vite dev --open",
+        "benchmark": "bun scripts/benchmark.ts",
         "build": "vite build && node scripts/wrap-worker.mjs",
         "preview": "bun run build && wrangler dev",
         "deploy": "bun run build && wrangler deploy",
