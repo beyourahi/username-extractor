@@ -24,6 +24,12 @@
             }
         }
     );
+
+    let legacyMarkdown = $state("");
+    let legacyNotionToken = $state("");
+    let legacyNotionDatabaseId = $state("");
+    let legacyMarkdownSubmitting = $state(false);
+    let legacyNotionSubmitting = $state(false);
 </script>
 
 <div class="flex flex-col gap-6">
@@ -150,6 +156,119 @@
             >
                 run dedup
             </button>
+        </form>
+    </section>
+
+    <!-- Import legacy data -->
+    <section class="border-border bg-surface/40 flex flex-col gap-3 rounded border p-4 font-mono text-xs">
+        <h2 class="text-foreground-muted text-[10px] tracking-widest text-balance uppercase">import legacy data</h2>
+        <p class="text-foreground-muted text-pretty">
+            seed lifetime leads from the python cli output or an existing notion database. idempotent — re-running with
+            the same input is safe.
+        </p>
+
+        <form
+            method="POST"
+            action="?/importLegacy"
+            use:enhance={() => {
+                legacyMarkdownSubmitting = true;
+                return async ({ result, update }) => {
+                    legacyMarkdownSubmitting = false;
+                    if (result.type === "success" && result.data?.importLegacyResult) {
+                        const r = result.data.importLegacyResult as {
+                            imported_markdown: number;
+                            imported_notion: number;
+                            skipped: number;
+                        };
+                        toast.success(`imported ${r.imported_markdown + r.imported_notion} · skipped ${r.skipped}`);
+                        legacyMarkdown = "";
+                    } else if (result.type === "failure") {
+                        const err = (result.data?.error as string | undefined) ?? "import failed";
+                        toast.error(err);
+                    }
+                    await update({ reset: false });
+                };
+            }}
+            class="flex flex-col gap-2"
+        >
+            <label class="flex flex-col gap-1">
+                <span class="text-foreground-muted tracking-widest whitespace-nowrap uppercase">markdown source</span>
+                <textarea
+                    name="markdown"
+                    rows="6"
+                    placeholder="paste verified_usernames.md…"
+                    bind:value={legacyMarkdown}
+                    class="border-border bg-background text-foreground rounded-sm border px-2 py-1 font-mono"
+                ></textarea>
+            </label>
+            <div class="flex justify-end">
+                <button
+                    type="submit"
+                    disabled={legacyMarkdownSubmitting || legacyMarkdown.trim().length === 0}
+                    class={`border-info/40 text-info pointer-fine:hover:bg-info/10 rounded-sm border px-3 py-1 tracking-widest whitespace-nowrap uppercase disabled:opacity-50 ${
+                        legacyMarkdownSubmitting ? "cursor-wait" : "cursor-pointer"
+                    }`}
+                >
+                    {legacyMarkdownSubmitting ? "importing…" : "import markdown"}
+                </button>
+            </div>
+        </form>
+
+        <form
+            method="POST"
+            action="?/importLegacy"
+            use:enhance={() => {
+                legacyNotionSubmitting = true;
+                return async ({ result, update }) => {
+                    legacyNotionSubmitting = false;
+                    if (result.type === "success" && result.data?.importLegacyResult) {
+                        const r = result.data.importLegacyResult as {
+                            imported_markdown: number;
+                            imported_notion: number;
+                            skipped: number;
+                        };
+                        toast.success(`imported ${r.imported_markdown + r.imported_notion} · skipped ${r.skipped}`);
+                        legacyNotionToken = "";
+                        legacyNotionDatabaseId = "";
+                    } else if (result.type === "failure") {
+                        const err = (result.data?.error as string | undefined) ?? "import failed";
+                        toast.error(err);
+                    }
+                    await update({ reset: false });
+                };
+            }}
+            class="flex flex-col gap-2"
+        >
+            <label class="flex flex-col gap-1">
+                <span class="text-foreground-muted tracking-widest whitespace-nowrap uppercase">notion source</span>
+                <input
+                    type="password"
+                    name="notionToken"
+                    placeholder="secret_…"
+                    bind:value={legacyNotionToken}
+                    class="border-border bg-background text-foreground rounded-sm border px-2 py-1"
+                />
+                <input
+                    type="text"
+                    name="notionDatabaseId"
+                    placeholder="database id"
+                    bind:value={legacyNotionDatabaseId}
+                    class="border-border bg-background text-foreground rounded-sm border px-2 py-1"
+                />
+            </label>
+            <div class="flex justify-end">
+                <button
+                    type="submit"
+                    disabled={legacyNotionSubmitting ||
+                        legacyNotionToken.trim().length === 0 ||
+                        legacyNotionDatabaseId.trim().length === 0}
+                    class={`border-info/40 text-info pointer-fine:hover:bg-info/10 rounded-sm border px-3 py-1 tracking-widest whitespace-nowrap uppercase disabled:opacity-50 ${
+                        legacyNotionSubmitting ? "cursor-wait" : "cursor-pointer"
+                    }`}
+                >
+                    {legacyNotionSubmitting ? "importing…" : "import notion"}
+                </button>
+            </div>
         </form>
     </section>
 

@@ -132,5 +132,52 @@ export const actions: Actions = {
         } catch (e) {
             return fail(500, { error: e instanceof Error ? e.message : "dedup failed" });
         }
+    },
+
+    importLegacy: async (event) => {
+        const data = await event.request.formData();
+        const markdown = (data.get("markdown") ?? "").toString();
+        const notionToken = (data.get("notionToken") ?? "").toString();
+        const notionDatabaseId = (data.get("notionDatabaseId") ?? "").toString();
+
+        type LegacyPayload = {
+            markdown?: string;
+            notion?: { token: string; databaseId: string };
+        };
+        const payload: LegacyPayload = {};
+        if (markdown.trim().length > 0) {
+            payload.markdown = markdown;
+        }
+        if (notionToken.trim().length > 0 && notionDatabaseId.trim().length > 0) {
+            payload.notion = { token: notionToken.trim(), databaseId: notionDatabaseId.trim() };
+        }
+
+        if (!payload.markdown && !payload.notion) {
+            return fail(400, { error: "provide markdown or both notion token + database id" });
+        }
+
+        try {
+            const res = await event.fetch("/api/import/legacy", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) {
+                const errorText = await res.text();
+                return fail(res.status, { error: errorText || `legacy import failed: ${res.status}` });
+            }
+            const json = (await res.json()) as {
+                imported_markdown: number;
+                imported_notion: number;
+                skipped: number;
+            };
+            const imported = json.imported_markdown + json.imported_notion;
+            return {
+                importLegacyResult: json,
+                message: `imported ${imported} · skipped ${json.skipped}`
+            };
+        } catch (e) {
+            return fail(500, { error: e instanceof Error ? e.message : "legacy import failed" });
+        }
     }
 };
