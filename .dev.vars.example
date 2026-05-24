@@ -1,4 +1,0 @@
-ACCESS_TEAM_DOMAIN=beyourahi.cloudflareaccess.com
-ACCESS_AUDIENCE=replace-with-aud-tag
-ALLOW_DEV_AUTH=1
-NOTION_TOKEN_ENCRYPTION_KEY=base64-32-bytes

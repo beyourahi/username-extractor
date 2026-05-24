@@ -149,6 +149,12 @@ In production the app sits behind a Cloudflare Access Self-Hosted application:
 
 Notion is configured per user from the in-app **Settings** page — paste a Notion integration token and target database. The token is encrypted with `NOTION_TOKEN_ENCRYPTION_KEY` before it is stored in D1.
 
+To migrate from the legacy Python CLI, paste your `verified_usernames.md` or supply a Notion token + database ID under **Settings → Import legacy data**.
+
+## Benchmarking
+
+A pre-launch benchmark script lives at `scripts/benchmark.ts` and runs via `bun run benchmark`. It reads checked-in fixtures from `src/lib/extract/__tests__/fixtures/` (58 screenshots with an `expected.json` ground truth lifted from the legacy `needs_review.md`), invokes the Workers AI vision model against each one, and writes a per-image accuracy summary to `docs/benchmark.md`. The benchmark is **not** wired to CI — Workers AI invocations cost real money — and is intended for manual pre-launch verification per the PRD §Final verification step.
+
 ## Project structure
 
 ```
