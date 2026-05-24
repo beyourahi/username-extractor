@@ -322,7 +322,7 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
             item_id: itemId,
             error: "R2 object missing"
         });
-        emit(env, "item_failed", { jobId, userId, itemId, status: "r2_missing" });
+        emit(env, "item_failed", { jobId, userId, itemId, r2Key, status: "r2_missing" });
         return;
     }
     const imageBytes = await obj.arrayBuffer();
@@ -351,6 +351,7 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
                 jobId,
                 userId,
                 itemId,
+                r2Key,
                 status: "extract_error",
                 durationMs: Date.now() - startedAt
             });
@@ -406,6 +407,7 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
             jobId,
             userId,
             itemId,
+            r2Key,
             status: "no_username",
             durationMs: Date.now() - startedAt
         });
