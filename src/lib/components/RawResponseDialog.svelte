@@ -1,6 +1,7 @@
 <script lang="ts">
     import { Dialog } from "bits-ui";
     import { X, Copy } from "@lucide/svelte";
+    import Button from "./Button.svelte";
 
     let {
         open,
@@ -52,40 +53,37 @@
 
 <Dialog.Root {open} onOpenChange={handleOpenChange}>
     <Dialog.Portal>
-        <Dialog.Overlay class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
+        <Dialog.Overlay
+            class="fade-in fixed inset-0 z-50"
+            style="background: hsl(0 0% 0% / 0.6); backdrop-filter: blur(6px);"
+        />
         <Dialog.Content
-            class="border-border bg-surface fixed top-1/2 left-1/2 z-50 flex max-h-[80vh] w-[min(90vw,800px)] -translate-x-1/2 -translate-y-1/2 flex-col rounded border font-mono shadow-xl"
+            class="border-border-strong bg-card slide-in fixed top-1/2 left-1/2 z-50 flex max-h-[80vh] w-[min(90vw,800px)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl border shadow-2xl"
+            style="box-shadow: 0 20px 60px hsl(0 0% 0% / 0.6);"
         >
-            <div class="border-border flex items-center justify-between border-b px-4 py-2">
-                <Dialog.Title class="text-foreground text-xs tracking-widest text-balance uppercase">
-                    raw model response · {stem}
-                </Dialog.Title>
-                <div class="flex items-center gap-1">
-                    <button
-                        type="button"
-                        class="border-border pointer-fine:hover:bg-surface-elevated cursor-copy rounded-sm border px-2 py-0.5 text-[10px] tracking-widest whitespace-nowrap uppercase disabled:cursor-not-allowed"
-                        onclick={copy}
-                        disabled={!raw}
-                    >
-                        <Copy class="inline h-3 w-3" /> copy
-                    </button>
-                    <Dialog.Close
-                        class="border-border pointer-fine:hover:bg-surface-elevated cursor-pointer rounded-sm border px-2 py-0.5"
-                        aria-label="close"
-                    >
-                        <X class="h-3 w-3" />
+            <div class="border-border flex items-start justify-between gap-3 border-b p-5">
+                <div class="min-w-0">
+                    <Dialog.Title class="text-sm font-semibold tracking-tight">Raw model response</Dialog.Title>
+                    <p class="text-muted-fg mt-1 truncate font-mono text-xs">{stem}</p>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <Button variant="ghost" size="sm" onclick={copy} disabled={!raw}>
+                        <Copy size={12} /> Copy
+                    </Button>
+                    <Dialog.Close class="sleek -m-1 rounded p-1 text-zinc-400 hover:text-white" aria-label="Close">
+                        <X size={16} />
                     </Dialog.Close>
                 </div>
             </div>
-            <div class="overflow-auto p-4 text-xs">
+            <div class="overflow-auto p-5">
                 {#if loading}
-                    <p class="text-foreground-muted">loading…</p>
+                    <p class="text-muted-fg text-xs">Loading…</p>
                 {:else if error}
-                    <p class="text-danger text-pretty">error: {error}</p>
+                    <p class="text-tier-failed-fg text-xs text-pretty">Error: {error}</p>
                 {:else if raw}
-                    <pre class="text-foreground break-words whitespace-pre-wrap">{raw}</pre>
+                    <pre class="text-xs leading-relaxed break-words whitespace-pre-wrap text-zinc-200">{raw}</pre>
                 {:else}
-                    <p class="text-foreground-muted">no data</p>
+                    <p class="text-muted-fg text-xs">No data.</p>
                 {/if}
             </div>
         </Dialog.Content>

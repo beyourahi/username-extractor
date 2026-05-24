@@ -1,19 +1,75 @@
 <script lang="ts">
-    import Badge from "./Badge.svelte";
+    import { Check, X, Hourglass, AlertTriangle } from "@lucide/svelte";
+    import Spinner from "./Spinner.svelte";
+    import { cn } from "$lib/utils/cn";
     import type { NotionStatus } from "$lib/types/messages";
 
-    let { status }: { status: NotionStatus } = $props();
+    let {
+        status,
+        size = "default"
+    }: {
+        status: NotionStatus | "syncing" | null;
+        size?: "sm" | "default";
+    } = $props();
 
-    const map: Record<string, { tone: "default" | "success" | "warning" | "danger" | "info"; label: string }> = {
-        added: { tone: "success", label: "✓ ADDED" },
-        invalid: { tone: "danger", label: "✗ INVALID" },
-        pending: { tone: "warning", label: "⏳ PENDING" },
-        unconfigured: { tone: "default", label: "— UNCONFIGURED" }
-    };
+    type Variant = { label: string; icon: typeof Check | null; fg: string; bg: string; bd: string };
 
-    const cfg = $derived(
-        status ? (map[status] ?? { tone: "default" as const, label: "—" }) : { tone: "default" as const, label: "—" }
+    const variants = {
+        added: {
+            label: "Added",
+            icon: Check,
+            fg: "var(--status-active-foreground)",
+            bg: "var(--status-active-bg)",
+            bd: "var(--status-active-border)"
+        },
+        pending: {
+            label: "Pending",
+            icon: Hourglass,
+            fg: "var(--tier-med-foreground)",
+            bg: "var(--tier-med-bg)",
+            bd: "var(--tier-med-border)"
+        },
+        invalid: {
+            label: "Invalid",
+            icon: X,
+            fg: "var(--status-inactive-foreground)",
+            bg: "var(--status-inactive-bg)",
+            bd: "var(--status-inactive-border)"
+        },
+        unconfigured: {
+            label: "Unconfigured",
+            icon: AlertTriangle,
+            fg: "var(--muted-foreground)",
+            bg: "transparent",
+            bd: "var(--border-strong)"
+        },
+        syncing: {
+            label: "Syncing",
+            icon: null,
+            fg: "var(--brand)",
+            bg: "var(--brand-soft)",
+            bd: "var(--brand-border)"
+        }
+    } satisfies Record<string, Variant>;
+
+    const v = $derived<Variant>(
+        status && status in variants ? variants[status as keyof typeof variants] : variants.unconfigured
     );
+    const s = $derived(size === "sm");
 </script>
 
-<Badge tone={cfg.tone}>{cfg.label}</Badge>
+<span
+    class={cn(
+        "inline-flex items-center rounded-full border font-medium",
+        s ? "gap-1 px-1.5 py-[2px] text-[10px]" : "gap-1.5 px-2 py-0.5 text-[11px]"
+    )}
+    style="background: {v.bg}; color: {v.fg}; border-color: {v.bd};"
+>
+    {#if status === "syncing"}
+        <Spinner size="sm" color="brand" />
+    {:else if v.icon}
+        {@const Ic = v.icon}
+        <Ic size={s ? 9 : 11} />
+    {/if}
+    {v.label}
+</span>

@@ -2,7 +2,7 @@
     import type { Snippet } from "svelte";
     import { tv } from "tailwind-variants";
 
-    type Tone = "default" | "success" | "warning" | "danger" | "info";
+    type Tone = "default" | "success" | "warning" | "danger" | "info" | "brand";
 
     let {
         tone = "default",
@@ -15,14 +15,17 @@
     } = $props();
 
     const badge = tv({
-        base: "inline-flex items-center gap-1 whitespace-nowrap rounded-sm border px-1.5 py-0.5 font-mono text-[10px] font-medium uppercase tracking-widest",
+        base: "inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-[2px] font-mono text-[10px] font-medium uppercase tracking-[0.10em]",
         variants: {
             tone: {
-                default: "border-border bg-surface text-foreground-muted",
-                success: "border-accent/40 bg-accent/10 text-accent",
-                warning: "border-warning/40 bg-warning/10 text-warning",
-                danger: "border-danger/40 bg-danger/10 text-danger",
-                info: "border-info/40 bg-info/10 text-info"
+                default: "border-border-strong text-muted-fg bg-transparent",
+                success:
+                    "border-[color:var(--status-active-border)] bg-[color:var(--status-active-bg)] text-[color:var(--status-active-fg)]",
+                warning:
+                    "border-[color:var(--tier-med-border)] bg-[color:var(--tier-med-bg)] text-[color:var(--tier-med-fg)]",
+                danger: "border-[color:var(--tier-failed-border)] bg-[color:var(--tier-failed-bg)] text-[color:var(--tier-failed-fg)]",
+                info: "border-[color:var(--brand-border)] bg-[color:var(--brand-soft)] text-[color:var(--brand)]",
+                brand: "border-[color:var(--brand-border)] bg-[color:var(--brand-soft)] text-[color:var(--brand)]"
             }
         }
     });

@@ -19,20 +19,22 @@
 
 <div
     class={cn(
-        "border-border bg-surface/40 flex flex-col items-center justify-center gap-3 rounded border border-dashed px-6 py-16 text-center",
+        "border-border-strong grid place-items-center rounded-lg border border-dashed px-6 py-16 text-center",
         className
     )}
 >
-    {#if icon}
-        <div class="text-foreground-muted">{@render icon()}</div>
-    {/if}
-    <h2 class="font-mono text-sm font-medium tracking-widest text-balance uppercase">
-        {title}
-    </h2>
-    <p class="text-foreground-muted max-w-md font-mono text-xs leading-relaxed text-pretty">
-        {description}
-    </p>
-    {#if action}
-        <div class="pt-2">{@render action()}</div>
-    {/if}
+    <div class="flex max-w-md flex-col items-center gap-3">
+        {#if icon}
+            <div class="text-zinc-600">{@render icon()}</div>
+        {/if}
+        <h2 class="text-sm font-semibold tracking-tight text-zinc-200">
+            {title}
+        </h2>
+        <p class="text-muted-fg text-xs leading-relaxed text-pretty">
+            {description}
+        </p>
+        {#if action}
+            <div class="pt-2">{@render action()}</div>
+        {/if}
+    </div>
 </div>

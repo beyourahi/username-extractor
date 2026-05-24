@@ -2,8 +2,15 @@
     import { untrack } from "svelte";
     import { superForm } from "sveltekit-superforms";
     import { toast } from "svelte-sonner";
-    import PageHeader from "$lib/components/PageHeader.svelte";
     import { enhance } from "$app/forms";
+    import { Sparkles, RefreshCw, Upload, Trash2, FileText, Check, AlertTriangle } from "@lucide/svelte";
+    import PageHeader from "$lib/components/PageHeader.svelte";
+    import Button from "$lib/components/Button.svelte";
+    import Switch from "$lib/components/Switch.svelte";
+    import Field from "$lib/components/Field.svelte";
+    import TextInput from "$lib/components/TextInput.svelte";
+    import Spinner from "$lib/components/Spinner.svelte";
+    import type { Component, Snippet } from "svelte";
 
     let { data } = $props();
 
@@ -32,144 +39,195 @@
     let legacyNotionSubmitting = $state(false);
 </script>
 
-<div class="flex flex-col gap-6">
-    <PageHeader title="settings" subtitle="extraction defaults · notion · maintenance" />
+{#snippet section(icon: Component<{ size?: number; class?: string }>, title: string, subtitle: string, body: Snippet)}
+    {@const Ic = icon}
+    <section class="border-border bg-card overflow-hidden rounded-lg border">
+        <header class="border-border border-b p-4">
+            <div class="flex items-center gap-2.5">
+                <span class="bg-secondary flex h-7 w-7 items-center justify-center rounded-md">
+                    <Ic size={13} class="text-zinc-300" />
+                </span>
+                <div>
+                    <h2 class="text-sm font-semibold tracking-tight">{title}</h2>
+                    <p class="text-muted-fg mt-0.5 text-[11px]">{subtitle}</p>
+                </div>
+            </div>
+        </header>
+        <div class="px-4">{@render body()}</div>
+    </section>
+{/snippet}
 
-    <form method="POST" action="?/save" use:enhanceForm class="flex flex-col gap-6 font-mono text-xs">
-        <!-- Extraction -->
-        <section class="border-border bg-surface/40 flex flex-col gap-3 rounded border p-4">
-            <h2 class="text-foreground-muted text-[10px] tracking-widest text-balance uppercase">extraction</h2>
-            <label class="flex cursor-pointer items-center gap-2">
-                <input
-                    type="checkbox"
-                    class="cursor-pointer"
-                    name="diagnosticsDefault"
-                    bind:checked={$form.diagnosticsDefault}
-                />
-                <span>save raw model response on every job</span>
-            </label>
-            <label class="flex flex-col gap-1">
-                <span class="text-foreground-muted tracking-widest whitespace-nowrap uppercase">daily image quota</span>
-                <input
-                    type="number"
-                    name="dailyImageQuota"
-                    min="0"
-                    max="10000"
-                    bind:value={$form.dailyImageQuota}
-                    class="border-border bg-background text-foreground w-40 rounded-sm border px-2 py-1"
-                />
-                {#if $errors.dailyImageQuota}
-                    <span class="text-danger text-pretty">{$errors.dailyImageQuota}</span>
-                {/if}
-            </label>
-        </section>
+<main class="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 pt-8 pb-8 sm:px-6 sm:pt-10">
+    <PageHeader title="Settings" subtitle="Extraction defaults, Notion credentials, and maintenance tools." />
 
-        <!-- Notion -->
-        <section class="border-border bg-surface/40 flex flex-col gap-3 rounded border p-4">
-            <h2 class="text-foreground-muted text-[10px] tracking-widest text-balance uppercase">notion</h2>
-            <label class="flex flex-col gap-1">
-                <span class="text-foreground-muted tracking-widest whitespace-nowrap uppercase">integration token</span>
-                <input
-                    type="password"
-                    name="notionToken"
-                    placeholder={maskedToken || "secret_…"}
-                    bind:value={$form.notionToken}
-                    class="border-border bg-background text-foreground rounded-sm border px-2 py-1"
+    <form method="POST" action="?/save" use:enhanceForm class="flex flex-col gap-8">
+        {#snippet extractionBody()}
+            <div class="flex items-start justify-between gap-3 py-3">
+                <div>
+                    <p class="text-sm font-medium text-zinc-200">Diagnostics by default</p>
+                    <p class="text-muted-fg mt-1 text-xs text-pretty">
+                        Save the raw model response to R2 alongside the parsed result.
+                    </p>
+                </div>
+                <Switch
+                    checked={$form.diagnosticsDefault}
+                    onchange={(v) => ($form.diagnosticsDefault = v)}
+                    ariaLabel="Diagnostics"
                 />
-                <span class="text-foreground-muted/60 text-pretty">leave blank to keep existing token</span>
-            </label>
-            <label class="flex flex-col gap-1">
-                <span class="text-foreground-muted tracking-widest whitespace-nowrap uppercase">database id</span>
-                <input
-                    type="text"
-                    name="notionDatabaseId"
-                    bind:value={$form.notionDatabaseId}
-                    class="border-border bg-background text-foreground rounded-sm border px-2 py-1"
-                />
-            </label>
-            <label class="flex cursor-pointer items-center gap-2">
-                <input
-                    type="checkbox"
-                    class="cursor-pointer"
-                    name="notionAutoSync"
-                    bind:checked={$form.notionAutoSync}
-                />
-                <span>auto-sync verified leads to notion</span>
-            </label>
-            <label class="flex cursor-pointer items-center gap-2">
-                <input
-                    type="checkbox"
-                    class="cursor-pointer"
-                    name="notionSkipValidation"
-                    bind:checked={$form.notionSkipValidation}
-                />
-                <span>skip instagram profile validation</span>
-            </label>
-            <label class="flex flex-col gap-1">
-                <span class="text-foreground-muted tracking-widest whitespace-nowrap uppercase"
-                    >validation delay (ms)</span
+                <input type="hidden" name="diagnosticsDefault" value={$form.diagnosticsDefault ? "true" : "false"} />
+            </div>
+            <div class="bg-border h-px"></div>
+            <div class="flex items-center justify-between py-3">
+                <div>
+                    <p class="text-sm font-medium text-zinc-200">Vision model</p>
+                    <p class="text-muted-fg mt-0.5 font-mono text-[11px] whitespace-nowrap">@cf/moonshotai/kimi-k2.6</p>
+                </div>
+                <span class="border-border-strong text-muted-fg rounded-full border px-2 py-0.5 font-mono text-[10px]">
+                    locked
+                </span>
+            </div>
+            <div class="bg-border h-px"></div>
+            <div class="flex items-center justify-between gap-3 py-3">
+                <div>
+                    <p class="text-sm font-medium text-zinc-200">Daily image quota</p>
+                    <p class="text-muted-fg mt-0.5 text-xs">Per-user upper bound applied to new jobs.</p>
+                </div>
+                <div class="w-28">
+                    <TextInput
+                        type="number"
+                        name="dailyImageQuota"
+                        bind:value={$form.dailyImageQuota}
+                        min={0}
+                        max={10000}
+                        class="text-right"
+                    />
+                    {#if $errors.dailyImageQuota}
+                        <p class="text-tier-failed-fg mt-1 text-[11px] text-pretty">{$errors.dailyImageQuota}</p>
+                    {/if}
+                </div>
+            </div>
+        {/snippet}
+
+        {@render section(Sparkles, "Extraction", "Defaults applied to every new job.", extractionBody)}
+
+        {#snippet notionBody()}
+            <div class="space-y-4 py-3">
+                <Field
+                    label="Integration token"
+                    hint={maskedToken
+                        ? `Stored: ${maskedToken} — leave blank to keep.`
+                        : "Encrypted at rest. Masked after save."}
                 >
-                <input
-                    type="number"
-                    name="notionValidationDelayMs"
-                    min="0"
-                    max="60000"
-                    bind:value={$form.notionValidationDelayMs}
-                    class="border-border bg-background text-foreground w-40 rounded-sm border px-2 py-1"
+                    <TextInput
+                        type="password"
+                        name="notionToken"
+                        bind:value={$form.notionToken}
+                        placeholder={maskedToken || "secret_…"}
+                        autocomplete="off"
+                    />
+                </Field>
+                <Field label="Database ID" hint="Found in the URL of your Notion database.">
+                    <TextInput name="notionDatabaseId" bind:value={$form.notionDatabaseId} />
+                </Field>
+            </div>
+            <div class="bg-border h-px"></div>
+            <div class="flex items-start justify-between gap-3 py-3">
+                <div>
+                    <p class="text-sm font-medium text-zinc-200">Auto-sync verified leads</p>
+                    <p class="text-muted-fg mt-1 text-xs text-pretty">
+                        HIGH and MED tiers get pushed automatically as a job runs.
+                    </p>
+                </div>
+                <Switch
+                    checked={$form.notionAutoSync}
+                    onchange={(v) => ($form.notionAutoSync = v)}
+                    ariaLabel="Auto sync"
                 />
-            </label>
-        </section>
+                <input type="hidden" name="notionAutoSync" value={$form.notionAutoSync ? "true" : "false"} />
+            </div>
+            <div class="bg-border h-px"></div>
+            <div class="flex items-start justify-between gap-3 py-3">
+                <div>
+                    <p class="text-sm font-medium text-zinc-200">Skip Instagram profile validation</p>
+                    <p class="text-muted-fg mt-1 text-xs text-pretty">
+                        Trust extracted handles without an HTTP check — faster but allows 404s through.
+                    </p>
+                </div>
+                <Switch
+                    checked={$form.notionSkipValidation}
+                    onchange={(v) => ($form.notionSkipValidation = v)}
+                    ariaLabel="Skip validation"
+                />
+                <input
+                    type="hidden"
+                    name="notionSkipValidation"
+                    value={$form.notionSkipValidation ? "true" : "false"}
+                />
+            </div>
+            <div class="bg-border h-px"></div>
+            <div class="flex items-center justify-between gap-3 py-3">
+                <div>
+                    <p class="text-sm font-medium text-zinc-200">Validation delay (ms)</p>
+                    <p class="text-muted-fg mt-0.5 text-xs">Throttle between Instagram HEAD requests.</p>
+                </div>
+                <div class="w-28">
+                    <TextInput
+                        type="number"
+                        name="notionValidationDelayMs"
+                        bind:value={$form.notionValidationDelayMs}
+                        min={0}
+                        max={60000}
+                        class="text-right"
+                    />
+                </div>
+            </div>
+        {/snippet}
 
-        <div class="flex items-center justify-end gap-2">
-            <button
-                type="submit"
-                disabled={$submitting}
-                class={`border-accent bg-accent/10 text-accent pointer-fine:hover:bg-accent/20 rounded-sm border px-4 py-1 tracking-widest whitespace-nowrap uppercase disabled:opacity-50 ${
-                    $submitting ? "cursor-wait" : "cursor-pointer"
-                }`}
-            >
-                {$submitting ? "saving…" : "save"}
-            </button>
+        {@render section(FileText, "Notion", "Credentials used to push verified handles into your CRM.", notionBody)}
+
+        <div
+            class="border-border-strong sticky bottom-4 z-30 flex items-center justify-between gap-3 rounded-lg border p-3 backdrop-blur-md"
+            style="background: hsl(240 5.9% 10% / 0.85);"
+        >
+            <div class="text-muted-fg flex items-center gap-2 text-xs">
+                {#if $submitting}
+                    <Spinner size="sm" color="brand" /> Saving…
+                {:else if $message}
+                    <Check size={12} class="text-brand" />
+                    <span class="text-brand">Saved</span>
+                {:else}
+                    <span>Changes apply to subsequent jobs.</span>
+                {/if}
+            </div>
+            <div class="flex items-center gap-2">
+                <Button type="submit" variant="brand" size="sm" disabled={$submitting}>
+                    {$submitting ? "Saving…" : "Save changes"}
+                </Button>
+            </div>
         </div>
-
-        {#if $message}
-            <p class="text-accent text-pretty">{$message}</p>
-        {/if}
     </form>
 
-    <!-- Maintenance: dedup -->
-    <section class="border-border bg-surface/40 flex flex-col gap-3 rounded border p-4 font-mono text-xs">
-        <h2 class="text-foreground-muted text-[10px] tracking-widest text-balance uppercase">
-            maintenance · notion dedup
-        </h2>
-        <p class="text-foreground-muted text-pretty">
-            scans your notion database, scores duplicate usernames, and archives all but the best entry per group.
-        </p>
-        <form method="POST" action="?/dedup" use:enhance class="flex flex-wrap items-center gap-3">
-            <label class="flex cursor-pointer items-center gap-2">
-                <input type="checkbox" class="cursor-pointer" name="dryRun" value="true" checked />
-                <span>dry run · preview only</span>
-            </label>
-            <button
-                type="submit"
-                class="border-info/40 text-info pointer-fine:hover:bg-info/10 cursor-pointer rounded-sm border px-3 py-1 tracking-widest whitespace-nowrap uppercase"
-            >
-                run dedup
-            </button>
-        </form>
-    </section>
-
-    <!-- Import legacy data -->
-    <section class="border-border bg-surface/40 flex flex-col gap-3 rounded border p-4 font-mono text-xs">
-        <h2 class="text-foreground-muted text-[10px] tracking-widest text-balance uppercase">import legacy data</h2>
-        <p class="text-foreground-muted text-pretty">
-            seed lifetime leads from the python cli output or an existing notion database. idempotent — re-running with
-            the same input is safe.
-        </p>
-
+    {#snippet maintenanceBody()}
+        <div class="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm font-medium text-zinc-200">Notion deduplication</p>
+                <p class="text-muted-fg mt-1 text-xs text-pretty">
+                    Scans your full database and archives losers using the keep-strategy.
+                </p>
+            </div>
+            <form method="POST" action="?/dedup" use:enhance class="flex items-center gap-2">
+                <label class="text-muted-fg inline-flex cursor-pointer items-center gap-1.5 text-[11px]">
+                    <input type="checkbox" name="dryRun" value="true" checked class="cursor-pointer" />
+                    Dry run
+                </label>
+                <Button type="submit" variant="brand" size="sm">Run dedup</Button>
+            </form>
+        </div>
+        <div class="bg-border h-px"></div>
         <form
             method="POST"
             action="?/importLegacy"
+            class="flex flex-col gap-3 py-3"
             use:enhance={() => {
                 legacyMarkdownSubmitting = true;
                 return async ({ result, update }) => {
@@ -180,43 +238,46 @@
                             imported_notion: number;
                             skipped: number;
                         };
-                        toast.success(`imported ${r.imported_markdown + r.imported_notion} · skipped ${r.skipped}`);
+                        toast.success(`Imported ${r.imported_markdown + r.imported_notion} · skipped ${r.skipped}`);
                         legacyMarkdown = "";
                     } else if (result.type === "failure") {
-                        const err = (result.data?.error as string | undefined) ?? "import failed";
+                        const err = (result.data?.error as string | undefined) ?? "Import failed";
                         toast.error(err);
                     }
                     await update({ reset: false });
                 };
             }}
-            class="flex flex-col gap-2"
         >
-            <label class="flex flex-col gap-1">
-                <span class="text-foreground-muted tracking-widest whitespace-nowrap uppercase">markdown source</span>
-                <textarea
-                    name="markdown"
-                    rows="6"
-                    placeholder="paste verified_usernames.md…"
-                    bind:value={legacyMarkdown}
-                    class="border-border bg-background text-foreground rounded-sm border px-2 py-1 font-mono"
-                ></textarea>
-            </label>
+            <div>
+                <p class="text-sm font-medium text-zinc-200">Legacy markdown import</p>
+                <p class="text-muted-fg mt-1 text-xs text-pretty">
+                    Paste the contents of <span class="font-mono">verified_usernames.md</span> from the Python CLI.
+                </p>
+            </div>
+            <textarea
+                name="markdown"
+                rows="5"
+                bind:value={legacyMarkdown}
+                placeholder="Paste markdown…"
+                class="border-border-strong bg-background w-full rounded-lg border px-3 py-2 font-mono text-xs text-zinc-200 placeholder:text-zinc-500 focus:border-[color:var(--brand)] focus:ring-2 focus:ring-[color:var(--brand-soft)] focus:outline-none"
+            ></textarea>
             <div class="flex justify-end">
-                <button
+                <Button
                     type="submit"
+                    variant="outline"
+                    size="sm"
                     disabled={legacyMarkdownSubmitting || legacyMarkdown.trim().length === 0}
-                    class={`border-info/40 text-info pointer-fine:hover:bg-info/10 rounded-sm border px-3 py-1 tracking-widest whitespace-nowrap uppercase disabled:opacity-50 ${
-                        legacyMarkdownSubmitting ? "cursor-wait" : "cursor-pointer"
-                    }`}
                 >
-                    {legacyMarkdownSubmitting ? "importing…" : "import markdown"}
-                </button>
+                    <Upload size={13} />
+                    {legacyMarkdownSubmitting ? "Importing…" : "Import markdown"}
+                </Button>
             </div>
         </form>
-
+        <div class="bg-border h-px"></div>
         <form
             method="POST"
             action="?/importLegacy"
+            class="flex flex-col gap-3 py-3"
             use:enhance={() => {
                 legacyNotionSubmitting = true;
                 return async ({ result, update }) => {
@@ -227,67 +288,73 @@
                             imported_notion: number;
                             skipped: number;
                         };
-                        toast.success(`imported ${r.imported_markdown + r.imported_notion} · skipped ${r.skipped}`);
+                        toast.success(`Imported ${r.imported_markdown + r.imported_notion} · skipped ${r.skipped}`);
                         legacyNotionToken = "";
                         legacyNotionDatabaseId = "";
                     } else if (result.type === "failure") {
-                        const err = (result.data?.error as string | undefined) ?? "import failed";
+                        const err = (result.data?.error as string | undefined) ?? "Import failed";
                         toast.error(err);
                     }
                     await update({ reset: false });
                 };
             }}
-            class="flex flex-col gap-2"
         >
-            <label class="flex flex-col gap-1">
-                <span class="text-foreground-muted tracking-widest whitespace-nowrap uppercase">notion source</span>
-                <input
+            <div>
+                <p class="text-sm font-medium text-zinc-200">Legacy Notion import</p>
+                <p class="text-muted-fg mt-1 text-xs text-pretty">
+                    Scan an existing Notion database into Leads. Idempotent — re-running is safe.
+                </p>
+            </div>
+            <div class="grid gap-2 sm:grid-cols-2">
+                <TextInput
                     type="password"
                     name="notionToken"
-                    placeholder="secret_…"
                     bind:value={legacyNotionToken}
-                    class="border-border bg-background text-foreground rounded-sm border px-2 py-1"
+                    placeholder="secret_…"
+                    autocomplete="off"
                 />
-                <input
-                    type="text"
-                    name="notionDatabaseId"
-                    placeholder="database id"
-                    bind:value={legacyNotionDatabaseId}
-                    class="border-border bg-background text-foreground rounded-sm border px-2 py-1"
-                />
-            </label>
+                <TextInput name="notionDatabaseId" bind:value={legacyNotionDatabaseId} placeholder="database id" />
+            </div>
             <div class="flex justify-end">
-                <button
+                <Button
                     type="submit"
+                    variant="outline"
+                    size="sm"
                     disabled={legacyNotionSubmitting ||
                         legacyNotionToken.trim().length === 0 ||
                         legacyNotionDatabaseId.trim().length === 0}
-                    class={`border-info/40 text-info pointer-fine:hover:bg-info/10 rounded-sm border px-3 py-1 tracking-widest whitespace-nowrap uppercase disabled:opacity-50 ${
-                        legacyNotionSubmitting ? "cursor-wait" : "cursor-pointer"
-                    }`}
                 >
-                    {legacyNotionSubmitting ? "importing…" : "import notion"}
-                </button>
+                    <Upload size={13} />
+                    {legacyNotionSubmitting ? "Importing…" : "Import Notion"}
+                </Button>
             </div>
         </form>
-    </section>
+    {/snippet}
 
-    <!-- Reset -->
-    <section class="border-danger/40 bg-danger/5 flex flex-col gap-3 rounded border p-4 font-mono text-xs">
-        <h2 class="text-danger text-[10px] tracking-widest text-balance uppercase">danger zone · reset</h2>
-        <p class="text-foreground-muted text-pretty">
-            deletes all settings (including encrypted notion token). leads and jobs are preserved.
-        </p>
-        <form method="POST" action="?/reset" use:enhance>
-            <button
-                type="submit"
-                class="border-danger/40 text-danger pointer-fine:hover:bg-danger/10 cursor-pointer rounded-sm border px-3 py-1 tracking-widest whitespace-nowrap uppercase"
-                onclick={(e) => {
-                    if (!confirm("reset settings? this cannot be undone.")) e.preventDefault();
+    {@render section(RefreshCw, "Maintenance", "One-shot tools for cleaning historical state.", maintenanceBody)}
+
+    {#snippet resetBody()}
+        <div class="flex flex-col gap-3 py-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+                <p class="text-tier-failed-fg text-sm font-medium">Reset to defaults</p>
+                <p class="text-muted-fg mt-1 text-xs text-pretty">
+                    Wipes settings only (including encrypted Notion token). Jobs and leads are unaffected.
+                </p>
+            </div>
+            <form
+                method="POST"
+                action="?/reset"
+                use:enhance
+                onsubmit={(e) => {
+                    if (!confirm("Reset settings? This cannot be undone.")) e.preventDefault();
                 }}
             >
-                reset settings
-            </button>
-        </form>
-    </section>
-</div>
+                <Button type="submit" variant="destructive" size="sm">
+                    <Trash2 size={13} /> Reset settings
+                </Button>
+            </form>
+        </div>
+    {/snippet}
+
+    {@render section(AlertTriangle, "Danger zone", "Destructive — confirm before clicking.", resetBody)}
+</main>

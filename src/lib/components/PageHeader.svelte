@@ -15,23 +15,19 @@
     } = $props();
 </script>
 
-<header class={cn("border-border flex items-end justify-between gap-4 border-b pb-4", className)}>
-    <div class="flex flex-col gap-1">
-        <h1 class="font-mono text-2xl font-medium tracking-tight text-balance">
-            <span class="text-foreground-muted select-none">::</span>
+<header class={cn("flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between", className)}>
+    <div>
+        <h1 class="text-2xl font-black tracking-tight sm:text-3xl" style="letter-spacing: -0.02em;">
             {title}
         </h1>
         {#if subtitle}
-            <p class="text-foreground-muted max-w-prose font-mono text-xs text-pretty">
+            <p class="text-muted-fg mt-1 max-w-prose text-xs sm:text-sm">
                 {subtitle}
             </p>
         {/if}
-        <span class="text-foreground-muted/40 font-mono text-xs leading-none select-none" aria-hidden="true">
-            ······································
-        </span>
     </div>
     {#if actions}
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
             {@render actions()}
         </div>
     {/if}

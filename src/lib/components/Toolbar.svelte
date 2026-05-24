@@ -15,14 +15,14 @@
 
 <div
     class={cn(
-        "border-border bg-surface/40 flex flex-wrap items-center justify-between gap-3 rounded border px-3 py-2 font-mono text-xs",
+        "border-border bg-card flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between",
         className
     )}
 >
     <div class="flex flex-wrap items-center gap-2">
         {#if filters}{@render filters()}{/if}
     </div>
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2">
         {#if actions}{@render actions()}{/if}
     </div>
 </div>

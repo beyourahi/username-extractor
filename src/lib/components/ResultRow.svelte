@@ -1,7 +1,8 @@
 <script lang="ts">
+    import { RefreshCw, FileText, Code2 } from "@lucide/svelte";
     import NotionBadge from "./NotionBadge.svelte";
     import TierBadge from "./TierBadge.svelte";
-    import Badge from "./Badge.svelte";
+    import Button from "./Button.svelte";
     import { cn } from "$lib/utils/cn";
     import type { NotionStatus, ItemStatus, Tier } from "$lib/types/messages";
 
@@ -22,89 +23,123 @@
 
     let {
         item,
+        index,
         onRetry,
         onViewRaw,
         appearAnimated = false
     }: {
         item: ResultRowItem;
+        index?: number;
         onRetry?: (() => void | Promise<void>) | undefined;
         onViewRaw?: (() => void | Promise<void>) | undefined;
         appearAnimated?: boolean;
     } = $props();
 
-    const statusTone = $derived(
-        item.status === "verified"
-            ? "success"
-            : item.status === "review"
-              ? "warning"
+    // Border accent color reflects tier; falls back to status semantics.
+    const accentColor = $derived(
+        item.tier === "HIGH"
+            ? "var(--brand)"
+            : item.tier === "MED"
+              ? "var(--tier-med)"
               : item.status === "failed"
-                ? "danger"
-                : item.status === "duplicate"
-                  ? "info"
-                  : "default"
+                ? "var(--tier-failed)"
+                : item.status === "review"
+                  ? "var(--tier-review)"
+                  : "transparent"
+    );
+
+    const synthBadge = $derived(
+        item.tier ? null : item.status === "review" ? "REVIEW" : item.status === "failed" ? "FAILED" : null
     );
 </script>
 
 <div
     class={cn(
-        "border-border/60 pointer-fine:hover:bg-surface/60 grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b px-3 py-2 font-mono text-xs",
-        appearAnimated && "scan-in"
+        "status-transition group hover:border-border-strong relative flex items-center gap-3 rounded-lg border p-3",
+        appearAnimated && "slide-in"
     )}
+    style="background: var(--card); border-color: var(--border);"
 >
-    <div class="flex items-center gap-2">
-        <Badge tone={statusTone}>{item.status.toUpperCase()}</Badge>
+    {#if accentColor !== "transparent"}
+        <span class="absolute top-2 bottom-2 left-0 w-[3px] rounded-full" style="background: {accentColor};"></span>
+    {/if}
+
+    {#if index !== undefined}
+        <span class="text-muted-fg w-6 shrink-0 font-mono text-[10px] tabular-nums">
+            {String(index + 1).padStart(2, "0")}
+        </span>
+    {/if}
+
+    <div
+        class="border-border bg-secondary flex h-12 w-12 shrink-0 items-center justify-center rounded-md border"
+        title={item.filename}
+        aria-hidden="true"
+    >
+        <FileText size={16} class="text-zinc-500" />
     </div>
 
-    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 overflow-hidden">
-        <span class="text-foreground-muted cursor-help truncate" title={item.filename}>{item.filename}</span>
-        <span class="text-foreground-muted/40 select-none">▸</span>
+    <div class="min-w-0 flex-1">
+        <div class="flex flex-wrap items-center gap-2">
+            {#if item.username}
+                <a
+                    href={`https://instagram.com/${item.username}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    class="truncate font-mono text-sm font-semibold text-zinc-100 hover:underline"
+                >
+                    @{item.username}
+                </a>
+            {:else}
+                <p class="text-muted-fg text-sm italic">— no handle —</p>
+            {/if}
 
-        {#if item.username}
-            <span class="text-foreground font-medium whitespace-nowrap">@{item.username}</span>
-        {:else if item.error}
-            <span class="text-danger cursor-help text-pretty" title={item.error}>{item.error.slice(0, 80)}</span>
-        {:else}
-            <span class="text-foreground-muted/60">—</span>
-        {/if}
+            {#if item.tier}
+                <TierBadge tier={item.tier} size="sm" />
+            {:else if synthBadge}
+                <TierBadge tier={synthBadge} size="sm" />
+            {/if}
 
-        {#if item.confidence !== null && item.confidence !== undefined}
-            <span class="text-foreground-muted whitespace-nowrap">conf={item.confidence.toFixed(0)}</span>
-        {/if}
-
-        <TierBadge tier={item.tier ?? null} />
-
-        {#if item.isDuplicate}
-            <Badge tone="info">DUP</Badge>
-        {:else if item.isNearDuplicate}
-            <Badge tone="info"
-                >~DUP{item.editDistance !== null && item.editDistance !== undefined
-                    ? ` Δ${item.editDistance}`
-                    : ""}</Badge
-            >
-        {/if}
-
-        <span class="text-foreground-muted/60">notion=</span>
-        <NotionBadge status={item.notionStatus ?? null} />
+            {#if item.isDuplicate}
+                <span
+                    class="border-border-strong text-muted-fg rounded-full border px-1.5 py-[1px] font-mono text-[10px]"
+                >
+                    duplicate
+                </span>
+            {:else if item.isNearDuplicate}
+                <span
+                    class="border-tier-med-border text-tier-med-fg rounded-full border px-1.5 py-[1px] font-mono text-[10px]"
+                >
+                    near · ed{item.editDistance ?? "?"}
+                </span>
+            {/if}
+        </div>
+        <p class="text-muted-fg mt-0.5 truncate text-[11px]">
+            <span class="font-mono">{item.filename}</span>
+            {#if item.confidence !== null && item.confidence !== undefined && item.confidence > 0}
+                · <span class="font-mono tabular-nums">{item.confidence.toFixed(0)}%</span> confidence
+            {/if}
+            {#if item.isNearDuplicate && item.similarTo}
+                · matches <span class="font-mono">@{item.similarTo}</span>
+            {/if}
+            {#if item.error}
+                · <span class="text-tier-failed-fg" title={item.error}>{item.error.slice(0, 80)}</span>
+            {/if}
+        </p>
     </div>
 
-    <div class="flex items-center gap-1">
-        {#if onRetry && item.status === "failed"}
-            <button
-                type="button"
-                class="border-border pointer-fine:hover:bg-surface-elevated pointer-fine:hover:text-foreground cursor-pointer rounded-sm border px-2 py-0.5 font-mono text-[10px] tracking-widest whitespace-nowrap uppercase"
-                onclick={onRetry}
-            >
-                retry
-            </button>
+    <div class="ml-auto flex shrink-0 items-center gap-2">
+        {#if item.notionStatus}
+            <NotionBadge status={item.notionStatus} size="sm" />
+        {/if}
+        {#if onRetry}
+            <Button variant="ghost" size="sm" onclick={onRetry} aria-label="Retry">
+                <RefreshCw size={12} /> Retry
+            </Button>
         {/if}
         {#if onViewRaw}
-            <button
-                type="button"
-                class="border-border pointer-fine:hover:bg-surface-elevated pointer-fine:hover:text-foreground cursor-pointer rounded-sm border px-2 py-0.5 font-mono text-[10px] tracking-widest whitespace-nowrap uppercase"
-                onclick={onViewRaw}
-            >
-                raw
-            </button>
+            <Button variant="ghost" size="sm" onclick={onViewRaw} aria-label="View raw response">
+                <Code2 size={12} /> Raw
+            </Button>
         {/if}
     </div>
 </div>
