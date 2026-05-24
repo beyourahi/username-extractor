@@ -35,7 +35,8 @@
             if (body.notionStatus === "added") toast.success("notion · added");
             else if (body.notionStatus === "invalid") toast.error("instagram returned 404 · marked invalid");
             else if (body.notionStatus === "pending") toast.error(`notion pending · ${body.error ?? "retry later"}`);
-            else if (body.notionStatus === "unconfigured") toast.error("notion not configured · set token in /settings");
+            else if (body.notionStatus === "unconfigured")
+                toast.error("notion not configured · set token in /settings");
             else toast.success("notion sync ran");
         } catch (e) {
             toast.error(e instanceof Error ? e.message : "sync failed");
