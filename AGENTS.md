@@ -28,8 +28,10 @@ bun run test                 # vitest run (unit suite)
 bun run test:watch
 bunx vitest run src/lib/extract/__tests__/clean.test.ts   # single test file
 bunx vitest run -t "cleans handles"                       # single test by name pattern
+bun run benchmark            # Kimi K2.6 accuracy run against checked-in fixtures → docs/benchmark.md (HITS PAID AI, run on demand only)
 bun run cf-typegen           # regenerate worker-configuration.d.ts from wrangler.jsonc bindings
 bun run db:generate          # Drizzle: emit SQL migration from schema.ts changes
+bun run db:push              # Drizzle: push schema directly to D1 (dev shortcut, bypasses migrations)
 bun run db:migrate:local     # apply migrations to local D1
 bun run db:migrate           # apply migrations to remote D1
 bun run db:studio            # Drizzle Studio (requires CLOUDFLARE_* env vars, see drizzle.config.ts)
@@ -129,10 +131,11 @@ User Notion tokens are encrypted at rest using AES-GCM keyed by `NOTION_TOKEN_EN
 - **Server-only code** lives under `src/lib/server/` (enforced by SvelteKit). Client imports of anything in this tree will fail at build.
 - **Snake_case** is intentional on the WebSocket wire format and Notion sync payloads — they match the PRD and the legacy CLI's output. Do not rename these to camelCase.
 - Tests are co-located in `__tests__/` subdirectories next to the module under test (e.g. `src/lib/extract/__tests__/clean.test.ts`). Vitest is configured with `environment: "node"`.
+- **Design primitives in `src/lib/components/`** — `Button`, `TextInput`, `Field`, `Switch`, `Spinner`, `Badge`, `Eyebrow`, `HeroHeading`, `AppBar`, `Footer`, `UserChip`. Reuse these before authoring bespoke styled elements. HSL design tokens live in `src/app.css` under `@theme inline` — read from there, don't hardcode colors.
 
 ## Required env / bindings
 
-Local (`.dev.vars`, copy from `.dev.vars.example`):
+Local (create `.dev.vars` — there is no `.example` template in the repo):
 
 | Key                           | Notes                                                                                     |
 | ----------------------------- | ----------------------------------------------------------------------------------------- |
@@ -160,3 +163,4 @@ Bindings (declared in `wrangler.jsonc`): `DB` (D1), `R2`, `KV`, `AI`, `QUEUE` (p
 - **WebSocket reconnect contract:** the client passes `?last_event_id=<n>` to `/api/jobs/[id]/ws`; the DO replays missed completed items from D1. Don't bypass this for "snapshot" loads — it's the resync path.
 - **CPU limit raised to 300s** (`limits.cpu_ms` in `wrangler.jsonc`) for the queue consumer's worst-case batch. Keep an eye on this if you add expensive per-item work.
 - **Workers AI model id is `@cf/moonshotai/kimi-k2.6`** — the PRD spec's `@cf/moonshot/...` (no `ai`) is a typo; don't copy it.
+- **Benchmark is paid and manual.** `bun run benchmark` invokes Workers AI per fixture and writes `docs/benchmark.md`. Intentionally not in CI. Any change to `src/lib/extract/` or `src/lib/notion/dedup.ts` should be followed by a manual re-run + commit of the updated report.
