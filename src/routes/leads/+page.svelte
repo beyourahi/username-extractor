@@ -29,9 +29,14 @@
 
     async function sendToNotion(id: string) {
         try {
-            const res = await fetch(`/api/leads/${id}/notion`, { method: "POST" });
+            const res = await fetch(`/api/leads/${id}/notion-sync`, { method: "POST" });
             if (!res.ok) throw new Error(`${res.status}`);
-            toast.success("notion sync queued");
+            const body = (await res.json()) as { notionStatus?: string; error?: string | null };
+            if (body.notionStatus === "added") toast.success("notion · added");
+            else if (body.notionStatus === "invalid") toast.error("instagram returned 404 · marked invalid");
+            else if (body.notionStatus === "pending") toast.error(`notion pending · ${body.error ?? "retry later"}`);
+            else if (body.notionStatus === "unconfigured") toast.error("notion not configured · set token in /settings");
+            else toast.success("notion sync ran");
         } catch (e) {
             toast.error(e instanceof Error ? e.message : "sync failed");
         }
