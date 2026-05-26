@@ -26,7 +26,7 @@
     let mobileOpen = $state(false);
 
     async function signOut() {
-        // Cloudflare Access logout endpoint. Falls back gracefully if hostname unknown.
+        // `/cdn-cgi/access/logout` is the platform-provided logout for Cloudflare Access.
         if (typeof window === "undefined") return;
         const url = "/cdn-cgi/access/logout";
         window.location.href = url;

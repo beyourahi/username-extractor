@@ -1,13 +1,14 @@
 /**
- * AES-GCM helpers for encrypting the user's Notion token at rest in D1.
+ * AES-GCM helpers for at-rest encryption of the user's Notion token.
  *
- * The D1 column `user_settings.notion_token_encrypted` is a BLOB structured as
- * `[12-byte IV] || [ciphertext + auth tag]`. Encryption uses WebCrypto only —
- * no Node `crypto` imports — so this module is safe to call from any Workers
- * route handler.
+ * BLOB layout in `user_settings.notion_token_encrypted`:
+ *   [12-byte IV] || [ciphertext + 16-byte auth tag]
  *
- * `maskToken` mirrors the Python helper at `config.py:122-128` so the rendered
- * settings UI matches the CLI's display.
+ * Uses WebCrypto only (no Node `crypto`); safe in any Workers context.
+ * Key is derived once from env.NOTION_TOKEN_ENCRYPTION_KEY (base64, 32 bytes).
+ *
+ * `maskToken` mirrors the legacy Python `config.py:122-128` helper so the UI
+ * matches the CLI's rendering character-for-character.
  */
 
 const IV_LENGTH_BYTES = 12;
@@ -22,7 +23,7 @@ function base64Decode(input: string): Uint8Array {
     return out;
 }
 
-/** Derive an AES-GCM 256 CryptoKey from a base64-encoded 32-byte secret. */
+/** Imports AES-GCM 256 CryptoKey from a base64-encoded 32-byte secret. Throws on wrong length. */
 export async function deriveTokenKey(base64Key: string): Promise<CryptoKey> {
     const raw = base64Decode(base64Key);
     if (raw.length !== AES_KEY_LENGTH_BYTES) {
@@ -58,7 +59,7 @@ export async function decryptNotionToken(blob: Uint8Array, key: CryptoKey): Prom
     return new TextDecoder().decode(plainBuf);
 }
 
-/** Token render mask matching the Python `config.py:122-128` helper: first 10 chars + "..." */
+/** Display mask: `<first 10 chars>...`. Mirrors Python `config.py:122-128`. */
 export function maskToken(plaintext: string): string {
     if (plaintext.length <= 10) return plaintext;
     return plaintext.slice(0, 10) + "...";

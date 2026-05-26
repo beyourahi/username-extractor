@@ -1,10 +1,11 @@
 import { z } from "zod";
 
 /**
- * Settings form schema. Mirrors `user_settings` columns in
- * `src/lib/server/schema.ts`. The token is optional on write — empty string
- * means "leave existing encrypted token in place" so users don't have to retype
- * it on every save.
+ * Settings form schema. 1:1 with `user_settings` in `src/lib/server/schema.ts`.
+ *
+ * CONTRACT: `notionToken === ""` means "preserve the existing ciphertext".
+ * The server MUST NOT clear `user_settings.notion_token_encrypted` on empty input.
+ * Use a dedicated "remove token" action if/when that capability is exposed.
  */
 export const settingsSchema = z.object({
     diagnosticsDefault: z.boolean().default(false),

@@ -4,11 +4,12 @@ import { and, eq } from "drizzle-orm";
 import { getDb, schema } from "$lib/server/db";
 
 /**
- * WebSocket entry point. Forwards the upgrade request to the per-job
- * Durable Object, which handles hibernation, broadcast, and replay.
+ * WS upgrade proxy. Verifies `jobs.user_id = locals.userId` BEFORE forwarding to
+ * the per-job JobCoordinator DO — otherwise an attacker who guesses a job UUID
+ * could attach to another user's live stream.
  *
- * We resolve ownership BEFORE forwarding so an attacker can't bind a WS to
- * another user's job stream.
+ * Normalizes the DO request URL to `https://do/ws?job_id&last_event_id` so the
+ * DO can route by path (see `JobCoordinator.handleWebSocketUpgrade`).
  */
 export const GET: RequestHandler = async ({ request, params, locals, platform, url }) => {
     if (!locals.userId || !platform?.env) {
@@ -29,7 +30,6 @@ export const GET: RequestHandler = async ({ request, params, locals, platform, u
     }
 
     const stub = platform.env.JOB_COORDINATOR.get(platform.env.JOB_COORDINATOR.idFromName(params.id));
-    // Forward to DO using a normalized URL so the DO sees /ws + query params.
     const lastEventId = url.searchParams.get("last_event_id") ?? "";
     const target = new URL("https://do/ws");
     target.searchParams.set("job_id", params.id);

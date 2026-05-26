@@ -1,11 +1,17 @@
 /**
- * Notion Database Manager — TypeScript port.
+ * Notion API wrapper for the user's lead database. Workers-runtime safe.
+ * Verbatim port of `extract_usernames/integrations/notion_manager.py`.
  *
- * Source: /Users/beyourahi/Desktop/projects/extract_usernames/extract_usernames/integrations/notion_manager.py
+ * Reads use `dataSources.query` (Notion API quirk: paginated queries require
+ * a data source ID, not the database ID). Writes use the modern
+ * `pages.create({ parent: { database_id } })` form.
  *
- * Workers-runtime safe. Uses `@notionhq/client` with the modern `database_id`
- * parent on `pages.create`. Reads use `dataSources.query` because the Notion
- * REST API requires a data source for paginated queries.
+ * Per-instance caches (cleared only by re-instantiation):
+ *   `propertyNamesCache`     — detected title/url/status column names
+ *   `existingUsernamesCache` — lowercased usernames for fast dedup
+ *   `dataSourceIdCache`      — first data source on the database
+ *
+ * Rate limit: `rateLimitMs` (default DEFAULT_RATE_LIMIT_MS) between every API call.
  */
 
 import { Client, APIResponseError } from "@notionhq/client";
@@ -104,16 +110,14 @@ export class NotionDatabaseManager {
         this.rateLimitMs = options.rateLimitMs ?? DEFAULT_RATE_LIMIT_MS;
     }
 
-    /**
-     * Test seam — allows swapping the underlying Notion client (e.g. for mocks).
-     */
+    /** Test seam. Constructs an instance around an injected Notion client (mock). */
     static withClient(
         client: Client,
         databaseId: string,
         options: NotionDatabaseManagerOptions = {}
     ): NotionDatabaseManager {
         const instance = Object.create(NotionDatabaseManager.prototype) as NotionDatabaseManager;
-        // Cast through unknown to bypass readonly checks for this controlled construction.
+        // Bypass `readonly` for controlled construction — we never mutate after this.
         (instance as unknown as { client: Client }).client = client;
         (instance as unknown as { databaseId: string }).databaseId = NotionDatabaseManager.cleanDatabaseId(databaseId);
         (instance as unknown as { rateLimitMs: number }).rateLimitMs = options.rateLimitMs ?? DEFAULT_RATE_LIMIT_MS;
@@ -124,15 +128,15 @@ export class NotionDatabaseManager {
         return instance;
     }
 
-    /**
-     * Clean and extract database ID from various formats.
-     *
-     * Supports:
-     * - Raw ID: 300472d4ce5181aa83f2000b8ae958d2
-     * - Dashed ID: 300472d4-ce51-81aa-83f2-000b8ae958d2
-     * - Full URL: https://notion.so/300472d4ce5181aa83f2000b8ae958d2
-     * - URL with dashes + query: https://notion.so/300472d4-ce51-...?v=...
-     */
+/**
+ * Normalizes user-supplied database IDs to the 32-char hex form expected by
+ * the Notion API. Accepts:
+ *   - Raw:        `300472d4ce5181aa83f2000b8ae958d2`
+ *   - Dashed:     `300472d4-ce51-81aa-83f2-000b8ae958d2`
+ *   - URL:        `https://notion.so/300472d4ce5181aa83f2000b8ae958d2`
+ *   - URL w/ qs:  `https://notion.so/300472d4-ce51-...?v=...`
+ * Returns empty string for falsy input.
+ */
     static cleanDatabaseId(raw: string): string {
         if (!raw) {
             return "";
@@ -150,16 +154,15 @@ export class NotionDatabaseManager {
             id = id.slice(0, queryIdx);
         }
 
-        // Drop any trailing path segments (e.g. page slug after the ID).
+        // Drop trailing path segments (e.g. page slug after the ID).
         const slashIdx = id.lastIndexOf("/");
         if (slashIdx !== -1) {
             id = id.slice(slashIdx + 1);
         }
 
-        // Strip dashes.
         id = id.replace(/-/g, "");
 
-        // Keep only hex characters (the last 32 should form the ID).
+        // Take the last 32 hex chars — Notion IDs may be embedded in longer slugs.
         const hexOnly = id
             .split("")
             .filter((ch) => HEX_RE.test(ch))
@@ -223,7 +226,7 @@ export class NotionDatabaseManager {
         let urlName: string | null = null;
         let statusName: string | null = null;
 
-        // First pass: type-based detection + "social" hint for URL.
+        // Pass 1: type-based detection. URL column with "social" in the name wins outright.
         for (const [propName, propData] of Object.entries(properties)) {
             const type = propData?.type;
             if (type === "title" && !titleName) {
@@ -235,7 +238,7 @@ export class NotionDatabaseManager {
             }
         }
 
-        // Fallback: first url-typed property.
+        // Pass 2 fallback: any url-typed property.
         if (!urlName) {
             for (const [propName, propData] of Object.entries(properties)) {
                 if (propData?.type === "url") {
@@ -245,7 +248,7 @@ export class NotionDatabaseManager {
             }
         }
 
-        // Fallback: first status-typed property.
+        // Pass 2 fallback: any status-typed property.
         if (!statusName) {
             for (const [propName, propData] of Object.entries(properties)) {
                 if (propData?.type === "status") {

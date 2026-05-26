@@ -1,14 +1,23 @@
 /**
- * Instagram username validator.
+ * Instagram existence check. Workers-runtime port of
+ * `extract_usernames/integrations/instagram_validator.py`.
  *
- * Ports `extract_usernames/integrations/instagram_validator.py` to the Cloudflare
- * Workers runtime. Uses platform `fetch` + `AbortController` only — no Node
- * dependencies. Mirrors the Python retry policy: exponential backoff on the
- * same retryable status codes (429, 500, 502, 503, 504) with up to three
- * attempts by default.
+ * INVARIANT (PRD §FR-15): NEVER throws. All failure modes — timeout, network,
+ * unexpected status — surface via `ValidationResult.error` so callers can
+ * persist without try/catch.
  *
- * Behavior matches PRD §FR-15 — never throws; always returns a structured
- * `ValidationResult` so callers can persist outcomes without try/catch noise.
+ * Retry policy mirrors the Python original:
+ *   - Retryable statuses: 429, 500, 502, 503, 504.
+ *   - Up to `maxRetries` (default 3) retries on top of 1 initial attempt.
+ *   - Exponential backoff `base * 2^attempt`, capped at BACKOFF_CAP_MS.
+ *
+ * Result semantics:
+ *   200 + final URL not /accounts/login → exists: true
+ *   200 + /accounts/login redirect      → exists: false, error: "Account requires login"
+ *   404                                 → exists: false, error: "Account not found"
+ *   retryable (after exhaustion)        → exists: false, error: "Retryable status: <code>"
+ *   other                               → exists: false, error: "Unexpected status: <code>"
+ *   timeout (AbortError)                → exists: false, error: "Request timeout"
  */
 
 export interface ValidationResult {
@@ -34,16 +43,12 @@ const RETRYABLE_STATUS_CODES = new Set<number>([429, 500, 502, 503, 504]);
 const BACKOFF_CAP_MS = 10_000;
 const USER_AGENT = "username-extractor/1.0";
 
-/**
- * Sleep helper. Exposed only via dynamic binding so tests can stub it through
- * `vi.useFakeTimers()` if needed; otherwise it just resolves via `setTimeout`.
- */
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function computeBackoff(base: number, attempt: number): number {
-    // attempt is 0-indexed (first retry uses attempt=0 → base * 1, then * 2, * 4, ...)
+    // attempt is 0-indexed: returns base, 2*base, 4*base, … capped at BACKOFF_CAP_MS.
     const raw = base * Math.pow(2, attempt);
     return Math.min(raw, BACKOFF_CAP_MS);
 }
@@ -69,7 +74,6 @@ export async function validateUsername(username: string, opts?: ValidatorOptions
     let lastError: string | null = null;
     let lastFinalUrl = targetUrl;
 
-    // Total attempts = 1 initial + maxRetries.
     const totalAttempts = Math.max(1, maxRetries + 1);
 
     for (let attempt = 0; attempt < totalAttempts; attempt++) {
@@ -133,7 +137,7 @@ export async function validateUsername(username: string, opts?: ValidatorOptions
                 };
             }
 
-            // Any other non-retryable, non-success status.
+            // Any other non-retryable, non-200/404 status.
             return {
                 username,
                 exists: false,
@@ -161,7 +165,7 @@ export async function validateUsername(username: string, opts?: ValidatorOptions
         }
     }
 
-    // Defensive — loop always returns. This satisfies the type checker.
+    // Unreachable in practice; the loop always returns. Satisfies the type checker.
     return {
         username,
         exists: false,

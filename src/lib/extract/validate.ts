@@ -1,7 +1,7 @@
 /**
- * Instagram username format validation and unusual-pattern detection.
- *
- * Source: /Users/beyourahi/Desktop/projects/extract_usernames/extract_usernames/_archive/extract_usernames.py:470-522
+ * Verbatim port of Python validation helpers
+ * (extract_usernames.py:470-522 — `is_valid_instagram_format`, `has_unusual_pattern`).
+ * Used by `scoreConfidence` to weight VLM output.
  */
 
 const VALID_CHARS_RE = /^[a-z0-9._]+$/;
@@ -11,13 +11,9 @@ const REPEATED_SPECIAL_RE = /[._]{4,}/;
 const VOWELS = new Set(["a", "e", "i", "o", "u"]);
 
 /**
- * Validate username against Instagram format rules.
- *
- * - Length 1–30
- * - Only [a-z0-9._]
- * - Starts with alphanumeric
- * - Does not end with '.'
- * - No consecutive '..'
+ * Instagram handle format rules (all must pass):
+ *   length ∈ [1, 30]; charset `[a-z0-9._]`; first char alphanumeric;
+ *   does not end with `.`; no consecutive `..`.
  */
 export function isValidInstagramFormat(username: string): boolean {
     if (!username || username.length < 1 || username.length > 30) {
@@ -40,12 +36,11 @@ export function isValidInstagramFormat(username: string): boolean {
 }
 
 /**
- * Detect suspicious patterns suggesting OCR errors.
- *
- * Flags:
- * - 4+ consecutive '.' or '_' characters
- * - More than 50% special characters ('.' + '_')
- * - Length >= 5 with zero vowels (likely garbled)
+ * True when `username` triggers any OCR-corruption heuristic:
+ *   - 4+ consecutive `.` or `_`
+ *   - >50% special chars (`.` + `_`)
+ *   - length ≥ 5 with zero vowels (`aeiou`)
+ * Empty input also returns true.
  */
 export function hasUnusualPattern(username: string): boolean {
     if (!username) {

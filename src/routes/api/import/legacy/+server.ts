@@ -1,10 +1,16 @@
 /**
- * Legacy import endpoint.
+ * POST `/api/import/legacy` — one-off seed for the lifetime `leads` table.
  *
- * Accepts either a markdown blob (the CLI's `verified_usernames.md`) or an
- * existing Notion database, and seeds the user's lifetime `leads` table.
- * Idempotent — duplicate (user_id, username) inserts are no-ops thanks to the
- * UNIQUE index. Useful for users migrating off the Python CLI.
+ * Accepts either or both:
+ *   - `markdown`: raw text from the CLI's `verified_usernames.md` (parsed via `loadUsernamesFromMarkdown`).
+ *   - `notion`:   credentials to pull all existing rows from a Notion DB (status set to `'added'`).
+ *
+ * Idempotent: duplicates are absorbed by `uniq_leads_user_username`. Rate-limited
+ * in `hooks.server.ts` (5/min/user) — see `RATE_LIMIT_PATHS`.
+ *
+ * Tier/confidence are seeded as MED/85 for markdown imports because the
+ * source has no scoring info. Markdown rows get `notion_status = null`;
+ * Notion-sourced rows get `notion_status = 'added'`.
  */
 
 import type { RequestHandler } from "./$types";

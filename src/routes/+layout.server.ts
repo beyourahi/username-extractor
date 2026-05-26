@@ -3,11 +3,9 @@ import { getDb, schema } from "$lib/server/db";
 import { eq } from "drizzle-orm";
 
 /**
- * Loads the active user's settings row (if any). The presence/absence drives
- * the first-run wizard mounted in `+layout.svelte`.
- *
- * Workers-runtime safe: only uses `platform.env.DB` via the per-request
- * Drizzle client.
+ * Loads `user_settings` for the current user. `userSettings === null` signals
+ * the first-run wizard (rendered by `+layout.svelte`). DB errors and missing
+ * bindings degrade silently to `null` — the wizard re-prompts.
  */
 export const load: LayoutServerLoad = async ({ locals, platform }) => {
     if (!locals.userId || !platform?.env?.DB) {

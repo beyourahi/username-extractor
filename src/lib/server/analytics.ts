@@ -1,14 +1,14 @@
 /**
- * Workers Analytics Engine emitter. No-op when the binding is absent.
+ * Workers Analytics Engine emitter. No-op when the ANALYTICS binding is absent
+ * (preview/test, or local dev without `wrangler dev`).
  *
- * Schema:
+ * Positional schema — DO NOT REORDER (dashboard SQL reads `blob1..blob6`):
  *   blobs:   [event, jobId, userId, itemId, status, r2Key]
  *   doubles: [durationMs]
- *   indexes: [userId]
+ *   indexes: [userId]   ← keep low-cardinality
  *
- * Keep blob/double indices stable — the dashboard SQL depends on positional
- * access (`blob1`, `blob2`, …). `r2Key` (blob6) backs NFR-10: Workers AI
- * failures are replayable from the source image at the recorded R2 key.
+ * `r2Key` (blob6) is required for NFR-10: a Workers AI failure must be
+ * replayable from the recorded source image.
  */
 
 export interface AnalyticsAttrs {
@@ -45,6 +45,6 @@ export function emit(env: AnalyticsEnv, event: string, attrs: AnalyticsAttrs = {
             indexes: [attrs.userId ?? "anon"]
         });
     } catch {
-        // Analytics is best-effort — never let it break a request path.
+        // Best-effort. Never propagate analytics failures to the caller.
     }
 }

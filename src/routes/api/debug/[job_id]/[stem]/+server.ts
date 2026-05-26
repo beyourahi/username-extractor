@@ -4,9 +4,14 @@ import { and, eq } from "drizzle-orm";
 import { getDb, schema } from "$lib/server/db";
 
 /**
- * Returns the raw VLM response text saved during diagnostics mode.
+ * GET `debug/<job_id>/<stem>_response.txt` from R2 — the diagnostics blob
+ * written by the queue consumer when `jobs.diagnostics = 1`.
  *
- * Ownership is enforced by joining job_id → user_id before reading R2.
+ * Authorization MUST happen before R2 read: query `jobs.user_id = locals.userId`
+ * first; do not leak R2 contents on a job owned by another user.
+ *
+ * 404 paths intentionally do NOT distinguish "job not found" from "blob
+ * missing" beyond the response message — both surface as 404.
  */
 export const GET: RequestHandler = async ({ params, locals, platform }) => {
     if (!locals.userId || !platform?.env) {

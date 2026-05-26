@@ -4,14 +4,18 @@ import { and, eq } from "drizzle-orm";
 import { getDb, schema } from "$lib/server/db";
 
 /**
- * Authorized R2 read with optional Cloudflare Image Resizing.
+ * Authorized R2 read for `raw/<jobId>/...` keys.
  *
- * Keys are scoped to `raw/<jobId>/...` — we extract the jobId segment and
- * verify ownership before returning bytes. Other prefixes (e.g. `debug/`)
- * have their own routes.
+ * SECURITY: hard-rejects any prefix other than `raw/`. Other prefixes
+ * (`debug/`, etc.) MUST have their own dedicated routes — do not relax this.
  *
- * When `?w=` and/or `?h=` are present we proxy through `cf.image` to get a
- * resized variant. Otherwise the original bytes are returned.
+ * Authorization order (DO NOT reorder):
+ *   1. Parse `<jobId>` from the key path (second segment).
+ *   2. Verify `jobs.id = jobId AND jobs.user_id = locals.userId`.
+ *   3. Only then `R2.get`.
+ *
+ * Image resize via `?w=` / `?h=` proxies through `cf.image`; on resize
+ * failure, falls back to the raw bytes (200, not error).
  */
 export const GET: RequestHandler = async ({ params, url, request, locals, platform }) => {
     if (!locals.userId || !platform?.env) {
@@ -54,8 +58,8 @@ export const GET: RequestHandler = async ({ params, url, request, locals, platfo
         if (w) imageOpts["width"] = Number(w);
         if (h) imageOpts["height"] = Number(h);
         try {
-            // `cf.image` transforms work via fetch sub-requests; reuploading
-            // the body through fetch here is the documented pattern.
+            // Documented Cloudflare pattern: image transforms require a `fetch()`
+            // sub-request with `cf.image` — they are not applied to direct R2 responses.
             const proxied = await fetch(new URL(request.url), {
                 cf: { image: imageOpts }
             } as RequestInit & { cf?: Record<string, unknown> });
@@ -63,7 +67,7 @@ export const GET: RequestHandler = async ({ params, url, request, locals, platfo
                 return proxied;
             }
         } catch {
-            // Fall through to raw bytes.
+            // Resize unavailable (binding missing, transform error). Serve original bytes.
         }
     }
 

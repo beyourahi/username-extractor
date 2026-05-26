@@ -1,10 +1,17 @@
 /**
- * Drizzle Kit configuration for Cloudflare D1.
+ * Drizzle Kit config for the D1 database.
  *
- * - `bun run db:generate` — produce SQL migration from schema changes (no credentials needed)
- * - `bun run db:migrate:local` — apply migrations to local D1 via wrangler
- * - `bun run db:migrate` — apply migrations to remote D1 via wrangler
- * - `bun run db:studio` / `bun run db:push` — require D1 HTTP credentials in env
+ * Adapts based on env: when all three of CLOUDFLARE_ACCOUNT_ID,
+ * CLOUDFLARE_DATABASE_ID, CLOUDFLARE_D1_TOKEN are set, switches to the
+ * `d1-http` driver so `db:push` / `db:studio` can talk to remote D1.
+ * Without them, only schema-introspection commands (`db:generate`) work.
+ *
+ * Commands:
+ *   bun run db:generate       offline; emits SQL into ./migrations
+ *   bun run db:migrate:local  applies via wrangler against local D1
+ *   bun run db:migrate        applies via wrangler against remote D1
+ *   bun run db:studio         needs all 3 CLOUDFLARE_* env vars
+ *   bun run db:push           needs all 3 CLOUDFLARE_* env vars
  */
 import { defineConfig } from "drizzle-kit";
 

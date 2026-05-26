@@ -9,9 +9,17 @@ import { deriveTokenKey, encryptNotionToken, decryptNotionToken, maskToken } fro
 import { settingsSchema } from "$lib/schemas/settings";
 
 /**
- * Settings load: decrypts the stored Notion token (if any) and returns a
- * masked display value so the UI never echoes the secret back. On save, an
- * empty `notionToken` means "leave the existing encrypted blob in place".
+ * Settings page server module. Routes:
+ *   load            → decrypts the stored Notion token, returns ONLY `maskToken(plain)`
+ *                     (the raw secret never leaves the server).
+ *   save            → encrypts new token if provided; empty token preserves existing blob
+ *                     (CONTRACT enforced in `$lib/schemas/settings.ts`).
+ *   reset           → DELETE FROM user_settings (does NOT cascade to jobs/leads).
+ *   dedup           → proxies to `/api/notion/dedup`.
+ *   importLegacy    → proxies markdown + optional Notion creds to `/api/import/legacy`.
+ *
+ * INVARIANT: this module is the only place that calls `decryptNotionToken` on
+ * a settings load. All other reads use the encrypted blob directly.
  */
 export const load: PageServerLoad = async ({ locals, platform }) => {
     const empty = await superValidate(zod4(settingsSchema));
@@ -66,7 +74,7 @@ export const actions: Actions = {
 
         const db = getDb(platform);
 
-        // Encrypt new token if provided.
+        // Encrypt only when user typed a new token. Empty input ⇒ leave blob untouched.
         let tokenBlob: Uint8Array | null = null;
         if (form.data.notionToken && form.data.notionToken.length > 0) {
             if (!platform.env.NOTION_TOKEN_ENCRYPTION_KEY) {

@@ -1,11 +1,15 @@
 /**
- * Nightly R2 sweeper.
+ * Nightly R2 retention sweep. Wired via `scheduled` in worker-entry.ts;
+ * trigger configured in wrangler.jsonc.
  *
- *   raw/   → delete after 30 days
- *   debug/ → delete after 7 days
+ * Retention:
+ *   `raw/`   → 30 days   (original upload bytes)
+ *   `debug/` → 7 days    (diagnostics-mode raw VLM text)
  *
- * Paginated R2 list; both prefixes processed in series. Failures are
- * non-fatal — we emit to analytics and continue.
+ * Lists each prefix paginated (limit 1000) and deletes one key at a time —
+ * R2 has no batch delete, and serial deletes avoid concurrent-op spikes.
+ * Any single delete or list failure is non-fatal; the run still emits a
+ * `cron_sweep_completed` event with whatever counts it managed.
  */
 
 import { emit } from "$lib/server/analytics";
@@ -47,14 +51,12 @@ async function sweepPrefix(
             }
         }
 
-        // R2 has no batch delete; the binding deletes per-key but we run them
-        // serially to avoid spiking concurrent ops.
         for (const key of stale) {
             try {
                 await env.R2.delete(key);
                 deleted += 1;
             } catch {
-                // Continue on individual failures.
+                // Skip and continue — one stale key shouldn't poison the whole sweep.
             }
         }
 

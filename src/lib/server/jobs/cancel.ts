@@ -1,10 +1,14 @@
 /**
- * Cancel an in-flight job. We:
- *   1. Mark the job row 'cancelled' (user-scoped).
- *   2. Notify the JobCoordinator DO so it broadcasts to live WS clients.
+ * Cancels a job. Two-step:
+ *   1. UPDATE `jobs.status='cancelled'` scoped by `user_id` (ownership check).
+ *   2. POST /cancel to the JobCoordinator DO so live WS clients get notified.
  *
- * In-flight queue messages will still run; the consumer is idempotent and
- * checks the job's status, marking items 'failed' with reason "cancelled".
+ * IMPORTANT: queue messages already in flight ARE NOT drained. The consumer
+ * re-reads `jobs.status` per-message and marks items `failed` with
+ * `error="cancelled"`, so this is safe but not instant.
+ *
+ * Bug surface to watch: missing the DB-status check in the consumer would
+ * cause cancelled jobs to keep writing leads. Do not remove that check.
  */
 
 import { and, eq } from "drizzle-orm";
@@ -41,8 +45,8 @@ export async function cancelJob(input: CancelJobInput): Promise<{ cancelled: boo
         const stub = env.JOB_COORDINATOR.get(env.JOB_COORDINATOR.idFromName(jobId));
         await stub.fetch("https://do/cancel", { method: "POST" });
     } catch {
-        // DO unavailable — the consumer will pick up the status flip on its
-        // next idempotency check.
+        // DO unreachable. Acceptable: consumer reads `jobs.status` per message
+        // and the UI WebSocket will reconnect and replay from D1.
     }
 
     emit(env, "job_cancelled", { jobId, userId });

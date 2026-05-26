@@ -1,11 +1,14 @@
 /**
- * End-to-end VLM extraction pipeline.
+ * Single-image VLM extraction pipeline. The queue consumer calls this once per `job_items` row.
  *
- *   raw bytes → Workers AI (vision model) → text → cleanUsername →
- *   confidence score → tier + status
+ *   imageBytes → runVisionWithGateway → extractResponseText → cleanUsername
+ *               → scoreConfidence → tierOf + classifyStatus
  *
- * Returns a fully-typed result; callers persist `rawText` only when
- * `diagnostics` is true.
+ * Returns `username = null` and `status = "review"` when cleanUsername yields
+ * nothing — never throws on extraction failure (transport errors do throw).
+ *
+ * `rawText` is always populated for diagnostics; callers must only persist it
+ * to `job_items.raw_model_response` when `jobs.diagnostics = 1`.
  */
 
 import { cleanUsername } from "$lib/extract/clean";
@@ -29,8 +32,8 @@ export interface ExtractResult {
     status: "verified" | "review";
 }
 
-/** Default vision model. PRD pins Kimi K2.6; the Workers AI catalog id is
- *  `@cf/moonshotai/kimi-k2.6` (the PRD's `@cf/moonshot/...` spelling is a typo). */
+/** Pinned vision model. The benchmark in docs/benchmark.md is recorded against THIS exact id;
+ *  changing it invalidates the recorded accuracy. PRD spelling `@cf/moonshot/...` is a typo. */
 const DEFAULT_MODEL: VisionModel = "@cf/moonshotai/kimi-k2.6";
 
 function toByteArray(input: ArrayBuffer | Uint8Array): number[] {

@@ -4,10 +4,7 @@
 @source "./lib/**/*.{js,ts,svelte}";
 @source "./routes/**/*.{js,ts,svelte}";
 
-/* =========================================================================
-   Design tokens — extended from sibling repos (order-processor + invoice-generator).
-   Dark-only HSL surface scale, mint-emerald brand, status/tier semantics.
-   ========================================================================= */
+/* Design tokens: dark-only HSL surface scale, mint-emerald brand, status/tier semantics. */
 :root {
     --background: hsl(0 0% 5.9%);
     --foreground: hsl(0 0% 98%);
@@ -157,9 +154,7 @@ textarea {
     font-family: inherit;
 }
 
-/* =========================================================================
-   Motion (lifted from sibling repos: invoice-generator + order-processor)
-   ========================================================================= */
+/* Motion utilities and keyframes. */
 @utility sleek {
     transition: all 200ms ease-in-out;
     transform: translateZ(0);
@@ -269,7 +264,6 @@ textarea {
     }
 }
 
-/* Focus rings — sibling convention: white/50 ring */
 *:focus {
     outline: none;
 }
@@ -279,7 +273,6 @@ textarea {
     border-radius: 4px;
 }
 
-/* Scrollbars */
 *::-webkit-scrollbar {
     width: 8px;
     height: 8px;

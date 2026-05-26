@@ -1,6 +1,11 @@
 /**
- * Re-enqueue a single failed item. Ownership is verified by joining
- * job_items → jobs and matching `user_id`.
+ * Re-enqueues one job item. Ownership is enforced server-side by joining
+ * `job_items → jobs` and matching `user_id`. Returns `{retried:false}` when
+ * the item doesn't exist OR the requester doesn't own its parent job —
+ * callers should map both to 404 (do NOT leak the distinction).
+ *
+ * Resets `status='pending'`, `error=null`, `completedAt=null` before send so
+ * the consumer's update has a clean slate.
  */
 
 import { and, eq } from "drizzle-orm";

@@ -1,11 +1,8 @@
 /**
- * Verbatim VLM prompt from the Python extractor.
+ * VLM extraction prompt. Verbatim port of Python `extract_usernames.py:547-552`.
  *
- * Source: /Users/beyourahi/Desktop/projects/extract_usernames/extract_usernames/_archive/extract_usernames.py:547-552
- *
- * Used Phase 3 onward when calling env.AI.run('@cf/moonshotai/kimi-k2.6', ...).
- * Do not edit casually — any change invalidates the Kimi K2.6 accuracy benchmark
- * recorded against the legacy glm-ocr:bf16 baseline.
+ * FROZEN STRING: editing invalidates the docs/benchmark.md accuracy run for
+ * `@cf/moonshotai/kimi-k2.6`. Any change must be paired with a fresh benchmark.
  */
 export const EXTRACT_USERNAME_PROMPT =
     "Extract the Instagram username from this image. " +

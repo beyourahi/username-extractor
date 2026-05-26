@@ -4,15 +4,20 @@ import { users } from "$lib/server/schema";
 import { verifyAccessJwt, ensureUserRow } from "$lib/server/access";
 
 /**
- * Auth + hardening middleware.
+ * Auth + hardening middleware. Every request to a SvelteKit route passes through `handle`.
  *
- * - Verifies the Cf-Access-Jwt-Assertion header against the Access JWKS
- *   (NFR-7). Falls back to a dev user only when ALLOW_DEV_AUTH=1 in env.
- * - Upserts the local users row keyed on the Access subject and populates
- *   event.locals.userId / userEmail.
- * - Applies a best-effort in-memory rate limit (5 req/min per user) to the
- *   sensitive endpoints /api/notion/dedup and /api/import/legacy.
- * - Sets defensive security headers on every response.
+ * Pipeline:
+ *  1. `verifyAccessJwt` against the Cf-Access-Jwt-Assertion header (NFR-7).
+ *  2. `ensureUserRow` upserts a `users` row keyed on `claims.sub`; populates `event.locals.userId/userEmail`.
+ *  3. In-memory token bucket rate limits (5/min/user) on RATE_LIMIT_PATHS only.
+ *  4. SECURITY_HEADERS applied to every response (including the 401 short-circuit).
+ *
+ * Dev escape hatch: when ALLOW_DEV_AUTH=1 *and* no Access header is present,
+ * a synthetic "dev-user" row is upserted so FK constraints from job/lead
+ * inserts hold. Production must never set this flag.
+ *
+ * Rate-limit state is per-isolate; multiple isolates ⇒ users can exceed the
+ * declared cap. Acceptable for a soft anti-abuse measure, not a hard quota.
  */
 
 interface RateBucket {
@@ -52,7 +57,7 @@ const SECURITY_HEADERS: Record<string, string> = {
 };
 
 function applySecurityHeaders(response: Response): Response {
-    // Workers responses can have immutable headers — clone before mutating.
+    // Workers can return responses with immutable headers (e.g. from `fetch()` proxies); clone before mutating.
     try {
         const headers = new Headers(response.headers);
         for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
@@ -94,8 +99,8 @@ export const handle: Handle = async ({ event, resolve }) => {
                 const db = getDb(event.platform);
                 userId = await ensureUserRow(db, claims.sub, claims.email);
             } catch {
-                // If we can't upsert (DB not bound), still let the request through
-                // with a sub-derived id so handlers can decide.
+                // DB upsert failed (binding missing / migrations not applied). Continue with a
+                // synthetic `cf:<sub>` id so downstream handlers can surface their own error.
                 userId = `cf:${claims.sub}`;
             }
         } else {
@@ -104,7 +109,7 @@ export const handle: Handle = async ({ event, resolve }) => {
     } else if (!token && allowDev) {
         userId = "dev-user";
         userEmail = "dev@local";
-        // Ensure the dev-user FK target exists so inserts referencing user_id work.
+        // Upsert the dev-user row so FK targets exist for `jobs.user_id`, `leads.user_id`, etc.
         if (event.platform && env?.DB) {
             try {
                 const db = getDb(event.platform);
@@ -113,12 +118,12 @@ export const handle: Handle = async ({ event, resolve }) => {
                     .values({ id: "dev-user", cfAccessSubject: "dev-user", createdAt: Date.now() })
                     .onConflictDoNothing();
             } catch {
-                // Ignore — table may not be migrated yet; downstream handlers will surface a clear error.
+                // `users` table may not be migrated yet; let downstream queries error explicitly.
             }
         }
     } else {
-        // No valid token and no dev fallback — reject. Static asset paths are
-        // served by ASSETS upstream of this handler in production.
+        // No JWT and no dev escape ⇒ 401. Static assets bypass `handle` via the ASSETS binding,
+        // so this branch only fires on dynamic routes.
         return applySecurityHeaders(
             new Response("Unauthorized", {
                 status: 401,

@@ -1,8 +1,19 @@
 /**
- * Create a job: validate quota → upload to R2 → insert rows → enqueue.
+ * Creates a job and its items.
  *
- * All steps for a single batch run in a single function so the caller can
- * surface a single user-facing error and the analytics path is consistent.
+ * Pipeline (sequential — DO NOT reorder, downstream invariants depend on it):
+ *   1. Quota check: `loadQuota + loadUsedToday`; throws `QuotaExceededError`.
+ *   2. R2 upload of every file under `raw/<jobId>/<uuid>_<sanitized-name>`.
+ *   3. INSERT `jobs` row, then bulk INSERT `job_items` rows.
+ *   4. `QUEUE.send` per item to the `image-jobs` queue.
+ *
+ * Failure handling: R2 puts happen before D1 inserts, so a mid-loop R2 error
+ * leaves orphan blobs (cleaned by the nightly sweep). A D1 failure after R2
+ * also leaves orphans. NEVER move QUEUE.send before the D1 inserts —
+ * consumers assume the `job_items` row exists.
+ *
+ * Quota uses UTC-day windowing summed from `jobs.image_count` since the start
+ * of today. Default per-user limit: DEFAULT_DAILY_QUOTA.
  */
 
 import { and, eq, gte, sql } from "drizzle-orm";
@@ -94,13 +105,13 @@ export async function createJob(input: CreateJobInput): Promise<CreateJobResult>
         throw new Error("createJob: at least one file is required");
     }
 
-    // ---- Quota check -----------------------------------------------------
+    // Step 1: quota
     const [limit, used] = await Promise.all([loadQuota(db, userId), loadUsedToday(db, userId)]);
     if (used + files.length > limit) {
         throw new QuotaExceededError(used, limit, files.length);
     }
 
-    // ---- Build IDs -------------------------------------------------------
+    // Step 2: R2 uploads + row construction (interleaved so a partial failure leaves no D1 rows).
     const jobId = crypto.randomUUID();
     const now = Date.now();
 
@@ -140,7 +151,7 @@ export async function createJob(input: CreateJobInput): Promise<CreateJobResult>
         queueMessages.push(msg);
     }
 
-    // ---- Persist rows ----------------------------------------------------
+    // Step 3: D1 inserts (jobs first to satisfy job_items FK).
     await db.insert(jobs).values({
         id: jobId,
         userId,
@@ -155,7 +166,7 @@ export async function createJob(input: CreateJobInput): Promise<CreateJobResult>
         await db.insert(jobItems).values(itemRows);
     }
 
-    // ---- Enqueue ---------------------------------------------------------
+    // Step 4: enqueue. job_items rows MUST exist by now — consumer reads them.
     for (const m of queueMessages) {
         await env.QUEUE.send(m);
         emit(env, "item_queued", { jobId, userId, itemId: m.item_id });

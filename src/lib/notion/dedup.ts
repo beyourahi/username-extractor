@@ -1,11 +1,18 @@
 /**
- * Notion Deduplicator — TypeScript port.
+ * Notion smart deduplicator. Verbatim port of
+ * `extract_usernames/integrations/notion_deduplicator.py`.
  *
- * Source: /Users/beyourahi/Desktop/projects/extract_usernames/extract_usernames/integrations/notion_deduplicator.py
+ * Algorithm:
+ *   1. `findDuplicates`: group rows by `url` (Instagram URL), keep groups size ≥ 2.
+ *   2. `pickWinner`: choose one row per group via `keepStrategy`:
+ *        - "best"   → `scoreUsername` max (default)
+ *        - "oldest" → min `createdAt`
+ *        - "newest" → max `createdAt`
+ *   3. Soft-delete losers via `pages.update({ archived: true })`. NEVER hard deletes.
  *
- * Smart deduplication. Groups Notion rows by Instagram URL, picks the best
- * username via scoring, archives losers (soft-delete via `pages.update`
- * with `archived: true`). Never hard-deletes.
+ * Rate limit: serial calls spaced by `rateLimitMs` (default DEFAULT_RATE_LIMIT_MS),
+ * skipped in `dryRun` mode. Individual archive failures accumulate in `errors`
+ * and do NOT abort the run.
  */
 
 import type { Client } from "@notionhq/client";
@@ -41,16 +48,16 @@ function isDigit(ch: string): boolean {
 }
 
 /**
- * Score a username's quality. Higher = better.
+ * Quality score. Higher wins in `pickWinner({strategy:"best"})`.
+ * Verbatim port of `_score_username`. Do not tweak weights.
  *
- * Rules ported verbatim from `_score_username`:
- * - All-numeric (or e.g. "1.") → −1000
- * - Starts with digit → −50
- * - Starts with alpha → +100
- * - +floor(alphaRatio * 50) where alphaRatio = letters / max(1, len)
- * - Length 3–30 → +50, otherwise −20
- * - +2 per char up to a cap of 15 chars (max +30)
- * - All-lowercase (ignoring '_' and '.') → +10
+ *   all-numeric (or "1.")   → −1000   (hard reject)
+ *   first char is digit     → −50
+ *   first char is alpha     → +100
+ *   floor(alphaRatio × 50)   alphaRatio = letters / max(1, len)
+ *   length 3–30             → +50, else −20
+ *   +2 per char, capped at 15 chars (max +30)
+ *   all-lowercase (ignoring `_` and `.`) → +10
  */
 export function scoreUsername(username: string): number {
     if (!username) {
@@ -96,9 +103,7 @@ export function scoreUsername(username: string): number {
     return score;
 }
 
-/**
- * Group rows by URL. Returns only groups containing more than one entry.
- */
+/** Groups rows by `url` and drops singletons. Rows with empty `url` are ignored. */
 export function findDuplicates(rows: NotionRow[]): Map<string, NotionRow[]> {
     const groups = new Map<string, NotionRow[]>();
     for (const row of rows) {
@@ -152,7 +157,7 @@ function pickWinner(entries: NotionRow[], strategy: KeepStrategy): NotionRow {
         return winner;
     }
 
-    // newest
+    // strategy === "newest"
     for (let i = 1; i < entries.length; i++) {
         const candidate = entries[i]!;
         if (candidate.createdAt > winner.createdAt) {

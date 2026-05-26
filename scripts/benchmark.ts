@@ -1,42 +1,27 @@
 #!/usr/bin/env bun
 /**
- * Kimi K2.6 accuracy benchmark.
+ * Kimi K2.6 accuracy benchmark. PRD §Risks + §Final verification gate.
  *
- * PRD §Risks and §Final verification call for benchmarking
- * `@cf/moonshotai/kimi-k2.6` against ≥50 historical screenshots before
- * launch, using the legacy `glm-ocr:bf16` (Ollama) baseline as the
- * reference. This script is the runnable scaffold for that protocol.
+ * COSTS MONEY: every run invokes Workers AI per fixture. Excluded from CI.
+ * Trigger manually with `bun run benchmark`.
  *
- * Intentionally NOT wired into CI — every run hits Workers AI and costs
- * money. Run on demand: `bun run benchmark`.
+ * I/O:
+ *   in  → src/lib/extract/__tests__/fixtures/expected.json  (pair manifest)
+ *   in  → src/lib/extract/__tests__/fixtures/screenshots/   (PNG crops)
+ *   out → docs/benchmark.md                                  (markdown report)
  *
- * Inputs
- *   src/lib/extract/__tests__/fixtures/expected.json  — pair manifest
- *   src/lib/extract/__tests__/fixtures/screenshots/   — PNG crops
+ * Protocol (mirrors production call site `src/lib/server/ai/extract.ts`):
+ *   1. base64-encode PNG bytes.
+ *   2. `wrangler ai run @cf/moonshotai/kimi-k2.6 --remote --json` with `{ image, prompt }`.
+ *   3. Normalize via `cleanUsername` so comparison matches the runtime pipeline.
+ *   4. `match = cleaned === expected`. Aggregate to accuracy %.
  *
- * Output
- *   docs/benchmark.md                                — markdown report
+ * Ship gate: accuracy must be within −2pt of the legacy `glm-ocr:bf16`
+ * baseline (~85%) — i.e. ≥ 83% per the PRD.
  *
- * Protocol
- *   For each (id, filename, expected) pair:
- *     1. Read PNG bytes, base64-encode.
- *     2. Invoke Workers AI via `wrangler ai run @cf/moonshotai/kimi-k2.6
- *        --remote --json` with an `{ image, prompt }` payload that mirrors
- *        the production call site in `src/lib/server/extract/ai.ts`.
- *     3. Normalize the raw model text with `cleanUsername` so we compare
- *        like-for-like with the production pipeline.
- *     4. Mark `match = cleaned === expected`.
- *   Aggregate matches / total → accuracy %.
- *   Compare against the recorded glm-ocr:bf16 baseline (≈ 85% on this same
- *   needs-review set, per the legacy CLI's quality column).
- *
- * Fallback
- *   `wrangler ai run` CLI image-input support is in flux. If the call
- *   shape rejects our payload OR `wrangler` is not installed, the script
- *   emits a "template" report explaining the protocol and lists the
- *   per-fixture rows with `got = TBD`. The script itself succeeding —
- *   without a Workers AI call — is the deliverable; populating real
- *   numbers is a manual rerun.
+ * Fallback: when `wrangler` is missing OR the probe call fails, the script
+ * still writes a TEMPLATE report (TBD numbers). This is intentional — the
+ * scaffolding existing on disk is the deliverable.
  */
 
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
@@ -97,11 +82,11 @@ function stripAnsi(s: string): string {
 }
 
 /**
- * Single Workers AI call. Returns the raw model string, or null on failure.
+ * One Workers AI call via `wrangler ai run --json` with JSON payload on stdin.
+ * Returns `{raw}` on success, `{raw: null, error}` on any non-zero exit.
  *
- * NOTE: `wrangler ai run` does not currently accept image-bytes via a
- * stable, public CLI flag. We attempt a JSON payload via stdin and bail
- * out on any non-zero exit. This is deliberate — see the file header.
+ * CAVEAT: `wrangler ai run` does not expose a stable public flag for image
+ * bytes. Stdin JSON is the current best-effort. See the file header fallback note.
  */
 function callKimi(imagePath: string): { raw: string | null; error?: string } {
     const bytes = readFileSync(imagePath);
@@ -124,8 +109,7 @@ function callKimi(imagePath: string): { raw: string | null; error?: string } {
         return { raw: null, error: cleanedErr.slice(0, 200) };
     }
 
-    // wrangler may print the AI response as JSON or as a banner + JSON.
-    // Try to find a JSON object in stdout.
+    // `wrangler` may emit a banner before the JSON; scan for the first `{` and parse from there.
     const out = (res.stdout || "").trim();
     const jsonStart = out.indexOf("{");
     if (jsonStart === -1) {
@@ -143,9 +127,8 @@ function runBenchmark(): { rows: Row[]; live: boolean; reason: string } {
     const manifest = loadManifest();
     const wranglerAvailable = hasWrangler();
 
-    // Probe once: if the first call fails we treat the whole run as
-    // template-only. This avoids burning Workers AI quota on a misconfigured
-    // CLI shape.
+    // One probe call gates the rest of the run. If the wrangler shape rejects our
+    // payload, drop straight to template mode rather than burning quota on 58 retries.
     let live = false;
     let reason = "";
     if (!wranglerAvailable) {

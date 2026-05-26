@@ -1,19 +1,16 @@
 /**
- * Parse Instagram usernames from a markdown document.
+ * Markdown → ordered, deduped list of Instagram handles.
+ * Verbatim port of Python `notion_sync.py:24-69` (string-in/string-out
+ * — no filesystem access, accepts uploaded file content directly).
  *
- * Source: /Users/beyourahi/Desktop/projects/extract_usernames/extract_usernames/integrations/notion_sync.py:24-69
+ * Accepted line shapes (first whitespace token after prefix stripping wins):
+ *   `username`            plain
+ *   `- username`          bullet (`-`, `*`, `•`)
+ *   `1. username`         numbered
+ *   `@username`           at-prefix (also stripped a second time after token split)
  *
- * String-in / string-out — the SvelteKit version receives uploaded file
- * contents directly rather than reading from a filesystem path.
- *
- * Handles:
- * - Plain usernames: `username1`
- * - Bullet lists: `- username1`, `* username1`, `• username1`
- * - Numbered lists: `1. username1`
- * - At-prefixed: `@username1`
- *
- * Comments / headers (lines starting with `#`) are skipped. Duplicates are
- * removed while preserving first-seen order.
+ * Skipped: empty lines, lines starting with `#`.
+ * Output: insertion-ordered Set semantics (first occurrence wins).
  */
 
 const LIST_PREFIX_RE = /^[-*•]\s*/;
@@ -34,10 +31,9 @@ export function loadUsernamesFromMarkdown(content: string): string[] {
             continue;
         }
 
-        // Strip bullet/numbered/@ prefixes — Python applies once with a regex
-        // that matches `[-*•@]`. We split @ out so we can also handle plain
-        // `@username` with no bullet (the Python regex matches that too via
-        // the `@` alternation since `\s*` allows zero spaces).
+        // Strip prefixes individually. Python collapses these into one regex
+        // `[-*•@]\s*` — splitting them here keeps order explicit and lets us
+        // re-strip `@` after the whitespace-token split below.
         line = line.replace(LIST_PREFIX_RE, "");
         line = line.replace(NUMBERED_RE, "");
         line = line.replace(LEADING_AT_RE, "");
@@ -47,13 +43,12 @@ export function loadUsernamesFromMarkdown(content: string): string[] {
             continue;
         }
 
-        // First whitespace-delimited token.
         const token = line.split(/\s+/)[0];
         if (!token) {
             continue;
         }
 
-        // Additional cleanup: strip any remaining leading '@'.
+        // Second `@` strip: catches `- @username` where the first pass left `@username`.
         const cleaned = token.replace(LEADING_AT_RE, "").trim();
         if (!cleaned) {
             continue;

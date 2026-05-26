@@ -2,9 +2,12 @@ import { drizzle } from "drizzle-orm/d1";
 import * as schema from "./schema";
 
 /**
- * Per-request D1 client factory. Workers binds D1 per-request, so we cannot
- * cache the client at module scope — call this inside every load function
- * and +server.ts handler. See PRD execution plan §Cross-cutting concerns.
+ * Per-request D1 client factory. The D1 binding is request-scoped on Workers —
+ * NEVER cache the returned client at module scope or across requests. Call
+ * inside each `load`, `+server.ts` handler, queue consumer, etc.
+ *
+ * Throws synchronously when the DB binding is missing (misconfigured
+ * wrangler.jsonc or running outside a Workers context).
  */
 export function getDb(platform: App.Platform | undefined) {
     if (!platform?.env?.DB) {

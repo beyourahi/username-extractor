@@ -1,19 +1,18 @@
 /**
- * Custom Worker entry. Wraps the SvelteKit-generated worker to add the
- * pipeline handlers:
+ * Composite Worker entry. SvelteKit's adapter only emits `fetch`; this module
+ * adds the additional handlers and class export the app needs:
  *
- * - `queue`     — image-jobs consumer
- * - `scheduled` — nightly R2 sweep
- * - `JobCoordinator` — Durable Object class export
+ *   queue          → image-jobs consumer        (`./queue/consumer`)
+ *   scheduled      → nightly R2 sweep           (`./cron/sweep`)
+ *   JobCoordinator → Durable Object class       (`./durable-objects/job-coordinator`)
  *
- * The build pipeline:
- *   1. `vite build` runs `@sveltejs/adapter-cloudflare` which writes
- *      `.svelte-kit/cloudflare/_worker.js`.
- *   2. `scripts/wrap-worker.mjs` renames that file to
- *      `.svelte-kit/cloudflare/_sveltekit-worker.js` and replaces
- *      `_worker.js` with a thin wrapper that imports this module.
+ * Build sequence (must stay in sync — see CLAUDE.md "Composite worker"):
+ *   1. `vite build` → adapter-cloudflare writes `.svelte-kit/cloudflare/_worker.js`
+ *   2. `scripts/wrap-worker.mjs` renames it to `_sveltekit-worker.js` and writes
+ *      a new `_worker.js` that calls `createWorker(sveltekitDefault)`.
  *
- * The wrapper file (post-build) re-exports `default` from here.
+ * Adding a new top-level Worker handler (e.g. `email`, `tail`) requires edits
+ * to BOTH this file (return from `createWorker`) and `scripts/wrap-worker.mjs`.
  */
 
 import { queueConsumer } from "./queue/consumer";
@@ -40,9 +39,9 @@ interface SvelteKitHandler {
 }
 
 /**
- * Builds a composite worker. The SvelteKit handler is loaded lazily at
- * runtime via a relative import that resolves only after the build wrapper
- * has moved the generated file into place.
+ * Composes the SvelteKit `fetch` handler with this app's `queue`/`scheduled` handlers.
+ * Caller (the generated `_worker.js`) injects `sveltekit` to break the build-time
+ * cycle — the SvelteKit handler does not exist until after `vite build` runs.
  */
 export function createWorker(sveltekit: SvelteKitHandler) {
     return {

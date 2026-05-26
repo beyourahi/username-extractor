@@ -1,10 +1,14 @@
 /**
- * Shared client/server message types for the live job stream and lead views.
+ * Wire-format types for the live job stream.
  *
- * Phase 3 message contract: WebSocket envelopes flow through the JobCoordinator
- * Durable Object → browser. The discriminated union `Message` is the canonical
- * wire format. Older snapshot/ping shapes are retained for backward compat with
- * the in-progress UI; new code should target `Message`.
+ * Flow: queue consumer → `broadcastToJob()` → `JobCoordinator` DO → browser WS.
+ *
+ * `Message` (discriminated union) is the canonical envelope. Keys are
+ * intentionally snake_case to match the PRD spec and avoid client-side
+ * remapping — do NOT camelCase them.
+ *
+ * `JobItemUpdate` / `JobStreamMessage` are legacy shapes still consumed by the
+ * in-progress UI; new producers must emit `Message`.
  */
 
 export type NotionStatus = "added" | "invalid" | "pending" | "unconfigured" | null;
@@ -15,7 +19,7 @@ export type JobStatus = "pending" | "running" | "completed" | "cancelled" | "fai
 
 export type Tier = "HIGH" | "MED" | null;
 
-/** Per-item completion payload (mirrors PRD §WebSocket message contract). */
+/** Per-item completion payload. Matches PRD §WebSocket message contract. */
 export interface ItemCompletedResult {
     username: string | null;
     ig_url: string | null;
@@ -43,10 +47,7 @@ export interface JobCompletedSummary {
     elapsed_ms: number;
 }
 
-/**
- * Canonical WebSocket message envelope. Snake_case keys match the PRD wire
- * spec so the client can render without remapping.
- */
+/** Canonical WebSocket envelope. Discriminated on `type`. */
 export type Message =
     | { type: "item.started"; job_id: string; item_id: string; filename: string }
     | {
@@ -67,22 +68,20 @@ export type Message =
     | { type: "job.completed"; job_id: string; summary: JobCompletedSummary }
     | { type: "job.cancelled"; job_id: string };
 
-/** Queue payload — emitted by `createJob`, consumed by the queue consumer. */
+/** Queue payload. Producer: `createJob`. Consumer: `src/lib/server/queue/consumer.ts`. */
 export interface QueueMessage {
     job_id: string;
     item_id: string;
     r2_key: string;
     user_id: string;
     diagnostics: boolean;
-    /** Cached AI Gateway slug for routing (optional, env override wins). */
+    /** Cached AI Gateway slug. Env var `AI_GATEWAY_SLUG` (if set) wins over this. */
     ai_gateway_slug?: string;
 }
 
-/* ------------------------------------------------------------------------- */
-/*  Backward-compat shapes retained for the in-progress UI.                  */
-/* ------------------------------------------------------------------------- */
+// Legacy UI shapes below — kept for in-progress UI compatibility. New code must use `Message`.
 
-/** Live item update streamed from the Durable Object. (UI legacy shape.) */
+/** Legacy per-item update consumed by the in-progress UI. Prefer `Message` variants. */
 export interface JobItemUpdate {
     id: string;
     jobId: string;
@@ -100,7 +99,7 @@ export interface JobItemUpdate {
     error?: string | null;
 }
 
-/** Wrapper envelope sent over the WS channel. (UI legacy shape.) */
+/** Legacy WS envelope. Superseded by `Message`. */
 export interface JobStreamMessage {
     type: "item.update" | "job.update" | "snapshot" | "ping";
     eventId?: number;

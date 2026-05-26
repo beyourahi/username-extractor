@@ -1,9 +1,20 @@
 /**
- * Sync a single lead to Notion. Used both by the queue consumer (inline post-
- * extraction) and the explicit `/api/leads/[id]/notion-sync` route.
+ * Single-lead Notion sync.
  *
- * Returns the resulting notion_status + page_id + optional error so callers
- * can persist + broadcast in one shot.
+ * Two entrypoints:
+ *   - `syncLeadInline`: queue consumer path; caller supplies username/url and
+ *     pre-loaded credentials (lead row may not exist yet).
+ *   - `syncOneLead`: route-handler path (`POST /api/leads/[id]/notion-sync`);
+ *     loads lead + user_settings, runs inline sync, persists result.
+ *
+ * Result semantics (`notionStatus`):
+ *   - `unconfigured` → user has no token/db set; no-op success
+ *   - `invalid`      → IG validation found no such account (when not skipped)
+ *   - `added`        → page created, `notionPageId` populated
+ *   - `pending`      → recoverable failure (decrypt, network, IG check); `error` describes cause
+ *
+ * INVARIANT: never throws on operational failure. Errors surface via the
+ * returned `error` field so callers can persist + broadcast in one transaction.
  */
 
 import { and, eq } from "drizzle-orm";
@@ -32,11 +43,7 @@ export interface SyncOneResult {
     error: string | null;
 }
 
-/**
- * Inline variant used by the queue consumer, where the lead row may not be
- * persisted yet. The caller supplies the username + ig_url and any per-user
- * Notion credentials already loaded from `user_settings`.
- */
+/** Inline-sync input (queue consumer path). Caller is responsible for loading user_settings. */
 export interface SyncInlineInput {
     env: SyncOneEnv;
     username: string;
@@ -94,10 +101,7 @@ export async function syncLeadInline(input: SyncInlineInput): Promise<SyncOneRes
     }
 }
 
-/**
- * Route-handler variant. Loads the lead + user settings, runs the inline
- * sync, persists the result.
- */
+/** Route-handler variant. Loads lead + settings, calls `syncLeadInline`, writes result to `leads`. */
 export async function syncOneLead(input: SyncOneInput): Promise<SyncOneResult> {
     const { db, env, userId, leadId } = input;
 

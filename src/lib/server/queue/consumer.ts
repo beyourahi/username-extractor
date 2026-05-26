@@ -1,21 +1,26 @@
 /**
- * Queue consumer — the heart of the pipeline.
+ * Image-jobs queue consumer — the main extraction pipeline.
  *
- * Each message is one image. We:
- *   1. Check idempotency (status === 'pending') and that the parent job is
- *      not cancelled/failed.
- *   2. Mark running, broadcast `item.started`.
- *   3. Pull bytes from R2, run the VLM, classify.
- *   4. Dedup against `leads` (exact + near via Levenshtein).
- *   5. Update `job_items`, INSERT into `leads` when verified + non-duplicate.
- *   6. Broadcast `item.completed`.
- *   7. Sync to Notion if configured; broadcast `item.notion_updated`.
- *   8. If this was the last in-flight item, run the post-job Notion dedup,
- *      compute the summary, update `jobs`, broadcast `job.completed`.
+ * One message = one image. Per-message pipeline (`processMessage`):
+ *   1. Idempotency: bail unless `job_items.status === 'pending'`.
+ *   2. Parent-job liveness: if `jobs.status` is not pending/running, mark item failed.
+ *   3. R2 GET → VLM extract (one inline retry on transport error).
+ *   4. Dedup vs `leads` (`existsExact`, then Levenshtein via `findSimilarExisting`).
+ *   5. Compute final status: duplicate > near-dup → review > extraction.status.
+ *   6. UPDATE `job_items`; INSERT `leads` for `verified` non-duplicates.
+ *   7. Broadcast `item.completed`.
+ *   8. Per-user Notion sync via `syncLeadInline`; broadcast `item.notion_updated`.
+ *   9. `maybeFinalizeJob`: when no `pending|running` items remain → run post-job
+ *      Notion dedup, write summary, broadcast `job.completed`.
  *
- * Unexpected throws → `message.retry()` so the platform handles 3× retry
- * with DLQ. Expected failures (bad bytes, no parseable username) are
- * permanent and `message.ack()`'d.
+ * Error policy:
+ *   - Expected failures (R2 miss, unparseable VLM output) → ack + record in D1.
+ *   - Unexpected throws → `message.retry()` (queue retries 3×, then DLQ).
+ *
+ * INVARIANT: every D1 write must precede the matching broadcast. The UI is
+ * a view onto D1; broadcasts are a hint, not a source of truth.
+ *
+ * INVARIANT: `processMessage` MUST be idempotent — at-least-once delivery.
  */
 
 import { and, eq, inArray, sql } from "drizzle-orm";
@@ -63,7 +68,7 @@ async function broadcast(env: ConsumerEnv, jobId: string, message: Message): Pro
             headers: { "Content-Type": "application/json" }
         });
     } catch {
-        // Broadcast is best-effort; D1 remains the durable record.
+        // DO unreachable / hibernated. D1 is the source of truth; UI re-syncs on reconnect.
     }
 }
 
@@ -141,7 +146,7 @@ interface JobAggregates {
 }
 
 async function computeJobSummary(db: Db, jobId: string): Promise<JobAggregates> {
-    // Item-status breakdown.
+    // GROUP BY item status → verified/review/failed/duplicate.
     const itemRows = await db
         .select({ status: jobItems.status, c: sql<number>`COUNT(*)` })
         .from(jobItems)
@@ -165,7 +170,8 @@ async function computeJobSummary(db: Db, jobId: string): Promise<JobAggregates> 
         else if (r.status === "duplicate") out.duplicate = n;
     }
 
-    // Notion breakdown on leads sourced from this job.
+    // GROUP BY notion_status, scoped to leads with `source_job_id = jobId`.
+    // `pending` + `unconfigured` are folded into `notionPending` for the UI.
     const notionRows = await db
         .select({ status: leads.notionStatus, c: sql<number>`COUNT(*)` })
         .from(leads)
@@ -188,8 +194,8 @@ async function runPostJobDedup(
     try {
         const client = new Client({ auth: notionToken });
 
-        // Pull all pages once. We use the dataSources query path so the
-        // helper sees the same shape it does in the live path.
+        // Use `databases.retrieve` → `dataSources.query` to mirror the live-path shape
+        // (see `NotionDatabaseManager`). Avoids divergent dedup behaviour vs the manager.
         const dbInfo = (await client.databases.retrieve({
             database_id: notionDatabaseId
         })) as unknown as {
@@ -198,7 +204,8 @@ async function runPostJobDedup(
         };
         const dataSourceId = dbInfo.data_sources?.[0]?.id ?? notionDatabaseId;
 
-        // Detect property names — minimal heuristic that mirrors the manager.
+        // Property-name detection mirrors `NotionDatabaseManager`. Defaults match the
+        // canonical user template; the loop overrides with the first matching property.
         const properties = dbInfo.properties ?? {};
         let titleName = "Brand Name";
         let urlName = "Social Media Account";
@@ -259,6 +266,7 @@ async function runPostJobDedup(
         });
         return { groups: result.duplicateGroups, archived: result.duplicatesRemoved };
     } catch {
+        // Best-effort. Job still finalizes; missing dedup just shows 0 groups in the summary.
         return { groups: 0, archived: 0 };
     }
 }
@@ -267,7 +275,7 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
     const { job_id: jobId, item_id: itemId, r2_key: r2Key, user_id: userId, diagnostics } = msg;
     const startedAt = Date.now();
 
-    // ---- Idempotency check ---------------------------------------------------
+    // Idempotency: a retried message MUST be a no-op once the item has progressed past `pending`.
     const statusRows = await db
         .select({ status: jobItems.status })
         .from(jobItems)
@@ -292,7 +300,7 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
         return;
     }
 
-    // ---- Mark running --------------------------------------------------------
+    // Transition pending → running and notify the UI before any I/O.
     const itemMeta = await db
         .select({ filename: jobItems.filename })
         .from(jobItems)
@@ -309,7 +317,6 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
     });
     emit(env, "item_started", { jobId, userId, itemId });
 
-    // ---- Load image ----------------------------------------------------------
     const obj = await env.R2.get(r2Key);
     if (!obj) {
         await db
@@ -327,12 +334,12 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
     }
     const imageBytes = await obj.arrayBuffer();
 
-    // ---- Extract -------------------------------------------------------------
     let extraction;
     try {
         extraction = await extractUsernameFromImage({ env, imageBytes });
     } catch (firstErr) {
-        // One in-line retry before giving up.
+        // Single inline retry. Queue-level retries still apply for unexpected throws elsewhere;
+        // this localised retry catches transient Workers AI 5xx without blowing the message budget.
         try {
             extraction = await extractUsernameFromImage({ env, imageBytes });
         } catch (secondErr) {
@@ -359,7 +366,8 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
         }
     }
 
-    // Diagnostics: persist raw text to R2.
+    // Diagnostics mode: persist raw VLM text to R2 under `debug/<jobId>/<stem>_response.txt`.
+    // Read via `/api/debug/[job_id]/[stem]` when `jobs.diagnostics = 1`.
     if (diagnostics && extraction.rawText) {
         const stem = filename.replace(/\.[^./]+$/, "") || itemId;
         const debugKey = `debug/${jobId}/${stem}_response.txt`;
@@ -368,11 +376,10 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
                 httpMetadata: { contentType: "text/plain" }
             });
         } catch {
-            // Best-effort.
+            // Non-fatal — diagnostics blob is purely a debugging aid.
         }
     }
 
-    // ---- No parseable username path -----------------------------------------
     if (!extraction.username) {
         await db
             .update(jobItems)
@@ -415,7 +422,7 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
         return;
     }
 
-    // ---- Dedup checks --------------------------------------------------------
+    // Dedup: exact-match is cheap; near-dup (Levenshtein) only runs on a miss.
     const username = extraction.username;
     const igUrl = `https://instagram.com/${username}`;
     let isDuplicate = false;
@@ -435,14 +442,14 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
         }
     }
 
-    // ---- Compute final item status ------------------------------------------
+    // Status precedence: duplicate > near-dup (forces review) > extraction.status ('verified' | 'review').
     let finalStatus: ItemCompletedResult["status"];
     if (isDuplicate) {
         finalStatus = "duplicate";
     } else if (isNearDuplicate) {
         finalStatus = "review";
     } else {
-        finalStatus = extraction.status; // 'verified' | 'review'
+        finalStatus = extraction.status;
     }
 
     await db
@@ -461,7 +468,7 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
         })
         .where(eq(jobItems.id, itemId));
 
-    // Insert lead row for verified non-duplicates.
+    // Promote to a lifetime lead only when verified AND not a duplicate.
     let leadId: string | null = null;
     if (finalStatus === "verified" && !isDuplicate) {
         leadId = crypto.randomUUID();
@@ -484,7 +491,7 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
                     target: [leads.userId, leads.username]
                 });
         } catch {
-            // Unique-index race — treat as duplicate for downstream broadcast.
+            // `uniq_leads_user_username` lost the race against a concurrent insert; treat as duplicate downstream.
             leadId = null;
         }
     }
@@ -516,7 +523,8 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
         durationMs: Date.now() - startedAt
     });
 
-    // ---- Notion sync (verified only) ----------------------------------------
+    // Notion sync runs inline on the consumer (not as a separate enqueue) so
+    // `item.notion_updated` arrives in the same job lifecycle.
     if (finalStatus === "verified" && leadId) {
         const notionCfg = await loadNotionConfig(db, userId);
         let notionStatus: NotionStatus = "unconfigured";
@@ -578,7 +586,8 @@ async function maybeFinalizeJob(
     if (!jobRow) return;
     if (jobRow.status === "completed" || jobRow.status === "cancelled") return;
 
-    // ---- Post-job Notion dedup ----------------------------------------------
+    // Post-job Notion dedup: walks the user's Notion database and collapses
+    // duplicates that may pre-date this job. See `src/lib/notion/dedup.ts`.
     let dedupGroups = 0;
     let dedupArchived = 0;
     const cfg = await loadNotionConfig(db, userId);
@@ -590,7 +599,7 @@ async function maybeFinalizeJob(
             dedupGroups = dedupRes.groups;
             dedupArchived = dedupRes.archived;
         } catch {
-            // Skip dedup on decrypt failure.
+            // Skip dedup if the token blob can't be decrypted (key rotation, corruption).
         }
     }
 
@@ -643,7 +652,7 @@ export const queueConsumer = async (
             await processMessage(env, db, message.body);
             message.ack();
         } catch (err) {
-            // Unexpected — let the platform retry.
+            // Unexpected. Queue contract: retry 3× then DLQ to `image-jobs-dlq`.
             emit(env, "queue_error", {
                 jobId: message.body.job_id,
                 userId: message.body.user_id,

@@ -21,7 +21,8 @@ export const load: PageServerLoad = async ({ locals, platform, url }) => {
         .limit(PAGE_SIZE)
         .offset(offset);
 
-    // Per-job counts for verified / review / failed.
+    // Per-row SUM(CASE WHEN status = ...) — N+1 query. Acceptable for PAGE_SIZE=25;
+    // revisit if the page size grows.
     const counts = await Promise.all(
         rows.map(async (j) => {
             const r = await db
@@ -54,5 +55,5 @@ export const load: PageServerLoad = async ({ locals, platform, url }) => {
     };
 };
 
-// Silence unused import warning when no filter is used.
+// `and` is imported for future filter expansion; reference to silence the unused-import lint.
 void and;

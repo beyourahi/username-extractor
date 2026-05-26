@@ -1,17 +1,15 @@
 /**
- * Consensus / dotted-sibling / confusion-correction logic for dual-engine OCR.
+ * Dual-engine (VLM + OCR) reconciliation: dotted-sibling, confusion-pair, and
+ * edit-distance consensus strategies. Verbatim port of Python
+ * `extract_usernames.py:256-363, 600-626, 629-704`.
  *
- * Source: /Users/beyourahi/Desktop/projects/extract_usernames/extract_usernames/_archive/extract_usernames.py:256-363, 600-626, 629-704
+ * STATUS: not wired into v1 (single VLM path). Kept compileable + tested so the
+ * eventual dual-engine path drops in without redesign. Pure functions, no I/O.
  *
- * Not invoked in v1 (single VLM path), but kept compileable + tested so the
- * eventual dual-engine path has these primitives ready. Pure functions; no I/O.
- *
- * Deviation from Python:
- * - `intelligentConsensus` takes one options object rather than 6 positional
- *   args, and returns a single object instead of a 4-tuple. Behavior matches
- *   `intelligent_consensus_validator` semantically.
- * - To respect the "no cross-imports between phase-1 modules" rule, this file
- *   inlines a local Levenshtein helper instead of importing from `./distance`.
+ * API differences from Python:
+ *   - `intelligentConsensus` takes an options object, returns a single result
+ *     object (Python uses 6 positional args + a 4-tuple). Semantics identical.
+ *   - Local Levenshtein helper to avoid cross-imports between phase-1 modules.
  */
 
 export const CONFUSION_PAIRS: ReadonlyArray<readonly [string, string]> = [
@@ -28,9 +26,7 @@ export const CONFUSION_PAIRS: ReadonlyArray<readonly [string, string]> = [
     ["8", "b"]
 ];
 
-// ---------------------------------------------------------------------------
-// Local Levenshtein (kept private to avoid cross-imports between phase-1 modules).
-// ---------------------------------------------------------------------------
+// Local Levenshtein — DO NOT replace with `./distance` import (phase-1 isolation rule).
 function levenshtein(s1: string, s2: string): number {
     if (s1.length < s2.length) {
         return levenshtein(s2, s1);
@@ -57,17 +53,11 @@ function levenshtein(s1: string, s2: string): number {
     return prev[prev.length - 1] ?? 0;
 }
 
-// ---------------------------------------------------------------------------
-// Dotted-sibling detection
-// ---------------------------------------------------------------------------
-
 /**
- * Returns true if `candidate` is a dotted variant of `winner`:
- * - candidate has '.' where winner has 'o' / 'O' / '0' (dot misread as letter)
- * - candidate has '.' where winner has nothing (dot dropped in winner)
- *
- * Directional (candidate must be the one with the dots). Use through
- * `isDottedVariant` for a symmetric check.
+ * Directional check: `candidate` is a dotted-up form of `winner` when:
+ *   - candidate has `.` where winner has `o`/`O`/`0` (dot misread as O), OR
+ *   - candidate has `.` where winner has nothing (dot dropped in winner).
+ * For a symmetric check use `isDottedVariant`.
  */
 export function isDottedSibling(candidate: string, winner: string): boolean {
     if (candidate === winner) {
@@ -115,9 +105,7 @@ export function isDottedSibling(candidate: string, winner: string): boolean {
     return true;
 }
 
-/**
- * Bidirectional dotted-variant check (`_is_dotted_variant` in Python).
- */
+/** Symmetric wrapper. Mirrors Python `_is_dotted_variant`. */
 export function isDottedVariant(a: string, b: string): boolean {
     return isDottedSibling(a, b) || isDottedSibling(b, a);
 }
@@ -129,9 +117,9 @@ export interface Variant {
 }
 
 /**
- * Find a dotted-sibling variant of the winning username among the candidate
- * variants. Accepts only if the dotted variant's confidence is at least 70%
- * of the winner's.
+ * Best dotted-sibling variant of `winnerUsername` among `variants`.
+ * Accepts only when the sibling's confidence is ≥ 70% of the winner's;
+ * otherwise returns null.
  */
 export function findDottedSibling(
     winnerUsername: string,
@@ -159,14 +147,10 @@ export function findDottedSibling(
     return null;
 }
 
-// ---------------------------------------------------------------------------
-// Confusion-pair correction
-// ---------------------------------------------------------------------------
-
 /**
- * Scan variants for a username that differs from the winner by exactly one
- * known OCR confusion pair (and edit distance 1–3). Accept only if its
- * confidence is at least 55% of the winner's.
+ * Variant that differs from `winnerUsername` by exactly one CONFUSION_PAIRS
+ * substitution and has Levenshtein distance ∈ [1, 3].
+ * Acceptance threshold: candidate confidence ≥ 55% of winner's.
  */
 export function findConfusionCorrection(
     winnerUsername: string,
@@ -197,9 +181,8 @@ export function findConfusionCorrection(
 }
 
 /**
- * Bidirectional confusion-pair match between a VLM and an OCR result.
- * Returns the corrected username (preferred over either input) at a fixed
- * confidence of 88, mirroring `_find_confusion_match` in Python.
+ * Symmetric confusion-pair check between two candidates (VLM ↔ OCR).
+ * Returns the corrected form at fixed confidence 88. Mirrors Python `_find_confusion_match`.
  */
 export function findConfusionMatch(
     vlmUsername: string,
@@ -231,10 +214,6 @@ export function findConfusionMatch(
     return null;
 }
 
-// ---------------------------------------------------------------------------
-// Top-level consensus
-// ---------------------------------------------------------------------------
-
 export type ConsensusStrategy =
     | "exact_agreement"
     | "dot_reconciled_vlm"
@@ -263,13 +242,20 @@ export interface ConsensusResult {
 }
 
 /**
- * Merge VLM and EasyOCR results into a single decision.
- * Mirrors `intelligent_consensus_validator` in the Python source.
+ * Reconciles VLM and OCR predictions into a single winner. Strategies tried in
+ * order; first match wins. Mirrors Python `intelligent_consensus_validator`.
+ *
+ * Strategies:
+ *   1. exact_agreement       — usernames identical; conf = min(max(...) + 5, 95)
+ *   2. dot_reconciled_*      — one is a dotted variant; prefer the side with separators
+ *   3. confusion_corrected   — known OCR confusion pair fixes the mismatch
+ *   4. *_longer_variant / *_confidence_match — edit distance ≤ 2; tiebreak by length, then confidence
+ *   5. *_disagreement_win    — ≥10pt confidence gap; winner penalised −10 (floor 75)
+ *   6. ambiguous_disagreement — fall through; pick VLM with −15 (floor 70)
  */
 export function intelligentConsensus(input: ConsensusInput): ConsensusResult {
     const { vlmUsername, vlmConfidence, ocrUsername, ocrConfidence } = input;
 
-    // Strategy 1: Exact agreement
     if (vlmUsername === ocrUsername) {
         const conf = Math.min(Math.max(vlmConfidence, ocrConfidence) + 5, 95);
         return {
@@ -280,7 +266,6 @@ export function intelligentConsensus(input: ConsensusInput): ConsensusResult {
         };
     }
 
-    // Strategy 2: Dot reconciliation
     if (isDottedVariant(vlmUsername, ocrUsername)) {
         if (vlmUsername.includes(".") || vlmUsername.includes("_")) {
             return {
@@ -298,7 +283,6 @@ export function intelligentConsensus(input: ConsensusInput): ConsensusResult {
         };
     }
 
-    // Strategy 3: Confusion correction
     const correction = findConfusionMatch(vlmUsername, ocrUsername);
     if (correction) {
         return {
@@ -309,7 +293,6 @@ export function intelligentConsensus(input: ConsensusInput): ConsensusResult {
         };
     }
 
-    // Strategy 4: Minor edit distance
     const editDist = levenshtein(vlmUsername, ocrUsername);
     if (editDist <= 2) {
         if (vlmUsername.length > ocrUsername.length) {
@@ -344,7 +327,6 @@ export function intelligentConsensus(input: ConsensusInput): ConsensusResult {
         };
     }
 
-    // Strategy 5: Significant disagreement
     if (vlmConfidence >= ocrConfidence + 10) {
         return {
             username: vlmUsername,

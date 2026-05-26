@@ -1,11 +1,13 @@
 /**
- * Notion connection-error troubleshooting messages.
+ * Builds a user-facing help string for Notion connection errors.
+ * Verbatim port of Python `notion_manager.py:169-217`.
  *
- * Source: /Users/beyourahi/Desktop/projects/extract_usernames/extract_usernames/integrations/notion_manager.py:169-217
+ * Branches by error code/message keyword:
+ *   - `object_not_found` / "could not find database" → DB-sharing instructions
+ *   - `unauthorized`                                 → token reset instructions
+ *   - else                                            → generic 3-step checklist
  *
- * Returns a human-readable, multi-line help string covering the three common
- * failure modes (object_not_found, unauthorized, generic) with actionable
- * remediation steps.
+ * Returned string contains emoji glyphs by design — surfaced to humans only.
  */
 
 export function buildConnectionErrorHelp(errorCode: string, errorMsg: string): string {

@@ -1,12 +1,12 @@
 /**
- * Levenshtein distance and similarity matching for username deduplication.
- *
- * Source: /Users/beyourahi/Desktop/projects/extract_usernames/extract_usernames/_archive/extract_usernames.py:748-784
+ * Verbatim port of Python `_levenshtein_distance` / `_find_similar_existing`
+ * (extract_usernames.py:748-784). Used for the near-dup check against the
+ * leads table; queue consumer caps the candidate set at NEAR_DUP_CANDIDATE_LIMIT.
  */
 
 /**
- * Compute Levenshtein edit distance between two strings using a row-rolling DP.
- * Swaps args so the iterated string is the shorter one.
+ * Row-rolling Levenshtein DP. O(|s1| * |s2|) time, O(min(|s1|,|s2|)) space.
+ * Swaps args so `s2` is the shorter side ⇒ smaller `previousRow` allocation.
  */
 export function levenshteinDistance(s1: string, s2: string): number {
     if (s1.length < s2.length) {
@@ -41,10 +41,10 @@ export function levenshteinDistance(s1: string, s2: string): number {
 }
 
 /**
- * Find the closest existing username within `maxDistance` (exclusive of 0,
- * i.e. exact matches are skipped — matches Python `0 < dist < best_dist`).
- *
- * Returns null when no candidate is within distance.
+ * Nearest candidate within `(0, maxDistance]` edit distance.
+ * Exact matches (`dist === 0`) are skipped — they're handled by the
+ * `existsExact` check upstream. Length-difference filter short-circuits the DP.
+ * Returns `null` when nothing qualifies.
  */
 export function findSimilarExisting(
     username: string,

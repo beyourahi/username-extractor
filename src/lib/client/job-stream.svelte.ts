@@ -1,13 +1,19 @@
 /**
- * Reactive client store for the live job WebSocket stream.
+ * Svelte 5 runes-backed client store for the live job WebSocket.
  *
- * Wraps the JobCoordinator Durable Object channel exposed at
- * `/api/jobs/:id/ws` (Phase 3). Uses Svelte 5 runes so consumers can read
- * `state.items` / `state.counts` directly inside `$derived` blocks.
+ * Connects to `/api/jobs/:id/ws` (proxied to the JobCoordinator DO).
+ * Consumers may read `store.state.items` / `.completed` / `.cancelled`
+ * directly inside `$derived(...)` — `state` is a single `$state` object so
+ * Svelte tracks dependencies field-by-field.
  *
- * Reconnect strategy: exponential backoff (1s, 2s, 4s, 8s) capped at 5
- * attempts, then surfaces an error. On reconnect, replays missed events by
- * forwarding `last_event_id` as a querystring.
+ * Reconnect:
+ *   - Backoff: 1s, 2s, 4s, 8s, 8s (cap), max MAX_RECONNECT attempts.
+ *   - On reconnect: forwards `state.lastEventId` as `?last_event_id=` so the
+ *     DO replays D1-persisted completions the client missed.
+ *   - No reconnect when `closed`, `completed`, or `cancelled`.
+ *
+ * The server NEVER reads from the socket (DO `webSocketMessage` is a no-op).
+ * This module sends nothing — it's a one-way subscription.
  */
 import type { Message, ItemCompletedResult, NotionStatus } from "$lib/types/messages";
 
@@ -163,7 +169,7 @@ export function createJobStream(jobId: string) {
         try {
             ws?.close();
         } catch {
-            /* noop */
+            // Socket already closed; safe to ignore.
         }
         connect();
     }
@@ -177,7 +183,7 @@ export function createJobStream(jobId: string) {
         try {
             ws?.close();
         } catch {
-            /* noop */
+            // Socket already closed; safe to ignore.
         }
     }
 

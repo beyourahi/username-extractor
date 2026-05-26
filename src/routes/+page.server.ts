@@ -1,10 +1,6 @@
 import type { PageServerLoad } from "./$types";
 
-/**
- * Upload landing page. Surfaces the diagnostics default from user settings so
- * the dropzone toggle can preselect it. Settings themselves are loaded by
- * `+layout.server.ts`; we just narrow the slice we care about here.
- */
+/** Narrows `userSettings` (from `+layout.server.ts`) to the two flags the upload form needs. */
 export const load: PageServerLoad = async ({ parent }) => {
     const layout = await parent();
     return {

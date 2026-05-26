@@ -1,12 +1,17 @@
 /**
- * Cloudflare Access JWT verification.
+ * Cloudflare Access JWT verification (NFR-7). Pure WebCrypto, no Node deps.
  *
- * Verifies the `Cf-Access-Jwt-Assertion` header against the team-domain JWKS
- * using only Workers-runtime crypto. Caches JWKS in module scope with a 15-min
- * TTL. See PRD §Security NFR-7.
+ * Verification steps (must all pass for `verifyAccessJwt` to return claims):
+ *   1. Token is a well-formed 3-segment JWT.
+ *   2. Header `alg=RS256` and `kid` present.
+ *   3. `exp` not past; `nbf` not in the future (60s clock skew allowance).
+ *   4. `aud` includes ACCESS_AUDIENCE.
+ *   5. `iss` matches `https://<ACCESS_TEAM_DOMAIN>` if present.
+ *   6. RSA signature verifies against the JWKS entry for `kid`.
+ *   7. Both `sub` and `email` claims are non-empty.
  *
- * Also provides ensureUserRow() — upserts a row in `users` keyed on the
- * Cloudflare Access subject and returns the local user id.
+ * JWKS fetch is cached in-isolate by team-domain for `JWKS_TTL_MS` (15 min).
+ * Cache lives in module scope — survives across requests within the same isolate.
  */
 
 import { eq } from "drizzle-orm";
@@ -55,7 +60,7 @@ const JWKS_TTL_MS = 15 * 60 * 1000;
 const jwksCache = new Map<string, JwksCacheEntry>();
 
 function base64UrlToUint8Array(input: string): Uint8Array {
-    // base64url -> base64
+    // base64url → base64: re-pad and swap URL-safe chars before atob().
     const pad = input.length % 4;
     const padded = pad === 0 ? input : input + "=".repeat(4 - pad);
     const b64 = padded.replace(/-/g, "+").replace(/_/g, "/");
@@ -106,7 +111,7 @@ async function loadJwks(teamDomain: string): Promise<Map<string, CryptoKey>> {
             const k = await importJwk(jwk);
             keys.set(jwk.kid, k);
         } catch {
-            // skip unusable keys
+            // Skip keys that fail to import (unknown alg, malformed n/e).
         }
     }
     jwksCache.set(teamDomain, { keys, expiresAt: now + JWKS_TTL_MS });
@@ -119,9 +124,9 @@ export interface AccessEnv {
 }
 
 /**
- * Verify a Cloudflare Access JWT. Returns the subject + email on success,
- * or null on any verification failure (signature, expiry, aud mismatch,
- * malformed token, missing env).
+ * Verifies an Access JWT. Returns `{sub, email}` on success, `null` on ANY
+ * failure (missing env, malformed token, expired, aud mismatch, bad signature, …).
+ * Callers MUST treat null as unauthenticated — do not log raw failure reasons.
  */
 export async function verifyAccessJwt(token: string | null | undefined, env: AccessEnv): Promise<AccessClaims | null> {
     if (!token) return null;
@@ -151,7 +156,7 @@ export async function verifyAccessJwt(token: string | null | undefined, env: Acc
     if (typeof payload.exp === "number" && payload.exp < now) return null;
     if (typeof payload.nbf === "number" && payload.nbf > now + 60) return null;
 
-    // aud may be string or array.
+    // `aud` in Access tokens may be string or string[].
     const aud = payload.aud;
     const audOk = Array.isArray(aud) ? aud.includes(audience) : aud === audience;
     if (!audOk) return null;
@@ -168,7 +173,8 @@ export async function verifyAccessJwt(token: string | null | undefined, env: Acc
     const key = keys.get(header.kid);
     if (!key) return null;
 
-    // Copy to a fresh ArrayBuffer-backed view so TS BufferSource accepts it under exactOptionalPropertyTypes.
+    // Copy into fresh ArrayBuffers: WebCrypto wants ArrayBuffer-backed BufferSources under
+    // exactOptionalPropertyTypes, not the SharedArrayBuffer-compatible Uint8Array view types.
     const signingInput = new TextEncoder().encode(`${rawHeader}.${rawPayload}`);
     const sigBytes = base64UrlToUint8Array(rawSig);
     const sigBuf = new ArrayBuffer(sigBytes.byteLength);
@@ -189,8 +195,9 @@ export async function verifyAccessJwt(token: string | null | undefined, env: Acc
 }
 
 /**
- * Upsert a users row keyed on the Cloudflare Access subject. Returns the
- * local users.id (uuid). Idempotent — safe to call on every request.
+ * Idempotent upsert into `users` keyed on `cf_access_subject`. Returns the
+ * local `users.id` (uuid). Safe to call on every authenticated request.
+ * `_email` is currently unused but kept in the signature for future audit logging.
  */
 export async function ensureUserRow(db: Db, cfSub: string, _email: string): Promise<string> {
     const existing = await db
@@ -211,7 +218,7 @@ export async function ensureUserRow(db: Db, cfSub: string, _email: string): Prom
     return row[0]?.id ?? id;
 }
 
-/** Test-only: clear the module-level JWKS cache between tests. */
+/** TEST ONLY. Clears the in-isolate JWKS cache. Do not call from app code. */
 export function __clearJwksCacheForTests(): void {
     jwksCache.clear();
 }

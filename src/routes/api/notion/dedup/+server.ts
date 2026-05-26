@@ -6,6 +6,17 @@ import { getDb, schema } from "$lib/server/db";
 import { decryptNotionToken, deriveTokenKey } from "$lib/server/crypto";
 import { deduplicate, type NotionRow } from "$lib/notion/dedup";
 
+/**
+ * POST `/api/notion/dedup` — manual trigger of `$lib/notion/dedup#deduplicate`.
+ *
+ *   `?dry_run=1` previews archive candidates without mutating Notion.
+ *
+ * Rate-limited via `hooks.server.ts` RATE_LIMIT_PATHS (5/min/user). Returns
+ * 400 when the user has not stored Notion credentials in `user_settings`.
+ *
+ * Property-name detection duplicates the logic in `NotionDatabaseManager` and
+ * the consumer's `runPostJobDedup`. Keep all three in sync if the heuristic changes.
+ */
 export const POST: RequestHandler = async ({ url, locals, platform }) => {
     if (!locals.userId || !platform?.env) {
         throw error(503, "platform unavailable");
@@ -32,7 +43,7 @@ export const POST: RequestHandler = async ({ url, locals, platform }) => {
     const token = await decryptNotionToken(new Uint8Array(s.tok as ArrayBuffer), key);
     const client = new Client({ auth: token });
 
-    // Resolve data source id + property names.
+    // Resolve data source id + title/url property names (mirrors `NotionDatabaseManager.detectPropertyNames`).
     const dbInfo = (await client.databases.retrieve({
         database_id: s.dbId
     })) as unknown as {

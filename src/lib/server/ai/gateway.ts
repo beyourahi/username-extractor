@@ -1,10 +1,15 @@
 /**
- * Workers AI invocation with optional AI Gateway routing.
+ * Workers AI runner with optional AI Gateway routing.
  *
- * When `AI_GATEWAY_SLUG` (or per-call `gatewaySlug`) is set, we use the
- * official `env.AI.gateway(slug).run(...)`-style routing. Otherwise the call
- * goes directly to the Workers AI binding. The wrapper returns the raw model
- * response — callers normalize the shape.
+ * Routing:
+ *   - If `options.gatewaySlug` or env `AI_GATEWAY_SLUG` is set AND `env.AI.gateway`
+ *     is a function, calls `env.AI.gateway(slug).run(model, input)`.
+ *   - Otherwise calls `env.AI.run(model, input)` directly.
+ * The per-call override wins. Falls through to direct AI binding if the gateway
+ * proxy lacks `.run` (defensive — guards against runtime API drift).
+ *
+ * Returns the raw model response. Use `extractResponseText` to normalize the
+ * many possible output shapes (LLaVA, GLM-OCR, OpenAI-compat, plain strings).
  */
 
 interface RunVisionEnv {
@@ -17,7 +22,7 @@ export interface RunVisionOptions {
     gatewaySlug?: string;
 }
 
-/** Loose model name — Workers AI typings only cover a subset. */
+/** Loose model id. Workers AI typings only enumerate a subset of the catalog. */
 export type VisionModel = string;
 
 export type VisionInput =
@@ -34,10 +39,8 @@ export async function runVisionWithGateway(
     const slug = options.gatewaySlug ?? env.AI_GATEWAY_SLUG;
 
     if (slug && typeof env.AI?.gateway === "function") {
-        // The Workers AI binding exposes a `gateway(id)` proxy that routes
-        // model calls through the named AI Gateway instance. We use the
-        // documented binding API rather than building the REST URL ourselves
-        // so token handling stays in the platform.
+        // Use the binding-provided `env.AI.gateway(slug)` proxy so Cloudflare
+        // handles auth — never build the REST URL by hand (leaks tokens, breaks on API drift).
         const gw = env.AI.gateway(slug) as unknown as {
             run: (m: string, i: unknown) => Promise<unknown>;
         };
@@ -46,19 +49,24 @@ export async function runVisionWithGateway(
         }
     }
 
-    // Cast through unknown because the Ai.run signature is overloaded for the
-    // strongly-typed model list; we deliberately allow loose model names.
+    // Cast through unknown: `Ai.run` is heavily overloaded for known model ids
+    // but VisionModel is intentionally a string to accept catalog entries
+    // missing from the typings.
     const ai = env.AI as unknown as { run: (m: string, i: unknown) => Promise<unknown> };
     return ai.run(model, input);
 }
 
 /**
- * Extract a usable text response from the heterogeneous Workers AI vision
- * output. Handles:
- * - `{ response: "text" }` (classic LLaVA / GLM-OCR shape)
- * - `{ description: "text" }` (some image captioners)
- * - `{ choices: [{ message: { content } }] }` (OpenAI-compat chat)
- * - plain string responses
+ * Normalizes the heterogeneous Workers AI vision output to a plain string.
+ * Returns `""` when no recognized shape is found (caller treats as no extraction).
+ *
+ * Probes in order (first match wins):
+ *   1. plain string
+ *   2. `{ response }`    — classic LLaVA / GLM-OCR
+ *   3. `{ description }` — image captioners
+ *   4. `{ text }`        — newer endpoints
+ *   5. `{ choices[0].message.content }` — OpenAI-compat chat
+ *   6. `{ choices[0].text }` — OpenAI-compat completion
  */
 export function extractResponseText(raw: unknown): string {
     if (raw == null) {

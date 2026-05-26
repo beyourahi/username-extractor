@@ -1,13 +1,15 @@
 /**
- * KV-backed read-through cache for Instagram validation results.
+ * Read-through KV cache for Instagram username existence checks.
  *
- * The Python version (see `instagram_validator.py:_enforce_rate_limit`) handled
- * rate limiting in-process with `time.sleep`. On Workers we instead amortize
- * cost with KV — a hit returns the cached `{exists, checkedAt}` shape without
- * touching Instagram.
+ * Key:  `ig:exists:<lowercased username>`
+ * Val:  CachedResult JSON
+ * TTL:  DEFAULT_TTL_SECONDS (7 days), overridable via `opts.ttlSeconds`.
  *
- * Transient validator failures (`error !== null`) are intentionally NOT cached
- * to avoid pinning a false negative for the full TTL window.
+ * INVARIANT: validator errors (`result.error !== null`) are NEVER written.
+ * This prevents a transient 429/5xx from pinning `exists: false` for the
+ * full TTL. Replaces the Python CLI's in-process `time.sleep` rate limiter.
+ *
+ * `opts.force = true` bypasses the cache lookup but still writes on success.
  */
 
 import { validateUsername } from "./validator";
@@ -23,7 +25,7 @@ export interface ValidateUsernameCachedOptions {
     force?: boolean;
 }
 
-const DEFAULT_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
+const DEFAULT_TTL_SECONDS = 60 * 60 * 24 * 7;
 
 function cacheKey(username: string): string {
     return `ig:exists:${username.toLowerCase()}`;
@@ -56,8 +58,7 @@ export async function validateUsernameCached(
         checkedAt: Date.now()
     };
 
-    // Skip writes when the validator surfaced an error — transient failures
-    // should not poison the cache for the full TTL.
+    // See module invariant: only cache definitive results.
     if (result.error === null) {
         await env.KV.put(key, JSON.stringify(cached), { expirationTtl: ttlSeconds });
     }

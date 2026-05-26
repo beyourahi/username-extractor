@@ -1,10 +1,14 @@
 /**
- * D1 schema for Username Extractor.
+ * Drizzle schema for the D1 database. Mirrors docs/web-port-prd.md §Data model.
  *
- * Mirrors the conceptual DDL in docs/web-port-prd.md §Data model and contracts.
- * Column names use snake_case at the SQL level for legibility in wrangler d1 execute.
+ * Conventions:
+ *  - SQL columns are snake_case (readable via `wrangler d1 execute`); TS fields are camelCase.
+ *  - Timestamps are Unix epoch ms in INTEGER (SQLite has no native datetime).
+ *  - Booleans are INTEGER 0/1.
+ *  - All `user_id` columns FK to `users.id`. `job_items` cascades on job delete.
  *
- * SQLite has no native datetime — all timestamps are Unix epoch ms in INTEGER columns.
+ * Migrations live in `migrations/` and are generated via `bun run db:generate`.
+ * NEVER hand-edit a generated migration after it has been applied to production.
  */
 import { sqliteTable, text, integer, real, blob, index, uniqueIndex } from "drizzle-orm/sqlite-core";
 
@@ -19,7 +23,7 @@ export const userSettings = sqliteTable("user_settings", {
         .primaryKey()
         .references(() => users.id, { onDelete: "cascade" }),
     diagnosticsDefault: integer("diagnostics_default").notNull().default(0),
-    /** AES-GCM ciphertext + 12-byte IV prefix. Decrypted with env.NOTION_TOKEN_ENCRYPTION_KEY. */
+    /** Layout: [12-byte IV] || [AES-GCM ciphertext]. Encrypt/decrypt via `src/lib/server/crypto.ts` using env.NOTION_TOKEN_ENCRYPTION_KEY. NFR-6. */
     notionTokenEncrypted: blob("notion_token_encrypted"),
     notionDatabaseId: text("notion_database_id"),
     notionAutoSync: integer("notion_auto_sync").notNull().default(0),
@@ -28,7 +32,7 @@ export const userSettings = sqliteTable("user_settings", {
     dailyImageQuota: integer("daily_image_quota").notNull().default(1000)
 });
 
-/** Job status: pending | running | completed | cancelled | failed */
+/** `status`: pending | running | completed | cancelled | failed. Mirror in `$lib/types/messages` JobStatus. */
 export const jobs = sqliteTable(
     "jobs",
     {
@@ -40,7 +44,7 @@ export const jobs = sqliteTable(
         vlmModel: text("vlm_model").notNull(),
         diagnostics: integer("diagnostics").notNull(),
         imageCount: integer("image_count").notNull(),
-        /** Set when the post-job NotionDeduplicator pass completes. JSON: { duplicate_groups, duplicates_found, duplicates_removed, errors }. */
+        /** JSON written by the post-job NotionDeduplicator (`src/lib/notion/dedup.ts`). Shape: `{ duplicate_groups, duplicates_found, duplicates_removed, errors }`. */
         dedupSummary: text("dedup_summary"),
         createdAt: integer("created_at").notNull(),
         completedAt: integer("completed_at")
@@ -51,7 +55,7 @@ export const jobs = sqliteTable(
     ]
 );
 
-/** Item status: pending | running | verified | review | failed | duplicate */
+/** `status`: pending | running | verified | review | failed | duplicate. Mirror in `$lib/types/messages` ItemStatus. */
 export const jobItems = sqliteTable(
     "job_items",
     {
@@ -64,13 +68,13 @@ export const jobItems = sqliteTable(
         status: text("status").notNull(),
         username: text("username"),
         confidence: real("confidence"),
-        /** HIGH | MED | null */
+        /** "HIGH" | "MED" | null. See `src/lib/extract/classify.ts` for tier rules. */
         tier: text("tier"),
         isDuplicate: integer("is_duplicate").notNull().default(0),
         isNearDuplicate: integer("is_near_duplicate").notNull().default(0),
         similarTo: text("similar_to"),
         editDistance: integer("edit_distance"),
-        /** Diagnostics-only: full raw model response text. */
+        /** Populated only when `jobs.diagnostics = 1`. Raw VLM response text for replay/debugging. */
         rawModelResponse: text("raw_model_response"),
         error: text("error"),
         createdAt: integer("created_at").notNull(),
@@ -83,10 +87,12 @@ export const jobItems = sqliteTable(
 );
 
 /**
- * Lifetime leads. Replaces the legacy cumulative `verified_usernames.md` regex scan
- * with an indexed (user_id, username) lookup.
+ * Lifetime leads table — the canonical "have I seen this username before?" store.
+ * Replaces the legacy `verified_usernames.md` regex scan with an indexed
+ * `(user_id, username)` unique lookup.
  *
- * notion_status: 'added' | 'invalid' | 'pending' | 'unconfigured' | null
+ * `notion_status`: 'added' | 'invalid' | 'pending' | 'unconfigured' | null.
+ * `archived = 1` excludes a row from active dedup checks but preserves history.
  */
 export const leads = sqliteTable(
     "leads",

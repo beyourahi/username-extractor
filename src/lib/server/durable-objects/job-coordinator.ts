@@ -1,17 +1,21 @@
 /**
- * JobCoordinator — per-job Durable Object.
+ * JobCoordinator — per-job Durable Object, addressed by `idFromName(jobId)`.
  *
- * Responsibilities:
- * - Hold one WebSocket-per-client (via the hibernation API) for the lifetime
- *   of the job.
- * - Receive `POST /broadcast` from the queue consumer and fan messages out.
- * - Receive `POST /cancel` from the cancel route handler; broadcast then
- *   close.
- * - On reconnect with `?last_event_id=...`, replay completed items from D1
- *   so the client can resync without reloading the page.
+ * INVARIANT: D1 is the source of truth. This DO is a best-effort relay.
+ * If it crashes or evicts, the consumer keeps writing to D1 and the UI
+ * re-syncs on reconnect via `?last_event_id=`. NEVER use DO storage here for
+ * durable state.
  *
- * The DO never writes to D1 itself for the live path — it is a broadcast
- * relay. The consumer is the single source of truth.
+ * HTTP surface (called via `JOB_COORDINATOR.get(id).fetch(...)`):
+ *   GET  /ws?job_id&last_event_id   → 101 upgrade; on reconnect, replays D1 rows with completedAt ≤ last_event_id
+ *   POST /broadcast    { message }  → fanout `message` to all hibernating sockets; on `job.completed`, persists `summary` to `jobs.dedup_summary` as a belt-and-braces write
+ *   POST /cancel?job_id             → fanout `{type:"job.cancelled"}` then close all sockets with 1000
+ *
+ * WebSockets use the hibernation API (`ctx.acceptWebSocket`) — no in-memory
+ * connection map needed; runtime tracks sockets by tag.
+ *
+ * Clients are read-only on the wire; `webSocketMessage` drops payloads to
+ * keep the association alive but does not interpret them.
  */
 
 import { DurableObject } from "cloudflare:workers";
@@ -59,8 +63,7 @@ export class JobCoordinator extends DurableObject<JobCoordinatorEnv> {
         const lastEventId = lastEventIdRaw ? Number(lastEventIdRaw) : null;
 
         if (jobId && lastEventId !== null && Number.isFinite(lastEventId)) {
-            // Replay completed items. Best-effort — failures are swallowed so
-            // a slow D1 doesn't stall the upgrade.
+            // Replay completed items. Fire-and-forget so a slow D1 query never blocks the 101 upgrade.
             this.replayCompletedItems(server, jobId, lastEventId).catch(() => {});
         }
 
@@ -120,13 +123,13 @@ export class JobCoordinator extends DurableObject<JobCoordinatorEnv> {
             try {
                 ws.send(payload);
             } catch {
-                // Best-effort fanout; ignore individual socket errors.
+                // Drop dead sockets silently; hibernation API does its own GC.
             }
         }
 
-        // Persist the final summary so a reload after job completion can still
-        // render the totals card. The consumer also writes this — duplicate
-        // writes are cheap and DO-side write is a safety net.
+        // Safety net: also persist `summary` to `jobs.dedup_summary` so the
+        // job detail page can render totals after a hard reload. The queue
+        // consumer is the primary writer; this duplicate write is idempotent.
         if (body.message.type === "job.completed") {
             try {
                 const db = drizzle(this.env.DB, { schema });
@@ -137,7 +140,7 @@ export class JobCoordinator extends DurableObject<JobCoordinatorEnv> {
                     })
                     .where(eq(schema.jobs.id, body.message.job_id));
             } catch {
-                // Non-fatal.
+                // Non-fatal — consumer write already covers durability.
             }
         }
 
@@ -153,22 +156,21 @@ export class JobCoordinator extends DurableObject<JobCoordinatorEnv> {
                 ws.send(payload);
                 ws.close(1000, "job cancelled");
             } catch {
-                // ignore
+                // Socket already torn down.
             }
         }
         return new Response("ok");
     }
 
     override webSocketMessage(_ws: WebSocket, _message: string | ArrayBuffer): void {
-        // Clients are read-only in this design; we drop any inbound payloads
-        // so the hibernation runtime keeps the socket associated.
+        // Clients are read-only. Drop inbound frames; presence-only handler keeps the socket associated with this DO.
     }
 
     override webSocketClose(_ws: WebSocket, _code: number, _reason: string, _wasClean: boolean): void {
-        // No teardown required — hibernation API tracks sockets via tags.
+        // No teardown needed — hibernation API GCs sockets by tag.
     }
 
     override webSocketError(_ws: WebSocket, _error: unknown): void {
-        // No-op; surfaces in observability.
+        // Surfaces in Workers observability; no action required here.
     }
 }

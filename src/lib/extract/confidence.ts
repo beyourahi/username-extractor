@@ -1,11 +1,10 @@
 /**
- * VLM confidence scoring.
+ * Verbatim port of the Python CLI's confidence scoring
+ * (extract_usernames.py:563-578 inside `vlm_primary_extract`).
  *
- * Source: /Users/beyourahi/Desktop/projects/extract_usernames/extract_usernames/_archive/extract_usernames.py:525-589 (especially :563-578)
- *
- * Pure scoring logic extracted from `vlm_primary_extract`. Network/VLM
- * invocation is handled elsewhere; this module only deals with the post-hoc
- * score adjustment.
+ * Pure post-extraction scoring — no I/O. DO NOT alter weights without
+ * re-running the docs/benchmark.md accuracy run; the recorded baseline
+ * depends on the exact constants below.
  */
 import { hasUnusualPattern, isValidInstagramFormat } from "./validate";
 
@@ -19,8 +18,9 @@ const FORMAT_BONUS = 10;
 const UNUSUAL_PENALTY = 10;
 
 /**
- * Detect VLM hedging phrases ("appears", "might", etc.) in raw model output.
- * Match is case-insensitive substring (matches Python `any(word in raw.lower() ...)`).
+ * True if `rawText` contains any HEDGING_WORDS as a case-insensitive substring.
+ * Mirrors Python `any(word in raw.lower() for word in HEDGING_WORDS)` — does
+ * NOT do word-boundary matching, so e.g. "couldbe" still triggers.
  */
 export function containsHedging(rawText: string): boolean {
     if (!rawText) {
@@ -36,14 +36,14 @@ export function containsHedging(rawText: string): boolean {
 }
 
 /**
- * Compute a VLM confidence score in [60, 100].
+ * Score VLM confidence. Result clamped to [MIN_CONFIDENCE, MAX_CONFIDENCE] = [60, 100].
  *
- * - Hedging language: −15
- * - Valid Instagram format: +10
- * - Unusual pattern: −10
+ *   start = BASE_CONFIDENCE (85)
+ *   −HEDGING_PENALTY (15) if hedged
+ *   +FORMAT_BONUS    (10) if `isValidInstagramFormat(username)`
+ *   −UNUSUAL_PENALTY (10) if `hasUnusualPattern(username)`
  *
- * `hedged` can be passed explicitly; otherwise `rawText` is scanned via
- * `containsHedging`. Final value is clamped.
+ * `hedged` overrides `rawText` scanning when explicitly passed.
  */
 export function scoreConfidence(opts: { username: string; rawText?: string; hedged?: boolean }): number {
     const { username, rawText, hedged } = opts;
