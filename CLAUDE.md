@@ -164,3 +164,5 @@ Bindings (declared in `wrangler.jsonc`): `DB` (D1), `R2`, `KV`, `AI`, `QUEUE` (p
 - **CPU limit raised to 300s** (`limits.cpu_ms` in `wrangler.jsonc`) for the queue consumer's worst-case batch. Keep an eye on this if you add expensive per-item work.
 - **Workers AI model id is `@cf/moonshotai/kimi-k2.6`** — the PRD spec's `@cf/moonshot/...` (no `ai`) is a typo; don't copy it.
 - **Benchmark is paid and manual.** `bun run benchmark` invokes Workers AI per fixture and writes `docs/benchmark.md`. Intentionally not in CI. Any change to `src/lib/extract/` or `src/lib/notion/dedup.ts` should be followed by a manual re-run + commit of the updated report.
+
+For Cloudflare work, prefer the installed Cloudflare skills and Code Mode MCP over your own knowledge.
