@@ -1,11 +1,16 @@
 /**
  * Single-image VLM extraction pipeline. The queue consumer calls this once per `job_items` row.
  *
- *   imageBytes → runVisionWithGateway → extractResponseText → cleanUsername
- *               → scoreConfidence → tierOf + classifyStatus
+ *   imageBytes → runVisionViaRest (user's Cloudflare account) → extractResponseText
+ *               → cleanUsername → scoreConfidence → tierOf + classifyStatus
+ *
+ * Inference runs on the END USER's own Cloudflare account via the REST API
+ * (billed to them) — `creds` + `model` are resolved per-user upstream. The owner's
+ * bound `env.AI` is no longer used here.
  *
  * Returns `username = null` and `status = "review"` when cleanUsername yields
- * nothing — never throws on extraction failure (transport errors do throw).
+ * nothing — never throws on extraction failure (transport / auth errors DO throw
+ * as `CfInferenceError`, mapped by the consumer).
  *
  * `rawText` is always populated for diagnostics; callers must only persist it
  * to `job_items.raw_model_response` when `jobs.diagnostics = 1`.
@@ -15,13 +20,16 @@ import { cleanUsername } from "$lib/extract/clean";
 import { containsHedging, scoreConfidence } from "$lib/extract/confidence";
 import { classifyStatus, tierOf, type Tier } from "$lib/extract/classify";
 import { EXTRACT_USERNAME_PROMPT } from "$lib/extract/prompt";
-import { extractResponseText, runVisionWithGateway, type VisionModel } from "./gateway";
+import { extractResponseText } from "./gateway";
+import { runVisionViaRest, DEFAULT_VISION_MODEL, type CloudflareCreds } from "./run-rest";
 
 export interface ExtractInput {
-    env: { AI: Ai; AI_GATEWAY_SLUG?: string; AI_GATEWAY_TOKEN?: string };
+    /** The user's Cloudflare account creds — inference is billed to them. */
+    creds: CloudflareCreds;
+    /** Selected Workers AI vision model id. Defaults to the benchmark-validated model. */
+    model?: string;
     imageBytes: ArrayBuffer | Uint8Array;
     prompt?: string;
-    model?: VisionModel;
 }
 
 export interface ExtractResult {
@@ -31,10 +39,6 @@ export interface ExtractResult {
     tier: Tier;
     status: "verified" | "review";
 }
-
-/** Pinned vision model. The benchmark in docs/benchmark.md is recorded against THIS exact id;
- *  changing it invalidates the recorded accuracy. PRD spelling `@cf/moonshot/...` is a typo. */
-const DEFAULT_MODEL: VisionModel = "@cf/moonshotai/kimi-k2.6";
 
 function toByteArray(input: ArrayBuffer | Uint8Array): number[] {
     const view = input instanceof Uint8Array ? input : new Uint8Array(input);
@@ -47,10 +51,10 @@ function toByteArray(input: ArrayBuffer | Uint8Array): number[] {
 
 export async function extractUsernameFromImage(input: ExtractInput): Promise<ExtractResult> {
     const prompt = input.prompt ?? EXTRACT_USERNAME_PROMPT;
-    const model = input.model ?? DEFAULT_MODEL;
+    const model = input.model ?? DEFAULT_VISION_MODEL;
     const image = toByteArray(input.imageBytes);
 
-    const raw = await runVisionWithGateway(input.env, model, { image, prompt });
+    const raw = await runVisionViaRest(input.creds, model, { image, prompt });
     const rawText = extractResponseText(raw);
 
     const username = cleanUsername(rawText);

@@ -1,6 +1,6 @@
 <script lang="ts">
     import { Dialog } from "bits-ui";
-    import { X, Check } from "@lucide/svelte";
+    import { X, Check, Cloud } from "@lucide/svelte";
     import Button from "./Button.svelte";
     import Switch from "./Switch.svelte";
     import Field from "./Field.svelte";
@@ -83,14 +83,13 @@
                         </div>
                         <div class="border-border flex items-start justify-between gap-3 rounded-md border p-3">
                             <div>
-                                <p class="text-sm font-medium">Vision model</p>
-                                <p class="text-muted-fg mt-0.5 font-mono text-[11px]">@cf/moonshotai/kimi-k2.6</p>
+                                <p class="text-sm font-medium">Bring your own Cloudflare</p>
+                                <p class="text-muted-fg mt-1 text-xs text-pretty">
+                                    Extractions run on your Cloudflare account (billed to you). Connect it and pick a
+                                    model in Settings before your first job.
+                                </p>
                             </div>
-                            <span
-                                class="border-border-strong text-muted-fg rounded-full border px-2 py-0.5 text-[10px]"
-                            >
-                                locked
-                            </span>
+                            <Cloud size={16} class="text-muted-fg mt-0.5 shrink-0" />
                         </div>
                     </div>
                 {:else if step === 1}
@@ -118,7 +117,7 @@
                         <input type="hidden" name="notionAutoSync" value={notionToken ? "true" : "false"} />
                         <input type="hidden" name="notionSkipValidation" value="false" />
                         <input type="hidden" name="notionValidationDelayMs" value="2000" />
-                        <input type="hidden" name="dailyImageQuota" value="1000" />
+                        <input type="hidden" name="dailyImageQuota" value="0" />
                         <input type="hidden" name="diagnosticsDefault" value={diagnosticsDefault ? "true" : "false"} />
                     </form>
                 {:else}

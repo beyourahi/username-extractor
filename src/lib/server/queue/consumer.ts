@@ -29,6 +29,9 @@ import { Client } from "@notionhq/client";
 import * as schema from "$lib/server/schema";
 import { jobs, jobItems, leads, userSettings } from "$lib/server/schema";
 import { extractUsernameFromImage } from "$lib/server/ai/extract";
+import { loadCloudflareConfig, resolveCloudflareCreds } from "$lib/server/ai/cloudflare-config";
+import { CfInferenceError } from "$lib/server/ai/run-rest";
+import { itemErrorForCfError } from "$lib/server/ai/errors";
 import { findSimilarExisting } from "$lib/extract/distance";
 import { emit } from "$lib/server/analytics";
 import { syncLeadInline } from "$lib/server/notion/sync-one";
@@ -334,14 +337,55 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
     }
     const imageBytes = await obj.arrayBuffer();
 
+    // Resolve the user's OWN Cloudflare account — inference is billed to them, not the owner.
+    // Defense-in-depth: job creation already rejects unconnected users, but a job queued before
+    // the user disconnected could still reach here, so re-check and fail the item cleanly.
+    const cfResolved = await resolveCloudflareCreds(
+        env.NOTION_TOKEN_ENCRYPTION_KEY,
+        await loadCloudflareConfig(db, userId)
+    ).catch(() => null);
+    if (!cfResolved) {
+        const errText = "No Cloudflare account connected — connect one in Settings.";
+        await db
+            .update(jobItems)
+            .set({ status: "failed", error: errText, completedAt: Date.now() })
+            .where(eq(jobItems.id, itemId));
+        await broadcast(env, jobId, { type: "item.failed", job_id: jobId, item_id: itemId, error: errText });
+        emit(env, "item_failed", { jobId, userId, itemId, r2Key, status: "cf_not_connected" });
+        await maybeFinalizeJob(env, db, jobId, userId, startedAt);
+        return;
+    }
+    const { creds, model } = cfResolved;
+
     let extraction;
     try {
-        extraction = await extractUsernameFromImage({ env, imageBytes });
+        extraction = await extractUsernameFromImage({ creds, model, imageBytes });
     } catch (firstErr) {
-        // Single inline retry. Queue-level retries still apply for unexpected throws elsewhere;
-        // this localised retry catches transient Workers AI 5xx without blowing the message budget.
+        // Auth / unavailable-model are terminal for this token+model — fail the item now;
+        // a retry would just burn the queue budget on the same rejection.
+        if (
+            firstErr instanceof CfInferenceError &&
+            (firstErr.kind === "auth" || firstErr.kind === "model_unavailable")
+        ) {
+            const errText = itemErrorForCfError(firstErr, model);
+            await db
+                .update(jobItems)
+                .set({ status: "failed", error: errText, completedAt: Date.now() })
+                .where(eq(jobItems.id, itemId));
+            await broadcast(env, jobId, { type: "item.failed", job_id: jobId, item_id: itemId, error: errText });
+            emit(env, "item_failed", { jobId, userId, itemId, r2Key, status: `cf_${firstErr.kind}` });
+            await maybeFinalizeJob(env, db, jobId, userId, startedAt);
+            return;
+        }
+        // Rate limited: revert to `pending` and let the queue redeliver with backoff. The
+        // idempotency guard re-processes a `pending` item; leaving it `running` would no-op the retry.
+        if (firstErr instanceof CfInferenceError && firstErr.kind === "rate_limit") {
+            await db.update(jobItems).set({ status: "pending" }).where(eq(jobItems.id, itemId));
+            throw firstErr;
+        }
+        // Transport / unknown: one inline retry (transient Workers AI 5xx), then fail (ack).
         try {
-            extraction = await extractUsernameFromImage({ env, imageBytes });
+            extraction = await extractUsernameFromImage({ creds, model, imageBytes });
         } catch (secondErr) {
             const msgText = secondErr instanceof Error ? secondErr.message : String(firstErr);
             await db
@@ -362,6 +406,7 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
                 status: "extract_error",
                 durationMs: Date.now() - startedAt
             });
+            await maybeFinalizeJob(env, db, jobId, userId, startedAt);
             return;
         }
     }

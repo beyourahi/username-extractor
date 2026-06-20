@@ -3,7 +3,8 @@
     import { superForm } from "sveltekit-superforms";
     import { toast } from "svelte-sonner";
     import { enhance } from "$app/forms";
-    import { Sparkles, RefreshCw, Upload, Trash2, FileText, Check, AlertTriangle } from "@lucide/svelte";
+    import { invalidateAll } from "$app/navigation";
+    import { Sparkles, RefreshCw, Upload, Trash2, FileText, Check, AlertTriangle, Cloud } from "@lucide/svelte";
     import PageHeader from "$lib/components/PageHeader.svelte";
     import Button from "$lib/components/Button.svelte";
     import Switch from "$lib/components/Switch.svelte";
@@ -15,6 +16,9 @@
     let { data } = $props();
 
     const maskedToken = $derived(data.maskedToken ?? "");
+    const maskedCloudflareToken = $derived(data.maskedCloudflareToken ?? "");
+    const cloudflareConnected = $derived(Boolean(maskedCloudflareToken && maskedCloudflareToken !== "(decrypt error)"));
+    const DEFAULT_MODEL = "@cf/moonshotai/kimi-k2.6";
 
     const {
         form,
@@ -31,6 +35,39 @@
             }
         }
     );
+
+    // Picker options from the account's cached vision models. Always surfaces the
+    // recommended default first and the currently-selected id, even if the live list omits it.
+    const modelOptions = $derived.by(() => {
+        const list = data.models ?? [];
+        const ids = new Set(list.map((m) => m.id));
+        const opts = list.map((m) => ({
+            id: m.id,
+            label:
+                m.id === DEFAULT_MODEL
+                    ? `${m.label} · recommended`
+                    : `${m.label} · experimental${m.deprecated ? " (deprecated)" : ""}`
+        }));
+        if (!ids.has(DEFAULT_MODEL)) {
+            opts.unshift({ id: DEFAULT_MODEL, label: "moonshotai/kimi-k2.6 · recommended" });
+        }
+        const cur = $form.cloudflareModel;
+        if (cur && cur !== DEFAULT_MODEL && !ids.has(cur)) {
+            opts.push({ id: cur, label: `${cur.replace(/^@cf\//, "")} · experimental` });
+        }
+        return opts;
+    });
+
+    let refreshingModels = $state(false);
+    async function refreshModels() {
+        refreshingModels = true;
+        try {
+            await fetch("/api/cf/models?refresh=1");
+            await invalidateAll();
+        } finally {
+            refreshingModels = false;
+        }
+    }
 
     let legacyMarkdown = $state("");
     let legacyNotionToken = $state("");
@@ -77,20 +114,10 @@
                 <input type="hidden" name="diagnosticsDefault" value={$form.diagnosticsDefault ? "true" : "false"} />
             </div>
             <div class="bg-border h-px"></div>
-            <div class="flex items-center justify-between py-3">
-                <div>
-                    <p class="text-sm font-medium text-zinc-200">Vision model</p>
-                    <p class="text-muted-fg mt-0.5 font-mono text-[11px] whitespace-nowrap">@cf/moonshotai/kimi-k2.6</p>
-                </div>
-                <span class="border-border-strong text-muted-fg rounded-full border px-2 py-0.5 font-mono text-[10px]">
-                    locked
-                </span>
-            </div>
-            <div class="bg-border h-px"></div>
             <div class="flex items-center justify-between gap-3 py-3">
                 <div>
                     <p class="text-sm font-medium text-zinc-200">Daily image quota</p>
-                    <p class="text-muted-fg mt-0.5 text-xs">Per-user upper bound applied to new jobs.</p>
+                    <p class="text-muted-fg mt-0.5 text-xs">0 = unlimited. Billed to your Cloudflare account.</p>
                 </div>
                 <div class="w-28">
                     <TextInput
@@ -98,7 +125,7 @@
                         name="dailyImageQuota"
                         bind:value={$form.dailyImageQuota}
                         min={0}
-                        max={100000}
+                        max={1000000}
                         class="text-right"
                     />
                     {#if $errors.dailyImageQuota}
@@ -109,6 +136,83 @@
         {/snippet}
 
         {@render section(Sparkles, "Extraction", "Defaults applied to every new job.", extractionBody)}
+
+        {#snippet cloudflareBody()}
+            <div class="space-y-4 py-3">
+                <Field
+                    label="API token"
+                    hint={cloudflareConnected
+                        ? `Stored: ${maskedCloudflareToken} — leave blank to keep.`
+                        : "Scoped token with the Account · Workers AI · Read permission. Encrypted at rest."}
+                >
+                    <TextInput
+                        type="password"
+                        name="cloudflareToken"
+                        bind:value={$form.cloudflareToken}
+                        placeholder={maskedCloudflareToken || "v1.0-…"}
+                        autocomplete="off"
+                    />
+                </Field>
+                <Field label="Account ID" hint="Right sidebar of any account page in the Cloudflare dashboard.">
+                    <TextInput
+                        name="cloudflareAccountId"
+                        bind:value={$form.cloudflareAccountId}
+                        placeholder="0123456789abcdef…"
+                    />
+                </Field>
+                <p class="text-muted-fg text-[11px] leading-relaxed text-pretty">
+                    Inference runs on <span class="text-zinc-300">your</span> Cloudflare account and is billed to you.
+                    Create a token at
+                    <a
+                        href="https://dash.cloudflare.com/profile/api-tokens"
+                        target="_blank"
+                        rel="noreferrer"
+                        class="text-brand underline underline-offset-2">dash.cloudflare.com/profile/api-tokens</a
+                    >
+                    → Create Custom Token → permission
+                    <span class="font-mono text-zinc-300">Account · Workers AI · Read</span>.
+                </p>
+            </div>
+            <div class="bg-border h-px"></div>
+            <div class="flex items-center justify-between gap-3 py-3">
+                <div class="min-w-0">
+                    <p class="text-sm font-medium text-zinc-200">Vision model</p>
+                    <p class="text-muted-fg mt-0.5 text-xs text-pretty">
+                        Kimi K2.6 is benchmark-validated. Others are experimental — quality varies.
+                    </p>
+                </div>
+                <div class="flex shrink-0 items-center gap-2">
+                    <button
+                        type="button"
+                        onclick={refreshModels}
+                        disabled={refreshingModels || !cloudflareConnected}
+                        title="Refresh model list"
+                        aria-label="Refresh models"
+                        class="text-muted-fg transition-colors hover:text-zinc-200 disabled:opacity-40"
+                    >
+                        <RefreshCw size={13} class={refreshingModels ? "animate-spin" : ""} />
+                    </button>
+                    <div class="w-56">
+                        <select
+                            name="cloudflareModel"
+                            bind:value={$form.cloudflareModel}
+                            class="border-border-strong bg-background w-full rounded-md border px-2.5 py-2 font-mono text-[11px] text-zinc-200 focus:border-[color:var(--brand)] focus:ring-2 focus:ring-[color:var(--brand-soft)] focus:outline-none"
+                        >
+                            {#each modelOptions as opt (opt.id)}
+                                <option value={opt.id}>{opt.label}</option>
+                            {/each}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        {/snippet}
+
+        {@render section(
+            Cloud,
+            "Cloudflare account",
+            "Required — extractions run on your account, billed to you.",
+            cloudflareBody
+        )}
 
         {#snippet notionBody()}
             <div class="space-y-4 py-3">
@@ -358,7 +462,7 @@
             <div>
                 <p class="text-tier-failed-fg text-sm font-medium">Reset to defaults</p>
                 <p class="text-muted-fg mt-1 text-xs text-pretty">
-                    Wipes settings only (including encrypted Notion token). Jobs and leads are unaffected.
+                    Wipes settings only (including encrypted Notion + Cloudflare tokens). Jobs and leads are unaffected.
                 </p>
             </div>
             <form

@@ -20,6 +20,7 @@ import { and, eq, gte, sql } from "drizzle-orm";
 import type { Db } from "$lib/server/db";
 import { jobs, jobItems, userSettings } from "$lib/server/schema";
 import { emit } from "$lib/server/analytics";
+import { loadCloudflareConfig, isCloudflareConnected } from "$lib/server/ai/cloudflare-config";
 import type { QueueMessage } from "$lib/types/messages";
 
 export class QuotaExceededError extends Error {
@@ -32,6 +33,15 @@ export class QuotaExceededError extends Error {
         this.used = used;
         this.limit = limit;
         this.requested = requested;
+    }
+}
+
+/** Thrown when a user tries to start a job without a connected Cloudflare account. Inference is
+ *  billed to the user's own account, so a connection is mandatory before any job can run. */
+export class CloudflareNotConnectedError extends Error {
+    constructor() {
+        super("Connect your Cloudflare account in Settings before running extractions.");
+        this.name = "CloudflareNotConnectedError";
     }
 }
 
@@ -63,7 +73,9 @@ export interface CreateJobResult {
     itemCount: number;
 }
 
-const DEFAULT_DAILY_QUOTA = 50000;
+/** 0 = unlimited. Inference is billed to the user's own Cloudflare account, so the owner imposes
+ *  no cap by default; a user may still set a positive `daily_image_quota` as a self-serve kill-switch. */
+const DEFAULT_DAILY_QUOTA = 0;
 const VLM_MODEL = "@cf/moonshotai/kimi-k2.6";
 
 function sanitizeFilename(name: string): string {
@@ -193,11 +205,18 @@ export async function createJob(input: CreateJobInput): Promise<CreateJobResult>
         throw new Error("createJob: at least one file is required");
     }
 
+    // Step 0: a connected Cloudflare account is mandatory — inference runs on the user's
+    // account, billed to them. Reject up front so no job/R2/queue work happens unconnected.
+    if (!isCloudflareConnected(await loadCloudflareConfig(db, userId))) {
+        throw new CloudflareNotConnectedError();
+    }
+
     // Step 1: quota. Multi mode reserves against the client-declared total so the
     // whole folder is admitted (or rejected) up front rather than mid-upload.
+    // limit === 0 means unlimited (the default) — skip the check entirely.
     const reserve = multi ? Math.max(expectedTotal ?? files.length, files.length) : files.length;
     const [limit, used] = await Promise.all([loadQuota(db, userId), loadUsedToday(db, userId)]);
-    if (used + reserve > limit) {
+    if (limit > 0 && used + reserve > limit) {
         throw new QuotaExceededError(used, limit, reserve);
     }
 

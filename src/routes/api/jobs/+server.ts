@@ -1,7 +1,7 @@
 import type { RequestHandler } from "./$types";
 import { error, json } from "@sveltejs/kit";
 import { getDb } from "$lib/server/db";
-import { createJob, QuotaExceededError } from "$lib/server/jobs/create";
+import { createJob, QuotaExceededError, CloudflareNotConnectedError } from "$lib/server/jobs/create";
 
 export const POST: RequestHandler = async ({ request, locals, platform }) => {
     if (!locals.userId || !platform?.env) {
@@ -61,6 +61,9 @@ export const POST: RequestHandler = async ({ request, locals, platform }) => {
         });
         return json({ jobId: result.jobId, itemCount: result.itemCount }, { status: 201 });
     } catch (err) {
+        if (err instanceof CloudflareNotConnectedError) {
+            return json({ error: "cloudflare_not_connected", message: err.message }, { status: 412 });
+        }
         if (err instanceof QuotaExceededError) {
             return json(
                 {

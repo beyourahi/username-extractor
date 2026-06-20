@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi, afterEach } from "vitest";
 import { extractResponseText } from "../gateway";
 import { extractUsernameFromImage } from "../extract";
 
@@ -39,20 +39,28 @@ describe("extractResponseText", () => {
     });
 });
 
-describe("extractUsernameFromImage", () => {
-    function makeEnv(response: unknown) {
-        return {
-            AI: {
-                run: async () => response,
-                gateway: () => ({ run: async () => response })
-            } as unknown as Ai
-        };
+describe("extractUsernameFromImage (per-user REST)", () => {
+    const creds = { accountId: "acc", apiToken: "tok" };
+
+    afterEach(() => vi.unstubAllGlobals());
+
+    /** Mock the Workers AI REST call: the endpoint wraps model output in `{ success, result }`. */
+    function mockRest(inner: unknown, status = 200) {
+        vi.stubGlobal(
+            "fetch",
+            vi.fn(async () => ({
+                ok: status < 400,
+                status,
+                json: async () => ({ success: status < 400, result: inner })
+            }))
+        );
     }
 
     it("returns a verified result for a clean response", async () => {
-        const env = makeEnv({ response: "lebron.james" });
+        mockRest({ response: "lebron.james" });
         const result = await extractUsernameFromImage({
-            env,
+            creds,
+            model: "@cf/moonshotai/kimi-k2.6",
             imageBytes: new Uint8Array([1, 2, 3])
         });
         expect(result.username).toBe("lebron.james");
@@ -63,24 +71,14 @@ describe("extractUsernameFromImage", () => {
     });
 
     it("returns review when the response is hedged", async () => {
-        const env = makeEnv({ response: "The username appears to be foo.bar" });
-        const result = await extractUsernameFromImage({
-            env,
-            imageBytes: new Uint8Array([1])
-        });
-        // The hedging phrase appears anywhere in the raw text, so we expect
-        // a -15 penalty. Cleaning will still produce a candidate username
-        // ('theusernameappearstobefoo.bar' wouldn't be a real handle but the
-        // pipeline runs deterministically).
+        mockRest({ response: "The username appears to be foo.bar" });
+        const result = await extractUsernameFromImage({ creds, imageBytes: new Uint8Array([1]) });
         expect(result.confidence).toBeLessThan(95);
     });
 
     it("returns null username + review when the response is empty", async () => {
-        const env = makeEnv({ response: "" });
-        const result = await extractUsernameFromImage({
-            env,
-            imageBytes: new Uint8Array([1])
-        });
+        mockRest({ response: "" });
+        const result = await extractUsernameFromImage({ creds, imageBytes: new Uint8Array([1]) });
         expect(result.username).toBeNull();
         expect(result.confidence).toBe(0);
         expect(result.tier).toBeNull();

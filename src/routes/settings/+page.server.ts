@@ -6,6 +6,8 @@ import { eq } from "drizzle-orm";
 
 import { getDb, schema } from "$lib/server/db";
 import { deriveTokenKey, encryptNotionToken, decryptNotionToken, maskToken } from "$lib/server/crypto";
+import { listVisionModels, DEFAULT_VISION_MODEL, type CfModel } from "$lib/server/ai/run-rest";
+import { describeCloudflareError } from "$lib/server/ai/errors";
 import { settingsSchema } from "$lib/schemas/settings";
 
 /**
@@ -24,7 +26,14 @@ import { settingsSchema } from "$lib/schemas/settings";
 export const load: PageServerLoad = async ({ locals, platform }) => {
     const empty = await superValidate(zod4(settingsSchema));
     if (!locals.userId || !platform?.env?.DB) {
-        return { form: empty, maskedToken: "" };
+        return {
+            form: empty,
+            maskedToken: "",
+            maskedCloudflareToken: "",
+            cloudflareAccountId: "",
+            cloudflareModel: DEFAULT_VISION_MODEL,
+            models: [] as CfModel[]
+        };
     }
 
     const db = getDb(platform);
@@ -50,6 +59,40 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
         }
     }
 
+    let maskedCloudflareToken = "";
+    if (row?.cloudflareTokenEncrypted && platform.env.NOTION_TOKEN_ENCRYPTION_KEY) {
+        try {
+            const key = await deriveTokenKey(platform.env.NOTION_TOKEN_ENCRYPTION_KEY);
+            const blob =
+                row.cloudflareTokenEncrypted instanceof Uint8Array
+                    ? row.cloudflareTokenEncrypted
+                    : new Uint8Array(row.cloudflareTokenEncrypted as ArrayBuffer);
+            maskedCloudflareToken = maskToken(await decryptNotionToken(blob, key));
+        } catch {
+            maskedCloudflareToken = "(decrypt error)";
+        }
+    }
+
+    const cloudflareAccountId = row?.cloudflareAccountId ?? "";
+    const cloudflareModel = row?.cloudflareModel ?? DEFAULT_VISION_MODEL;
+
+    // Model list for the picker comes from the KV cache (written on save / by /api/cf/models).
+    // The client can call /api/cf/models to refresh on demand.
+    let models: CfModel[] = [];
+    if (cloudflareAccountId && platform.env.KV) {
+        try {
+            const cached = await platform.env.KV.get<{ models?: CfModel[] }>(
+                `cf-models:${cloudflareAccountId}`,
+                "json"
+            );
+            if (cached && Array.isArray(cached.models)) {
+                models = cached.models;
+            }
+        } catch {
+            // ignore cache read errors — the dropdown falls back to the default option
+        }
+    }
+
     const form = await superValidate(
         {
             diagnosticsDefault: Boolean(row?.diagnosticsDefault),
@@ -58,13 +101,16 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
             notionAutoSync: Boolean(row?.notionAutoSync),
             notionSkipValidation: Boolean(row?.notionSkipValidation),
             notionValidationDelayMs: row?.notionValidationDelayMs ?? 2000,
-            dailyImageQuota: row?.dailyImageQuota ?? 50000,
-            dedupKeepStrategy: (row?.dedupKeepStrategy as "best" | "oldest" | "newest" | undefined) ?? "best"
+            dailyImageQuota: row?.dailyImageQuota ?? 0,
+            dedupKeepStrategy: (row?.dedupKeepStrategy as "best" | "oldest" | "newest" | undefined) ?? "best",
+            cloudflareToken: "",
+            cloudflareAccountId,
+            cloudflareModel
         },
         zod4(settingsSchema)
     );
 
-    return { form, maskedToken };
+    return { form, maskedToken, maskedCloudflareToken, cloudflareAccountId, cloudflareModel, models };
 };
 
 export const actions: Actions = {
@@ -85,6 +131,33 @@ export const actions: Actions = {
             tokenBlob = await encryptNotionToken(form.data.notionToken, key);
         }
 
+        // Cloudflare connection: when a new token is provided, validate it by listing the
+        // account's models (proves token + account + Workers AI permission), cache that list,
+        // then encrypt the token. Empty token preserves the existing blob.
+        let cfTokenBlob: Uint8Array | null = null;
+        const cfAccountId = form.data.cloudflareAccountId.trim();
+        const cfTokenProvided = Boolean(form.data.cloudflareToken && form.data.cloudflareToken.length > 0);
+        if (cfTokenProvided && !cfAccountId) {
+            return message(form, "Enter your Cloudflare Account ID alongside the API token.", { status: 400 });
+        }
+        if (cfTokenProvided && cfAccountId) {
+            if (!platform.env.NOTION_TOKEN_ENCRYPTION_KEY) {
+                return message(form, "encryption key not configured", { status: 500 });
+            }
+            try {
+                const models = await listVisionModels({ accountId: cfAccountId, apiToken: form.data.cloudflareToken });
+                await platform.env.KV?.put(
+                    `cf-models:${cfAccountId}`,
+                    JSON.stringify({ models, cachedAt: Date.now() }),
+                    { expirationTtl: 86400 }
+                );
+            } catch (e) {
+                return message(form, describeCloudflareError(e), { status: 400 });
+            }
+            const key = await deriveTokenKey(platform.env.NOTION_TOKEN_ENCRYPTION_KEY);
+            cfTokenBlob = await encryptNotionToken(form.data.cloudflareToken, key);
+        }
+
         const existing = await db
             .select()
             .from(schema.userSettings)
@@ -98,10 +171,15 @@ export const actions: Actions = {
             notionSkipValidation: form.data.notionSkipValidation ? 1 : 0,
             notionValidationDelayMs: form.data.notionValidationDelayMs,
             dailyImageQuota: form.data.dailyImageQuota,
-            dedupKeepStrategy: form.data.dedupKeepStrategy
+            dedupKeepStrategy: form.data.dedupKeepStrategy,
+            cloudflareAccountId: cfAccountId || null,
+            cloudflareModel: form.data.cloudflareModel || DEFAULT_VISION_MODEL
         };
         if (tokenBlob) {
             updateData.notionTokenEncrypted = tokenBlob;
+        }
+        if (cfTokenBlob) {
+            updateData.cloudflareTokenEncrypted = cfTokenBlob;
         }
 
         if (existing.length === 0) {

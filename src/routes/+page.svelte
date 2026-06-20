@@ -2,7 +2,7 @@
     import { untrack } from "svelte";
     import { goto } from "$app/navigation";
     import { toast } from "svelte-sonner";
-    import { Sparkles, AlertTriangle } from "@lucide/svelte";
+    import { Sparkles, AlertTriangle, Cloud } from "@lucide/svelte";
     import HeroHeading from "$lib/components/HeroHeading.svelte";
     import UploadDropzone from "$lib/components/UploadDropzone.svelte";
     import Switch from "$lib/components/Switch.svelte";
@@ -21,6 +21,7 @@
     let diagnostics = $state<boolean>(untrack(() => Boolean(data.diagnosticsDefault)));
     let submitting = $state(false);
     const notionConfigured = $derived(Boolean(data.notionConfigured));
+    const cloudflareConnected = $derived(Boolean(data.cloudflareConnected));
 
     // Progress surface for the dropzone while preparing/uploading large folders.
     let phase = $state<"idle" | "preparing" | "creating" | "uploading">("idle");
@@ -44,6 +45,10 @@
     async function submit() {
         if (files.length === 0) {
             toast.error("No files selected");
+            return;
+        }
+        if (!cloudflareConnected) {
+            toast.error("Connect your Cloudflare account in Settings first.");
             return;
         }
         submitting = true;
@@ -105,6 +110,19 @@
 <div class="flex w-full grow flex-col items-center justify-center gap-10 px-4 py-10 sm:gap-14 sm:py-14 lg:gap-20">
     <HeroHeading />
 
+    {#if !cloudflareConnected}
+        <div
+            class="border-brand/40 fade-in flex w-full max-w-md items-start gap-2.5 rounded-lg border px-3.5 py-2.5 text-xs text-pretty"
+            style="background: var(--brand-soft);"
+        >
+            <Cloud size={15} class="text-brand mt-px shrink-0" />
+            <span class="text-zinc-200">
+                Connect your Cloudflare account to run extractions — inference is billed to you, not us.
+                <a href="/settings" class="text-brand font-medium underline-offset-2 hover:underline">Connect now</a>
+            </span>
+        </div>
+    {/if}
+
     {#if !notionConfigured}
         <div
             class="border-tier-med-border bg-tier-med-bg text-tier-med-fg fade-in flex w-full max-w-md items-start gap-2 rounded-lg border px-3 py-2 text-xs text-pretty"
@@ -160,7 +178,7 @@
                                 class="truncate text-right text-[11px] whitespace-nowrap"
                                 style="font-family: var(--font-mono); color: hsl(0 0% 80%);"
                             >
-                                @cf/moonshotai/kimi-k2.6
+                                {data.cloudflareModel}
                             </dd>
                         </div>
                         <div class="flex items-center justify-between gap-3">
@@ -181,7 +199,7 @@
                 variant="brand"
                 size="lg"
                 class="w-full"
-                disabled={files.length === 0 || submitting}
+                disabled={files.length === 0 || submitting || !cloudflareConnected}
                 onclick={submit}
             >
                 {#if submitting}
