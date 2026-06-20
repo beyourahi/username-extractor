@@ -5,6 +5,10 @@
     "main": ".svelte-kit/cloudflare/_worker.js",
     "compatibility_flags": ["nodejs_compat"],
     "compatibility_date": "2025-05-29",
+    // Never expose the public *.workers.dev URL — this worker is served only on its
+    // Cloudflare Access-gated custom domain (username-extractor.dropoutstudio.co).
+    "workers_dev": false,
+    "preview_urls": false,
     "assets": {
         "binding": "ASSETS",
         "directory": ".svelte-kit/cloudflare"
@@ -13,8 +17,7 @@
         "enabled": true
     },
     "vars": {
-        "ACCESS_TEAM_DOMAIN": "beyourahi.cloudflareaccess.com",
-        "ALLOW_DEV_AUTH": "1"
+        "ACCESS_TEAM_DOMAIN": "beyourahi.cloudflareaccess.com"
     },
     "limits": {
         "cpu_ms": 300000

@@ -15,7 +15,7 @@ const config = {
             trustedOrigins: [
                 "http://localhost:5173",
                 "http://localhost:8787",
-                "https://username-extractor.dropoutstudio.com"
+                "https://username-extractor.dropoutstudio.co"
             ]
         }
     }
