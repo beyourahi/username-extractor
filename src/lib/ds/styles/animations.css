@@ -1,0 +1,32 @@
+/**
+ * DROPOUT STUDIO — MOTION
+ * Optional keyframes for component flourishes. Import after tokens:
+ *     @import "@dropout/ds/animations.css";
+ * Used by <Cta dot> (pulse) and the optional CTA sheen. Respects reduced-motion.
+ */
+
+@keyframes ctaPulse {
+	0%,
+	100% {
+		box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.45);
+		opacity: 0.85;
+	}
+	50% {
+		box-shadow: 0 0 0 6px rgba(255, 255, 255, 0);
+		opacity: 1;
+	}
+}
+
+@keyframes ctaSheen {
+	to {
+		transform: translateX(220%) skewX(-18deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	[data-cta-dot],
+	[data-cta-sheen]::before,
+	[data-cta-sheen]::after {
+		animation: none !important;
+	}
+}

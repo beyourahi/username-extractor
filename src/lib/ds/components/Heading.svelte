@@ -1,0 +1,45 @@
+<script lang="ts">
+	import type { Snippet } from "svelte";
+	import { cn } from "../utils";
+
+	type Size = "display" | "title-lg" | "title" | "title-sm" | "subtitle" | "lead";
+
+	/**
+	 * Variable-weight heading. Drives the `opsz` + `wght` axes inline so weight
+	 * can animate. The weight law is encoded: capped at 600 for text; the 700
+	 * tier is reserved for display numerals (opt in with `numeral`).
+	 */
+	let {
+		children,
+		as = "h2",
+		size = "title",
+		weight = 540,
+		opsz = 120,
+		numeral = false,
+		class: className = ""
+	}: {
+		children: Snippet;
+		as?: string;
+		size?: Size;
+		weight?: number;
+		opsz?: number;
+		numeral?: boolean;
+		class?: string;
+	} = $props();
+
+	const sizeClass: Record<Size, string> = {
+		display: "text-display",
+		"title-lg": "text-title-lg",
+		title: "text-title",
+		"title-sm": "text-title-sm",
+		subtitle: "text-subtitle",
+		lead: "text-lead"
+	};
+
+	const safeWeight = $derived(Math.min(weight, numeral ? 700 : 600));
+	const style = $derived(`font-variation-settings: 'opsz' ${opsz}, 'wght' ${safeWeight};`);
+</script>
+
+<svelte:element this={as} class={cn(sizeClass[size], "leading-heading text-foreground", className)} {style}>
+	{@render children()}
+</svelte:element>

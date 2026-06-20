@@ -1,0 +1,287 @@
+/**
+ * DROPOUT STUDIO — DESIGN TOKENS
+ * =============================================================================
+ * The single source of truth for color, type, space, motion, and elevation
+ * across every Dropout product. Import once, after Tailwind:
+ *
+ *     @import "tailwindcss";
+ *     @import "@dropout/ds/tokens.css";
+ *
+ * Architecture — three tiers (the one load-bearing rule):
+ *   1. PRIMITIVES  raw values. The ONLY place literal OKLCH / scales live.
+ *   2. SEMANTIC    role aliases that var() the primitives. Swap per theme.
+ *   3. BRIDGE      @theme inline maps semantics onto Tailwind utilities.
+ *
+ * Components consume ONLY semantic / editorial tokens — never primitives —
+ * so dark mode and client rebrands are a value SWAP, not a component rewrite.
+ *
+ * Canonical theme is DARK (black-led), per the Dropout black-first law.
+ * Extracted and tiered from dropout-studio/src/app.css (2026-06).
+ */
+
+@custom-variant dark (&:is(.dark *));
+
+/* Touch-aware hover: fire only on real pointers, never on touch. Never gate an
+   essential affordance behind these — reveal it on `touch` instead. */
+@custom-variant hover {
+	@media (hover: hover) and (pointer: fine) {
+		&:hover {
+			@slot;
+		}
+	}
+}
+
+@custom-variant group-hover {
+	@media (hover: hover) and (pointer: fine) {
+		&:is(:where(.group):hover *) {
+			@slot;
+		}
+	}
+}
+
+@custom-variant touch (@media (hover: none) and (pointer: coarse));
+
+/* =============================================================================
+   TIER 1 — PRIMITIVES
+   The ink ramp is the monochrome spine: pure-white (0) → pure-black (1000),
+   chroma 0 throughout. Generates utilities (bg-ink-500, text-ink-200, …).
+   The system law is monochrome — reach for ink-* and signal, not red-500.
+   ============================================================================= */
+@theme {
+	--color-ink-0: oklch(1 0 0);
+	--color-ink-50: oklch(0.985 0 0);
+	--color-ink-100: oklch(0.97 0 0);
+	--color-ink-200: oklch(0.922 0 0);
+	--color-ink-300: oklch(0.708 0 0);
+	--color-ink-400: oklch(0.63 0 0);
+	--color-ink-500: oklch(0.556 0 0);
+	--color-ink-600: oklch(0.371 0 0);
+	--color-ink-700: oklch(0.325 0 0);
+	--color-ink-750: oklch(0.275 0 0);
+	--color-ink-800: oklch(0.269 0 0);
+	--color-ink-900: oklch(0.205 0 0);
+	--color-ink-950: oklch(0.145 0 0);
+	--color-ink-1000: oklch(0 0 0);
+
+	/* The lone functional hue — error / destructive states only, used sparingly. */
+	--color-danger: oklch(0.577 0.245 27.325);
+	--color-danger-dark: oklch(0.704 0.191 22.216);
+
+	/* Type scale — fixed rem steps, exposed as text-* utilities. */
+	--text-micro: 0.625rem;
+	--text-caption: 0.75rem;
+	--text-label: 0.875rem;
+	--text-body: 1rem;
+	--text-body-lg: 1.0625rem;
+	--text-lead: 1.125rem;
+	--text-subtitle: 1.5rem;
+	--text-title-sm: 1.875rem;
+	--text-title: 2.25rem;
+	--text-title-lg: 3rem;
+	--text-display: 3.75rem;
+
+	--leading-tight-custom: 1.2;
+	--leading-heading: 1.25;
+	--leading-body: 1.625;
+
+	/* Fonts — Google Sans variable family (Flex sans, Code mono). */
+	--font-sans:
+		"Google Sans Flex", "Google Sans Flex Fallback", system-ui, -apple-system, "Segoe UI", Roboto,
+		sans-serif;
+	--font-mono: "Google Sans Code", ui-monospace, "SF Mono", Consolas, "Courier New", monospace;
+
+	/* Motion — one shared editorial easing. */
+	--ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+	/* Weight axis: body + headings cap at 600; 700 is reserved for display
+	   numerals only. This thin value drives variable-font `wght` animation. */
+	--wght-thin: 300;
+}
+
+/* =============================================================================
+   TIER 2 — SEMANTIC
+   :root = light theme.  .dark = the canonical Dropout theme (black-led).
+   Every value is an alias of a Tier-1 primitive — no literals below.
+   ============================================================================= */
+:root {
+	--background: var(--color-ink-0);
+	--foreground: var(--color-ink-950);
+	--card: var(--color-ink-0);
+	--card-foreground: var(--color-ink-950);
+	--primary: var(--color-ink-900);
+	--primary-foreground: var(--color-ink-50);
+	--secondary: var(--color-ink-100);
+	--secondary-foreground: var(--color-ink-900);
+	--muted: var(--color-ink-100);
+	--muted-foreground: var(--color-ink-500);
+	--accent: var(--color-ink-100);
+	--accent-foreground: var(--color-ink-900);
+	--destructive: var(--color-danger);
+	--destructive-foreground: var(--color-ink-0);
+	--border: var(--color-ink-200);
+	--input: var(--color-ink-200);
+	--ring: var(--color-ink-300);
+
+	/* Editorial layer — the Dropout signature. signal is the single deliberate
+	   non-ink accent slot (see the law before changing it). hair = the hairline
+	   border. These swap with theme so the editorial look holds in light + dark. */
+	--signal: var(--color-ink-1000);
+	--ink-muted: var(--color-ink-500);
+	--ink-2: var(--color-ink-100);
+	--hair: oklch(0 0 0 / 0.1);
+	--hair-soft: oklch(0 0 0 / 0.06);
+
+	/* Structural shell — page gutter, max width, nav band. Use as
+	   px-[var(--shell-x)], max-w-[var(--maxw)], etc. Grows at ultra-wide. */
+	--pad: clamp(18px, 6vw, 120px);
+	--maxw: 1560px;
+	--shell-x: max(var(--pad), calc((100% - var(--maxw)) / 2));
+	--nav-h: 74px;
+	--nav-safe: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
+
+	--radius: 1rem;
+
+	--shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+	--shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+	--shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+	--shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
+	--shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
+	--shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
+	--shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+}
+
+/* Canonical Dropout theme. Editorial tokens here EXACTLY match the live site
+   (white signal, white hairlines on black surfaces). */
+.dark {
+	--background: var(--color-ink-950);
+	--foreground: var(--color-ink-50);
+	--card: var(--color-ink-900);
+	--card-foreground: var(--color-ink-50);
+	--primary: var(--color-ink-200);
+	--primary-foreground: var(--color-ink-900);
+	--secondary: var(--color-ink-800);
+	--secondary-foreground: var(--color-ink-50);
+	--muted: var(--color-ink-800);
+	--muted-foreground: var(--color-ink-300);
+	--accent: var(--color-ink-600);
+	--accent-foreground: var(--color-ink-50);
+	--destructive: var(--color-danger-dark);
+	--destructive-foreground: var(--color-ink-50);
+	--border: var(--color-ink-750);
+	--input: var(--color-ink-700);
+	--ring: var(--color-ink-500);
+
+	--signal: var(--color-ink-0);
+	--ink-muted: var(--color-ink-400);
+	--ink-2: var(--color-ink-900);
+	--hair: oklch(1 0 0 / 0.1);
+	--hair-soft: oklch(1 0 0 / 0.055);
+}
+
+/* Ultra-wide shell growth — structural only, theme-agnostic. */
+@media (max-width: 639.98px) {
+	:root {
+		--pad: clamp(12px, 3.3vw, 18px);
+	}
+}
+@media (min-width: 1920px) {
+	:root {
+		--maxw: 1660px;
+	}
+}
+@media (min-width: 2560px) {
+	:root {
+		--maxw: 1960px;
+		--pad: clamp(18px, 6vw, 160px);
+	}
+}
+@media (min-width: 3840px) {
+	:root {
+		--maxw: 2560px;
+		--pad: clamp(18px, 6vw, 220px);
+	}
+}
+
+/* =============================================================================
+   TIER 3 — BRIDGE
+   Map semantic + editorial tokens onto Tailwind's utility namespaces so
+   bg-background, text-foreground, border-hair, shadow-lg, rounded-xl all work.
+   ============================================================================= */
+@theme inline {
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-destructive: var(--destructive);
+	--color-destructive-foreground: var(--destructive-foreground);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+
+	--color-signal: var(--signal);
+	--color-ink-muted: var(--ink-muted);
+	--color-ink-2: var(--ink-2);
+	--color-hair: var(--hair);
+	--color-hair-soft: var(--hair-soft);
+
+	--radius-sm: calc(var(--radius) - 4px);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) + 4px);
+
+	--shadow-xs: var(--shadow-xs);
+	--shadow-sm: var(--shadow-sm);
+	--shadow: var(--shadow);
+	--shadow-md: var(--shadow-md);
+	--shadow-lg: var(--shadow-lg);
+	--shadow-xl: var(--shadow-xl);
+	--shadow-2xl: var(--shadow-2xl);
+}
+
+/* =============================================================================
+   BASE LAYER — foundational behavior every Dropout surface inherits.
+   Type smoothing, optical sizing, touch-aware cursors, and the focus ring.
+   ============================================================================= */
+@layer base {
+	html {
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+		text-rendering: optimizeLegibility;
+		font-optical-sizing: auto;
+	}
+
+	* {
+		outline: none;
+	}
+
+	:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	button:not(:disabled),
+	[type="button"]:not(:disabled),
+	[type="submit"]:not(:disabled),
+	[role="button"]:not([aria-disabled="true"]),
+	a[href],
+	label[for],
+	summary,
+	select:not(:disabled) {
+		cursor: pointer;
+	}
+
+	/* Touch devices: never show a text/pointer cursor mismatch. */
+	@media (hover: none) and (pointer: coarse) {
+		* {
+			cursor: auto !important;
+		}
+	}
+}
