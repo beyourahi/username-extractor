@@ -85,8 +85,8 @@
 <div class="flex flex-col gap-3">
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
         {#each tiles as tile (tile.label)}
-            <div class="border-border bg-card rounded-lg border p-3">
-                <p class="text-muted-fg text-[10px] font-medium tracking-[0.14em] whitespace-nowrap uppercase">
+            <div class="border-hair bg-card rounded-[var(--radius)] border p-3">
+                <p class="text-ink-muted text-micro font-mono tracking-[0.14em] whitespace-nowrap uppercase">
                     {tile.label}
                 </p>
                 <p
@@ -98,7 +98,7 @@
                     {tile.value}
                 </p>
                 {#if tile.showProgress}
-                    <div class="bg-secondary mt-2 h-1 w-full overflow-hidden rounded-full">
+                    <div class="bg-ink-2 mt-2 h-1 w-full overflow-hidden rounded-full">
                         <div
                             class="h-full transition-all duration-500"
                             style="width: {pct}%; background: var(--brand);"
@@ -111,19 +111,19 @@
 
     {#if dedup}
         <div
-            class="border-border bg-card text-muted-fg flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border px-3 py-2 font-mono text-xs"
+            class="border-hair bg-card text-ink-muted flex flex-wrap items-center gap-x-4 gap-y-1 rounded-[var(--radius)] border px-3 py-2 font-mono text-xs"
         >
-            <span class="text-zinc-300">Dedup ▸</span>
-            <span>groups <span class="text-zinc-200 tabular-nums">{dedup.duplicate_groups ?? 0}</span></span>
-            <span>found <span class="text-zinc-200 tabular-nums">{dedup.duplicates_found ?? 0}</span></span>
-            <span>removed <span class="text-zinc-200 tabular-nums">{dedup.duplicates_removed ?? 0}</span></span>
+            <span class="text-foreground">Dedup ▸</span>
+            <span>groups <span class="text-foreground tabular-nums">{dedup.duplicate_groups ?? 0}</span></span>
+            <span>found <span class="text-foreground tabular-nums">{dedup.duplicates_found ?? 0}</span></span>
+            <span>removed <span class="text-foreground tabular-nums">{dedup.duplicates_removed ?? 0}</span></span>
             {#if dedup.errors}
                 <span class="text-tier-failed-fg">errors <span class="tabular-nums">{dedup.errors}</span></span>
             {/if}
         </div>
     {/if}
     {#if running}
-        <p class="text-muted-fg text-center text-[11px]">
+        <p class="text-ink-muted text-center text-[11px]">
             Live updates via WebSocket · results stream in as they're processed.
         </p>
     {/if}

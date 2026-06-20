@@ -9,7 +9,7 @@
     import Button from "$lib/components/Button.svelte";
     import Eyebrow from "$lib/components/Eyebrow.svelte";
     import { createJobStream } from "$lib/client/job-stream.svelte";
-    import { cn } from "$lib/utils/cn";
+    import { Heading, cn, pillBase } from "$lib/ds";
     import type { JobItem } from "$lib/server/schema";
     import type { ItemStatus, Tier, NotionStatus } from "$lib/types/messages";
 
@@ -131,45 +131,45 @@
 
 <main class="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pt-8 pb-8 sm:px-6 sm:pt-10 lg:gap-8">
     <div class="flex items-center gap-1.5 text-xs">
-        <a href="/jobs" class="sleek text-zinc-500 hover:text-zinc-200">Jobs</a>
-        <ChevronRight size={11} class="text-zinc-700" />
-        <span class="text-muted-fg font-mono">{job.id}</span>
+        <a href="/jobs" class="sleek text-ink-muted hover:text-foreground">Jobs</a>
+        <ChevronRight size={11} class="text-ink-muted" />
+        <span class="text-ink-muted font-mono">{job.id}</span>
     </div>
 
     <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
             <div class="flex flex-wrap items-center gap-2.5">
-                <h1 class="text-2xl font-black tracking-tight sm:text-3xl" style="letter-spacing: -0.02em;">
+                <Heading as="h1" size="title">
                     {#if isLive}Extracting…{:else if job.status === "completed"}Extraction complete{:else if job.status === "cancelled"}Cancelled{:else if job.status === "failed"}Failed{:else}Job{/if}
-                </h1>
+                </Heading>
                 {#if isLive}
                     <span
-                        class="border-brand-border bg-brand-soft text-brand inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px]"
+                        class="border-brand-border bg-brand-soft text-brand inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[11px] tracking-[0.1em] uppercase"
                     >
                         <span class="status-dot-pulse bg-brand h-1.5 w-1.5 rounded-full"></span>
                         LIVE
                     </span>
                 {:else if job.status === "completed"}
                     <span
-                        class="border-status-active-border bg-status-active-bg text-status-active-fg inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px]"
+                        class="border-status-active-border bg-status-active-bg text-status-active-fg inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[11px] tracking-[0.1em] uppercase"
                     >
                         <Check size={9} /> COMPLETED
                     </span>
                 {:else if job.status === "cancelled"}
                     <span
-                        class="border-status-inactive-border bg-status-inactive-bg text-status-inactive-fg inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px]"
+                        class="border-status-inactive-border bg-status-inactive-bg text-status-inactive-fg inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[11px] tracking-[0.1em] uppercase"
                     >
                         <X size={9} /> CANCELLED
                     </span>
                 {:else if job.status === "failed"}
                     <span
-                        class="border-tier-failed-border bg-tier-failed-bg text-tier-failed-fg inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px]"
+                        class="border-tier-failed-border bg-tier-failed-bg text-tier-failed-fg inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[11px] tracking-[0.1em] uppercase"
                     >
                         <X size={9} /> FAILED
                     </span>
                 {/if}
             </div>
-            <p class="text-muted-fg mt-1 text-xs">
+            <p class="text-ink-muted mt-1 text-xs">
                 <span class="font-mono">{job.id}</span> · {job.imageCount} images ·
                 <span class="font-mono">{job.vlmModel}</span>{#if job.diagnostics}
                     · diagnostics{/if}{#if elapsed}
@@ -217,7 +217,8 @@
                     type="button"
                     onclick={() => (filter = chip.id)}
                     class={cn(
-                        "sleek inline-flex h-7 shrink-0 items-center rounded-full border px-2.5 text-[11px] font-medium whitespace-nowrap"
+                        pillBase,
+                        "sleek inline-flex h-7 shrink-0 items-center px-3 py-0 leading-none whitespace-nowrap"
                     )}
                     style={active
                         ? chip.tone === "brand"
@@ -235,15 +236,15 @@
         </div>
     </div>
 
-    <div class="border-border bg-card overflow-hidden rounded-lg border">
-        <div class="border-border text-muted-fg border-b px-4 py-2.5 text-[10px] tracking-[0.12em] uppercase">
+    <div class="border-hair bg-card overflow-hidden rounded-[var(--radius)] border">
+        <div class="border-hair text-ink-muted text-micro border-b px-4 py-2.5 font-mono tracking-[0.14em] uppercase">
             Items
         </div>
         {#if filtered.length === 0}
             {#if isLive}
-                <div class="text-muted-fg px-4 py-8 text-center text-xs">Awaiting first item…</div>
+                <div class="text-ink-muted px-4 py-8 text-center text-xs">Awaiting first item…</div>
             {:else}
-                <div class="text-muted-fg px-4 py-8 text-center text-xs">No items match this filter.</div>
+                <div class="text-ink-muted px-4 py-8 text-center text-xs">No items match this filter.</div>
             {/if}
         {:else}
             <div class="space-y-2 p-3">
@@ -272,28 +273,25 @@
 
                 {#if isLive}
                     <div
-                        class="border-brand-border bg-brand-soft fade-in flex items-center gap-3 rounded-lg border-2 border-dashed p-3"
+                        class="border-brand-border bg-brand-soft fade-in flex items-center gap-3 rounded-[var(--radius)] border-2 border-dashed p-3"
                     >
-                        <div
-                            class="scan-line relative overflow-hidden rounded-md"
-                            style="width: 48px; height: 48px; background: hsl(160 30% 15%);"
-                        >
-                            <div class="absolute inset-1.5 rounded-sm" style="background: hsl(160 30% 20%);"></div>
+                        <div class="scan-line bg-brand/15 relative h-12 w-12 overflow-hidden rounded-md">
+                            <div class="bg-brand/20 absolute inset-1.5 rounded-sm"></div>
                         </div>
                         <div class="flex-1">
                             <p class="text-brand font-mono text-[11px] font-medium tracking-wider uppercase">
                                 Now processing
                             </p>
-                            <p class="font-mono text-sm text-zinc-200">
+                            <p class="text-foreground font-mono text-sm">
                                 {stream?.state.items ? "Streaming…" : "Awaiting…"}
                             </p>
-                            <p class="text-muted-fg text-xs">
+                            <p class="text-ink-muted text-xs">
                                 Sending to <span class="font-mono">{job.vlmModel}</span>
                             </p>
                         </div>
                         <div
-                            class="spin h-4 w-4 rounded-full"
-                            style="border: 2px solid hsl(0 0% 100% / 0.10); border-top-color: var(--brand);"
+                            class="spin border-hair h-4 w-4 rounded-full border-2"
+                            style="border-top-color: var(--brand);"
                         ></div>
                     </div>
                 {/if}

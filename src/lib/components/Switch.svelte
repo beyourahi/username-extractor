@@ -29,8 +29,9 @@
     aria-disabled={disabled || undefined}
     {id}
     onclick={toggle}
-    class="status-transition inline-flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 disabled:opacity-50"
-    style="background: {checked ? 'var(--brand)' : 'var(--secondary)'};"
+    class="status-transition inline-flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 disabled:opacity-50 {checked
+        ? 'bg-brand'
+        : 'bg-ink-2'}"
     {disabled}
 >
     <span

@@ -53,37 +53,37 @@
 
 <Dialog.Root {open} onOpenChange={handleOpenChange}>
     <Dialog.Portal>
-        <Dialog.Overlay
-            class="fade-in fixed inset-0 z-50"
-            style="background: hsl(0 0% 0% / 0.6); backdrop-filter: blur(6px);"
-        />
+        <Dialog.Overlay class="fade-in bg-background/60 fixed inset-0 z-50" style="backdrop-filter: blur(6px);" />
         <Dialog.Content
-            class="border-border-strong bg-card slide-in fixed top-1/2 left-1/2 z-50 flex max-h-[80vh] w-[min(90vw,800px)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl border shadow-2xl"
-            style="box-shadow: 0 20px 60px hsl(0 0% 0% / 0.6);"
+            class="border-hair bg-card slide-in fixed top-1/2 left-1/2 z-50 flex max-h-[80vh] w-[min(90vw,800px)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-[var(--radius)] border shadow-xl"
         >
-            <div class="border-border flex items-start justify-between gap-3 border-b p-5">
+            <div class="border-hair flex items-start justify-between gap-3 border-b p-5">
                 <div class="min-w-0">
                     <Dialog.Title class="text-sm font-semibold tracking-tight">Raw model response</Dialog.Title>
-                    <p class="text-muted-fg mt-1 truncate font-mono text-xs">{stem}</p>
+                    <p class="text-ink-muted mt-1 truncate font-mono text-xs">{stem}</p>
                 </div>
                 <div class="flex items-center gap-1.5">
                     <Button variant="ghost" size="sm" onclick={copy} disabled={!raw}>
                         <Copy size={12} /> Copy
                     </Button>
-                    <Dialog.Close class="sleek -m-1 rounded p-1 text-zinc-400 hover:text-white" aria-label="Close">
+                    <Dialog.Close
+                        class="sleek text-ink-muted hover:text-foreground -m-1 rounded p-1"
+                        aria-label="Close"
+                    >
                         <X size={16} />
                     </Dialog.Close>
                 </div>
             </div>
             <div class="overflow-auto p-5">
                 {#if loading}
-                    <p class="text-muted-fg text-xs">Loading…</p>
+                    <p class="text-ink-muted text-xs">Loading…</p>
                 {:else if error}
                     <p class="text-tier-failed-fg text-xs text-pretty">Error: {error}</p>
                 {:else if raw}
-                    <pre class="text-xs leading-relaxed break-words whitespace-pre-wrap text-zinc-200">{raw}</pre>
+                    <pre
+                        class="border-hair bg-ink-2 text-foreground text-caption rounded-lg border p-4 leading-relaxed break-words whitespace-pre-wrap">{raw}</pre>
                 {:else}
-                    <p class="text-muted-fg text-xs">No data.</p>
+                    <p class="text-ink-muted text-xs">No data.</p>
                 {/if}
             </div>
         </Dialog.Content>

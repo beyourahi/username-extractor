@@ -8,10 +8,10 @@
     } = $props();
 
     const dims = $derived({ sm: 14, md: 22, lg: 32 }[size]);
-    const borderTop = $derived(color === "brand" ? "var(--brand)" : color === "white" ? "white" : color);
+    const borderTop = $derived(color === "brand" ? "var(--brand)" : color === "white" ? "currentColor" : color);
 </script>
 
 <span
-    class="spin inline-block rounded-full"
-    style="width: {dims}px; height: {dims}px; border: 2px solid hsl(0 0% 100% / 0.10); border-top-color: {borderTop};"
+    class="spin text-ink-muted inline-block rounded-full"
+    style="width: {dims}px; height: {dims}px; border: 2px solid var(--hair); border-top-color: {borderTop};"
 ></span>

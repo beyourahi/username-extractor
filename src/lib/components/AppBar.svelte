@@ -38,18 +38,17 @@
     }
 </script>
 
-<header
-    class="border-border sticky top-0 z-40 w-full border-b backdrop-blur-md"
-    style="background: hsl(0 0% 5.9% / 0.78);"
->
+<header class="border-hair bg-background/80 sticky top-0 z-40 w-full border-b backdrop-blur-md">
     <div class="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:px-6">
         <a
             href="/"
-            class="sleek flex shrink-0 items-center gap-2 rounded-md px-1.5 py-1 hover:opacity-80"
+            class="sleek flex shrink-0 items-center gap-2 rounded-lg px-1.5 py-1 hover:opacity-80"
             aria-label="Username Extractor home"
         >
             <Search size={16} class="text-brand" />
-            <span class="text-sm font-black tracking-tight whitespace-nowrap text-white">Username Extractor</span>
+            <span class="text-foreground text-sm font-semibold tracking-tight whitespace-nowrap"
+                >Username Extractor</span
+            >
         </a>
 
         <nav class="ml-2 hidden items-center gap-1 md:flex" aria-label="Primary">
@@ -59,10 +58,9 @@
                 <a
                     href={item.href}
                     class={cn(
-                        "sleek inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium",
-                        Active ? "text-white" : "text-zinc-400 hover:text-white"
+                        "sleek inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium",
+                        Active ? "bg-ink-2 text-foreground" : "text-ink-muted hover:text-foreground"
                     )}
-                    style={Active ? "background: var(--secondary);" : undefined}
                     aria-current={Active ? "page" : undefined}
                 >
                     <Ic size={13} />
@@ -77,7 +75,7 @@
                     <button
                         type="button"
                         onclick={() => (mobileOpen = !mobileOpen)}
-                        class="sleek border-border-strong bg-card flex h-9 w-9 items-center justify-center rounded-full border"
+                        class="sleek border-hair bg-card text-ink-muted hover:border-signal hover:text-foreground flex h-9 w-9 items-center justify-center rounded-full border"
                         aria-label="Open navigation"
                         aria-expanded={mobileOpen}
                     >
@@ -91,7 +89,7 @@
                             onclick={() => (mobileOpen = false)}
                         ></button>
                         <div
-                            class="border-border-strong bg-card fade-in absolute top-11 right-0 z-40 w-44 rounded-lg border p-1 shadow-xl"
+                            class="fade-in border-hair bg-card absolute top-11 right-0 z-40 w-44 rounded-[var(--radius)] border p-1 shadow-lg"
                         >
                             {#each items as item (item.id)}
                                 {@const Active = isActive(item.href)}
@@ -100,10 +98,11 @@
                                     href={item.href}
                                     onclick={() => (mobileOpen = false)}
                                     class={cn(
-                                        "flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm",
-                                        Active ? "text-white" : "text-zinc-300 hover:text-white"
+                                        "flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm",
+                                        Active
+                                            ? "bg-ink-2 text-foreground"
+                                            : "text-ink-muted hover:bg-ink-2 hover:text-foreground"
                                     )}
-                                    style={Active ? "background: var(--secondary);" : undefined}
                                 >
                                     <Ic size={14} />
                                     {item.label}

@@ -138,12 +138,17 @@
         ondragleave={onDragLeave}
         ondrop={onDrop}
         class={cn(
-            "flex w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all duration-200",
+            "flex w-full flex-col items-center justify-center rounded-[var(--radius)] border-2 border-dashed transition-all duration-200 ease-[var(--ease)]",
             "h-56 sm:h-72 lg:h-80",
-            error ? "border-[hsl(0_62%_50%/0.55)]" : dragOver ? "border-brand-border" : "border-border-strong",
+            error
+                ? "border-destructive/55 bg-card/30"
+                : dragOver
+                  ? "border-brand-border bg-brand-soft"
+                  : files.length
+                    ? "border-hair bg-card"
+                    : "border-hair bg-card/30",
             (disabled || processing) && "cursor-not-allowed opacity-60"
         )}
-        style="background: {dragOver ? 'hsl(160 84% 39% / 0.05)' : files.length ? 'var(--card)' : 'transparent'};"
         aria-disabled={disabled || processing}
     >
         <input
@@ -176,40 +181,40 @@
         {:else if processing}
             <div class="flex flex-col items-center gap-4">
                 <Spinner size="lg" color="brand" />
-                <p class="text-muted-fg text-sm tabular-nums">{progressLabel}</p>
+                <p class="text-ink-muted text-sm tabular-nums">{progressLabel}</p>
             </div>
         {:else if files.length > 0}
             <div class="flex flex-col items-center gap-4 px-4 text-center">
                 <div
-                    class="border-brand-border bg-brand-soft inline-flex items-center gap-2 rounded-full border px-3 py-1.5"
+                    class="border-brand-border bg-brand-soft text-status-active-fg inline-flex items-center gap-2 rounded-full border px-3 py-1.5"
                 >
-                    <Check size={12} class="text-brand" />
-                    <span class="text-brand font-mono text-xs font-medium">
+                    <Check size={12} class="text-status-active-fg" />
+                    <span class="font-mono text-xs font-medium">
                         {files.length} image{files.length !== 1 ? "s" : ""} ready
                     </span>
                 </div>
-                <p class="text-sm text-zinc-300">
-                    Drop more, or hit <span class="font-semibold text-white">Run extraction</span>
+                <p class="text-ink-muted text-sm">
+                    Drop more, or hit <span class="text-foreground font-semibold">Run extraction</span>
                 </p>
                 <button
                     type="button"
                     onclick={openFolderPicker}
-                    class="sleek text-muted-fg inline-flex items-center gap-1.5 text-xs hover:text-zinc-300"
+                    class="sleek text-ink-muted hover:text-foreground inline-flex items-center gap-1.5 text-xs"
                 >
                     <FolderOpen size={12} /> Add a folder
                 </button>
             </div>
         {:else}
             <div class="flex flex-col items-center gap-4 px-4 sm:gap-6">
-                <ImageIcon size={40} class="text-zinc-500" strokeWidth={1.5} />
+                <ImageIcon size={40} class="text-ink-muted" strokeWidth={1.5} />
                 <div class="flex flex-col items-center gap-1.5 text-center">
-                    <p class="text-base font-medium text-zinc-300 sm:text-lg">Drop screenshots or a whole folder</p>
-                    <p class="text-muted-fg text-xs sm:text-sm">click to browse files · PNG · JPG · WebP · AVIF</p>
+                    <p class="text-foreground text-base font-medium sm:text-lg">Drop screenshots or a whole folder</p>
+                    <p class="text-ink-muted text-xs sm:text-sm">click to browse files · PNG · JPG · WebP · AVIF</p>
                 </div>
                 <button
                     type="button"
                     onclick={openFolderPicker}
-                    class="sleek border-border-strong text-muted-fg inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs hover:text-zinc-200"
+                    class="sleek border-hair text-ink-muted hover:border-signal hover:text-foreground inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs"
                 >
                     <FolderOpen size={13} /> Select a folder
                 </button>
@@ -218,14 +223,14 @@
     </div>
 
     {#if files.length > 0 && !processing}
-        <div class="border-border bg-card fade-in rounded-lg border p-3">
+        <div class="border-hair bg-card fade-in rounded-[var(--radius)] border p-4 sm:p-5">
             <Eyebrow icon={ImageIcon}>
                 {files.length} queued · {totalMb} MB
                 {#snippet right()}
                     <button
                         type="button"
                         onclick={clearFiles}
-                        class="sleek text-[11px] text-zinc-500 hover:text-zinc-300"
+                        class="sleek text-ink-muted hover:text-foreground text-[11px]"
                     >
                         Clear
                     </button>
@@ -234,7 +239,7 @@
             <div class="mt-2.5 grid max-h-32 grid-cols-2 gap-1.5 overflow-auto sm:grid-cols-3">
                 {#each files.slice(0, 9) as f, idx (f.name + idx)}
                     <div
-                        class="border-border text-muted-fg flex items-center gap-1.5 truncate rounded border px-2 py-1 font-mono text-[11px]"
+                        class="border-hair text-ink-muted flex items-center gap-1.5 truncate rounded-lg border px-2 py-1 font-mono text-[11px]"
                     >
                         <ImageIcon size={10} />
                         <span class="truncate">{f.name}</span>
@@ -242,7 +247,7 @@
                 {/each}
                 {#if files.length > 9}
                     <div
-                        class="border-border text-muted-fg flex items-center justify-center rounded border px-2 py-1 text-[11px]"
+                        class="border-hair text-ink-muted flex items-center justify-center rounded-lg border px-2 py-1 text-[11px]"
                     >
                         +{files.length - 9} more
                     </div>

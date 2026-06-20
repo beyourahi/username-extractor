@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { cn } from "$lib/utils/cn";
+    import { cn, inputBase } from "$lib/ds";
 
     type AutoComplete = HTMLInputElement["autocomplete"];
 
@@ -58,19 +58,10 @@
     {onchange}
     {onkeydown}
     class={cn(
-        "status-transition w-full rounded-lg border px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-500 focus:ring-2 focus:outline-none disabled:opacity-50",
+        inputBase,
+        "disabled:opacity-50",
+        error && "border-tier-failed-border focus:border-tier-failed-border focus-visible:outline-tier-failed",
         className
     )}
-    style="background: var(--card); border-color: {error ? 'hsl(0 70% 60% / 0.55)' : 'var(--border-strong)'};"
-    onfocus={(e) => {
-        const t = e.currentTarget;
-        t.style.borderColor = "var(--brand)";
-        t.style.boxShadow = "0 0 0 3px var(--brand-soft)";
-    }}
-    onblur={(e) => {
-        const t = e.currentTarget;
-        t.style.borderColor = error ? "hsl(0 70% 60% / 0.55)" : "var(--border-strong)";
-        t.style.boxShadow = "none";
-    }}
     {...rest}
 />

@@ -55,27 +55,26 @@
 
 <div
     class={cn(
-        "status-transition group hover:border-border-strong relative flex items-center gap-3 rounded-lg border p-3",
+        "status-transition sleek group border-hair bg-card hover:bg-ink-2/40 relative flex items-center gap-3 rounded-[var(--radius)] border p-3",
         appearAnimated && "slide-in"
     )}
-    style="background: var(--card); border-color: var(--border);"
 >
     {#if accentColor !== "transparent"}
         <span class="absolute top-2 bottom-2 left-0 w-[3px] rounded-full" style="background: {accentColor};"></span>
     {/if}
 
     {#if index !== undefined}
-        <span class="text-muted-fg w-6 shrink-0 font-mono text-[10px] tabular-nums">
+        <span class="text-ink-muted w-6 shrink-0 font-mono text-[10px] tabular-nums">
             {String(index + 1).padStart(2, "0")}
         </span>
     {/if}
 
     <div
-        class="border-border bg-secondary flex h-12 w-12 shrink-0 items-center justify-center rounded-md border"
+        class="border-hair bg-ink-2 flex h-12 w-12 shrink-0 items-center justify-center rounded-md border"
         title={item.filename}
         aria-hidden="true"
     >
-        <FileText size={16} class="text-zinc-500" />
+        <FileText size={16} class="text-ink-muted" />
     </div>
 
     <div class="min-w-0 flex-1">
@@ -85,12 +84,12 @@
                     href={`https://instagram.com/${item.username}`}
                     target="_blank"
                     rel="noreferrer"
-                    class="truncate font-mono text-sm font-semibold text-zinc-100 hover:underline"
+                    class="text-foreground truncate font-mono text-sm font-semibold hover:underline"
                 >
                     @{item.username}
                 </a>
             {:else}
-                <p class="text-muted-fg text-sm italic">— no handle —</p>
+                <p class="text-ink-muted text-sm italic">— no handle —</p>
             {/if}
 
             {#if item.tier}
@@ -101,19 +100,19 @@
 
             {#if item.isDuplicate}
                 <span
-                    class="border-border-strong text-muted-fg rounded-full border px-1.5 py-[1px] font-mono text-[10px]"
+                    class="border-hair text-ink-muted rounded-full border px-1.5 py-[1px] font-mono text-[10px] uppercase"
                 >
                     duplicate
                 </span>
             {:else if item.isNearDuplicate}
                 <span
-                    class="border-tier-med-border text-tier-med-fg rounded-full border px-1.5 py-[1px] font-mono text-[10px]"
+                    class="border-tier-med-border text-tier-med-fg rounded-full border px-1.5 py-[1px] font-mono text-[10px] uppercase"
                 >
                     near · ed{item.editDistance ?? "?"}
                 </span>
             {/if}
         </div>
-        <p class="text-muted-fg mt-0.5 truncate text-[11px]">
+        <p class="text-ink-muted mt-0.5 truncate text-[11px]">
             <span class="font-mono">{item.filename}</span>
             {#if item.confidence !== null && item.confidence !== undefined && item.confidence > 0}
                 · <span class="font-mono tabular-nums">{item.confidence.toFixed(0)}%</span> confidence

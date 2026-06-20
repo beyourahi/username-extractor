@@ -1,88 +1,106 @@
+/**
+ * Global stylesheet — Tailwind v4 CSS-first (no tailwind.config.js).
+ *
+ * Color / type / space / motion-ease tokens come from the vendored Dropout
+ * Design System (`src/lib/ds`) — the single source of visual truth, shared with
+ * the sibling tools (day-zero, invoice-generator, order-processor). DS tokens.css
+ * supplies the ink ramp, semantic aliases, the editorial layer (signal / ink-muted
+ * / hair), the type scale, the Google Sans fonts, radius, shadows, --ease, the
+ * shell vars, the @custom-variant set, and the base layer. DS is VENDORED at
+ * src/lib/ds (run `bun run sync-ds` / `dropout-ds-sync` to refresh). Tailwind v4
+ * auto-scans src/, so DS utilities (bg-signal, border-hair, …) are generated with
+ * no `@source` needed.
+ *
+ * This file keeps ONLY what the DS doesn't cover: the tool-specific token layer —
+ * the mint-emerald `--brand` accent and the FUNCTIONAL color-coding (job status,
+ * lead tiers, Notion status) — all re-expressed in OKLCH so they sit naturally on
+ * the monochrome DS base (mirrors how order-processor layers its courier green).
+ * Plus the bespoke keyframe utilities the components depend on (scan / shimmer /
+ * spin / status-pulse / slide-in / fade-in). App is DARK-ONLY (app.html hardcodes
+ * <html class="dark">) — the DS canonical theme.
+ */
 @import "tailwindcss";
+@import "./lib/ds/styles/tokens.css";
+@import "./lib/ds/styles/animations.css";
 @import "tw-animate-css";
 
-@source "./lib/**/*.{js,ts,svelte}";
-@source "./routes/**/*.{js,ts,svelte}";
+/* Google Sans Flex needs a metric-matched fallback to avoid a CLS flash while the
+   variable font loads (the DS --font-sans names "Google Sans Flex Fallback"). */
+@font-face {
+    font-family: "Google Sans Flex Fallback";
+    src: local("Arial");
+    size-adjust: 98%;
+    ascent-override: 95%;
+    descent-override: 25%;
+    line-gap-override: 0%;
+}
 
-/* Design tokens: dark-only HSL surface scale, mint-emerald brand, status/tier semantics. */
+/* =============================================================================
+   TOOL-EXTRAS — tokens the DS doesn't define, expressed in OKLCH so they live on
+   the monochrome DS base. The brand mint is the ONE tool accent (the signal slot
+   stays the DS white-led signal); the status/tier/notion colors are FUNCTIONAL —
+   they encode meaning (job state, lead tier, sync state) and are preserved, not
+   flattened. Same token + utility names the markup already uses — only the values
+   moved from HSL to OKLCH. App is dark-only, so single values suffice.
+   ============================================================================= */
 :root {
-    --background: hsl(0 0% 5.9%);
-    --foreground: hsl(0 0% 98%);
-    --card: hsl(240 5.9% 10%);
-    --card-foreground: hsl(0 0% 98%);
-    --popover: hsl(240 5.9% 10%);
-    --popover-foreground: hsl(0 0% 98%);
-    --primary: hsl(0 0% 98%);
-    --primary-foreground: hsl(240 5.9% 10%);
-    --secondary: hsl(240 3.7% 15.9%);
-    --secondary-foreground: hsl(0 0% 98%);
-    --muted: hsl(240 3.7% 15.9%);
-    --muted-foreground: hsl(240 5% 64.9%);
-    --accent: hsl(240 3.7% 15.9%);
-    --accent-foreground: hsl(0 0% 98%);
-    --destructive: hsl(0 62.8% 50%);
-    --destructive-foreground: hsl(0 0% 98%);
-    --border: hsl(240 3.7% 15.9%);
-    --border-strong: hsl(240 4% 26%);
-    --input: hsl(240 3.7% 15.9%);
-    --ring: hsl(240 4.9% 83.9%);
+    /* shadcn popover surface → DS card; a touch stronger hairline → ink-600 */
+    --popover: var(--card);
+    --popover-foreground: var(--card-foreground);
+    --border-strong: var(--color-ink-600);
 
-    --brand: hsl(160 84% 39%);
-    --brand-foreground: hsl(0 0% 98%);
-    --brand-soft: hsl(160 84% 39% / 0.12);
-    --brand-border: hsl(160 84% 39% / 0.35);
+    /* THE single tool accent — mint-emerald (was hsl(160 84% 39%)) */
+    --brand: oklch(0.696 0.149 162.5);
+    --brand-foreground: var(--color-ink-50);
+    --brand-soft: oklch(0.696 0.149 162.5 / 0.12);
+    --brand-border: oklch(0.696 0.149 162.5 / 0.35);
 
-    --status-active: hsl(150 42% 56%);
-    --status-active-foreground: hsl(150 48% 76%);
-    --status-active-bg: hsl(150 42% 56% / 0.1);
-    --status-active-border: hsl(150 42% 56% / 0.32);
-    --status-inactive: hsl(8 44% 60%);
-    --status-inactive-foreground: hsl(8 50% 78%);
-    --status-inactive-bg: hsl(8 44% 60% / 0.09);
-    --status-inactive-border: hsl(8 44% 60% / 0.28);
+    /* job/run status — active mint-green, inactive warm-red (was hsl 150 / 8) */
+    --status-active: oklch(0.745 0.111 158);
+    --status-active-foreground: oklch(0.84 0.094 158);
+    --status-active-bg: oklch(0.745 0.111 158 / 0.1);
+    --status-active-border: oklch(0.745 0.111 158 / 0.32);
+    --status-inactive: oklch(0.655 0.105 29);
+    --status-inactive-foreground: oklch(0.79 0.09 29);
+    --status-inactive-bg: oklch(0.655 0.105 29 / 0.09);
+    --status-inactive-border: oklch(0.655 0.105 29 / 0.28);
 
+    /* lead tiers — HIGH reuses status-active; MED amber; REVIEW neutral ink; FAILED red */
     --tier-high: var(--status-active);
     --tier-high-foreground: var(--status-active-foreground);
     --tier-high-bg: var(--status-active-bg);
     --tier-high-border: var(--status-active-border);
+    --tier-med: oklch(0.8 0.142 79);
+    --tier-med-foreground: oklch(0.875 0.114 84);
+    --tier-med-bg: oklch(0.8 0.142 79 / 0.1);
+    --tier-med-border: oklch(0.8 0.142 79 / 0.3);
+    --tier-review: var(--color-ink-400);
+    --tier-review-foreground: var(--color-ink-300);
+    --tier-review-bg: oklch(0.63 0 0 / 0.08);
+    --tier-review-border: oklch(0.63 0 0 / 0.22);
+    --tier-failed: oklch(0.645 0.196 25);
+    --tier-failed-foreground: oklch(0.79 0.14 22);
+    --tier-failed-bg: oklch(0.645 0.196 25 / 0.1);
+    --tier-failed-border: oklch(0.645 0.196 25 / 0.3);
 
-    --tier-med: hsl(38 92% 60%);
-    --tier-med-foreground: hsl(38 96% 78%);
-    --tier-med-bg: hsl(38 92% 60% / 0.1);
-    --tier-med-border: hsl(38 92% 60% / 0.3);
-
-    --tier-review: hsl(240 5% 64%);
-    --tier-review-foreground: hsl(240 5% 80%);
-    --tier-review-bg: hsl(240 5% 64% / 0.08);
-    --tier-review-border: hsl(240 5% 64% / 0.22);
-
-    --tier-failed: hsl(0 62% 60%);
-    --tier-failed-foreground: hsl(0 70% 80%);
-    --tier-failed-bg: hsl(0 62% 60% / 0.1);
-    --tier-failed-border: hsl(0 62% 60% / 0.3);
+    /* themed scrollbar thumb (neutral ink, low alpha) */
+    --scrollbar-thumb: oklch(0.556 0 0 / 0.4);
 }
 
 @theme inline {
-    --font-sans: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
-    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    /* Tool-only color utilities. The semantic palette (background/foreground/card/
+       primary/…/destructive/border/input/ring), the signal/ink-muted/hair editorial
+       layer, fonts, radius-*, shadow-*, text-*, and leading-* all come from the DS.
 
-    --color-background: var(--background);
-    --color-foreground: var(--foreground);
+       NOTE: --color-fg / --color-muted-fg are transitional aliases so any not-yet-
+       migrated `text-fg` / `text-muted-fg` utilities still resolve to DS tokens while
+       components are restyled to text-foreground / text-ink-muted. */
     --color-fg: var(--foreground);
-    --color-card: var(--card);
+    --color-muted-fg: var(--ink-muted);
+
     --color-popover: var(--popover);
-    --color-primary: var(--primary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-secondary: var(--secondary);
-    --color-muted: var(--muted);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted-fg: var(--muted-foreground);
-    --color-accent: var(--accent);
-    --color-destructive: var(--destructive);
-    --color-border: var(--border);
+    --color-popover-foreground: var(--popover-foreground);
     --color-border-strong: var(--border-strong);
-    --color-input: var(--input);
-    --color-ring: var(--ring);
 
     --color-brand: var(--brand);
     --color-brand-foreground: var(--brand-foreground);
@@ -116,51 +134,68 @@
     --color-tier-failed-border: var(--tier-failed-border);
 }
 
-html {
-    color-scheme: dark;
-    overscroll-behavior: none;
+/* =============================================================================
+   BASE — additive to the DS base layer (which already owns html smoothing, the
+   focus ring, and touch-aware cursors). We only set box-sizing, a themed default
+   border color (so bare `border` utilities read --border), and the body canvas.
+   ============================================================================= */
+@layer base {
+    *,
+    ::before,
+    ::after {
+        box-sizing: border-box;
+        border-color: var(--border);
+    }
+
+    body {
+        @apply bg-background text-foreground font-sans antialiased;
+    }
+
+    html {
+        color-scheme: dark;
+        overscroll-behavior: none;
+    }
 }
+
 html,
 body {
     overflow-x: clip;
     max-width: 100%;
 }
 
-body {
-    background: var(--background);
-    color: var(--foreground);
-    font-family: var(--font-sans);
-    font-size: 14px;
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
+/* Themed scrollbars (re-expressed in OKLCH off the ink ramp). */
+*::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+    background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 8px;
+}
+*::-webkit-scrollbar-track {
+    background: transparent;
 }
 
-* {
-    box-sizing: border-box;
-    border-color: var(--border);
+.scrollbar-hide,
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
 }
 
-button,
-a,
-[role="button"],
-[tabindex]:not([tabindex="-1"]) {
-    cursor: pointer;
-}
-input,
-select,
-textarea {
-    cursor: text;
-    font-family: inherit;
+/* =============================================================================
+   MOTION UTILITIES — bespoke classes the components reference. Color literals are
+   expressed in OKLCH off the brand/ink ramp. `.sleek` matches the sibling tools.
+   ============================================================================= */
+.sleek {
+    @apply transform-gpu transition-all duration-200 ease-in-out;
 }
 
-/* Motion utilities and keyframes. */
-@utility sleek {
-    transition: all 200ms ease-in-out;
-    transform: translateZ(0);
-}
-
-@utility status-transition {
+.status-transition {
     transition:
         color 200ms ease,
         background-color 200ms ease,
@@ -177,7 +212,7 @@ textarea {
         opacity: 0.5;
     }
 }
-@utility status-dot-pulse {
+.status-dot-pulse {
     animation: status-pulse 2.5s ease-in-out infinite;
 }
 
@@ -191,8 +226,8 @@ textarea {
         transform: translateY(0);
     }
 }
-@utility slide-in {
-    animation: slide-in 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+.slide-in {
+    animation: slide-in 280ms var(--ease) both;
 }
 
 @keyframes fade-in {
@@ -203,7 +238,7 @@ textarea {
         opacity: 1;
     }
 }
-@utility fade-in {
+.fade-in {
     animation: fade-in 200ms ease-out both;
 }
 
@@ -215,7 +250,7 @@ textarea {
         transform: translateY(100%);
     }
 }
-@utility scan-line {
+.scan-line {
     position: relative;
     overflow: hidden;
 }
@@ -223,7 +258,7 @@ textarea {
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, transparent 0%, hsl(160 84% 39% / 0.18) 50%, transparent 100%);
+    background: linear-gradient(180deg, transparent 0%, var(--brand-soft) 50%, transparent 100%);
     animation: scan 1800ms ease-in-out infinite;
     pointer-events: none;
 }
@@ -233,7 +268,7 @@ textarea {
         transform: rotate(360deg);
     }
 }
-@utility spin {
+.spin {
     animation: spin-anim 800ms linear infinite;
 }
 
@@ -245,8 +280,8 @@ textarea {
         background-position: 200% 0;
     }
 }
-@utility shimmer {
-    background: linear-gradient(90deg, hsl(240 3.7% 15.9%) 0%, hsl(240 3.7% 22%) 50%, hsl(240 3.7% 15.9%) 100%);
+.shimmer {
+    background: linear-gradient(90deg, var(--color-ink-900) 0%, var(--color-ink-800) 50%, var(--color-ink-900) 100%);
     background-size: 200% 100%;
     animation: shimmer-anim 1.4s ease-in-out infinite;
 }
@@ -255,41 +290,33 @@ textarea {
     .status-dot-pulse,
     .scan-line::after,
     .shimmer,
-    .spin {
-        animation: none;
-    }
+    .spin,
     .slide-in,
     .fade-in {
         animation: none;
     }
 }
 
-*:focus {
-    outline: none;
+/* bits-ui dialogs (FirstRunWizard, RawResponseDialog) — overlay scrim + content
+   easing, matching the sibling dialog treatment. */
+[data-slot="dialog-overlay"],
+[data-dialog-overlay] {
+    background-color: oklch(0 0 0 / 0.6);
+    backdrop-filter: blur(6px);
 }
-*:focus-visible {
-    outline: 2px solid hsl(0 0% 100% / 0.5);
-    outline-offset: 2px;
-    border-radius: 4px;
-}
-
-*::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-    background: transparent;
-}
-*::-webkit-scrollbar-thumb {
-    background: hsl(240 5% 64% / 0.4);
-    border-radius: 8px;
-}
-*::-webkit-scrollbar-track {
-    background: transparent;
+[data-slot="dialog-content"],
+[data-dialog-content] {
+    animation-timing-function: var(--ease);
 }
 
-@media (hover: none) and (pointer: coarse) {
-    input,
-    textarea,
-    select {
-        font-size: 16px;
+/* Mobile 16px input floor — OUTSIDE @layer so it outranks Tailwind utilities and
+   the DS inputBase's lg:text-xs can't reintroduce iOS focus-zoom. */
+@supports (-webkit-touch-callout: none) {
+    @media (hover: none) and (pointer: coarse) {
+        input,
+        textarea,
+        select {
+            font-size: 16px;
+        }
     }
 }

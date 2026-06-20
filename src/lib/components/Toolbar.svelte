@@ -15,7 +15,7 @@
 
 <div
     class={cn(
-        "border-border bg-card flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between",
+        "border-hair bg-card flex flex-col gap-3 rounded-[var(--radius)] border p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between",
         className
     )}
 >

@@ -5,6 +5,7 @@
     import { enhance } from "$app/forms";
     import { invalidateAll } from "$app/navigation";
     import { Sparkles, RefreshCw, Upload, Trash2, FileText, Check, AlertTriangle, Cloud } from "@lucide/svelte";
+    import { Heading, cn, inputBase } from "$lib/ds";
     import PageHeader from "$lib/components/PageHeader.svelte";
     import Button from "$lib/components/Button.svelte";
     import Switch from "$lib/components/Switch.svelte";
@@ -78,19 +79,19 @@
 
 {#snippet section(icon: Component<{ size?: number; class?: string }>, title: string, subtitle: string, body: Snippet)}
     {@const Ic = icon}
-    <section class="border-border bg-card overflow-hidden rounded-lg border">
-        <header class="border-border border-b p-4">
-            <div class="flex items-center gap-2.5">
-                <span class="bg-secondary flex h-7 w-7 items-center justify-center rounded-md">
-                    <Ic size={13} class="text-zinc-300" />
+    <section class="border-hair bg-card overflow-hidden rounded-[var(--radius)] border">
+        <header class="border-hair border-b p-4 sm:p-5">
+            <div class="flex items-center gap-3">
+                <span class="bg-ink-2 border-hair flex h-8 w-8 items-center justify-center rounded-[10px] border">
+                    <Ic size={14} class="text-ink-muted" />
                 </span>
                 <div>
-                    <h2 class="text-sm font-semibold tracking-tight">{title}</h2>
-                    <p class="text-muted-fg mt-0.5 text-[11px]">{subtitle}</p>
+                    <Heading as="h2" size="title-sm" weight={560}>{title}</Heading>
+                    <p class="text-ink-muted mt-1 text-[11px]">{subtitle}</p>
                 </div>
             </div>
         </header>
-        <div class="px-4">{@render body()}</div>
+        <div class="px-4 sm:px-5">{@render body()}</div>
     </section>
 {/snippet}
 
@@ -101,8 +102,8 @@
         {#snippet extractionBody()}
             <div class="flex items-start justify-between gap-3 py-3">
                 <div>
-                    <p class="text-sm font-medium text-zinc-200">Diagnostics by default</p>
-                    <p class="text-muted-fg mt-1 text-xs text-pretty">
+                    <p class="text-foreground text-sm font-medium">Diagnostics by default</p>
+                    <p class="text-ink-muted mt-1 text-xs text-pretty">
                         Save the raw model response to R2 alongside the parsed result.
                     </p>
                 </div>
@@ -113,11 +114,11 @@
                 />
                 <input type="hidden" name="diagnosticsDefault" value={$form.diagnosticsDefault ? "true" : "false"} />
             </div>
-            <div class="bg-border h-px"></div>
+            <div class="border-hair border-t"></div>
             <div class="flex items-center justify-between gap-3 py-3">
                 <div>
-                    <p class="text-sm font-medium text-zinc-200">Daily image quota</p>
-                    <p class="text-muted-fg mt-0.5 text-xs">0 = unlimited. Billed to your Cloudflare account.</p>
+                    <p class="text-foreground text-sm font-medium">Daily image quota</p>
+                    <p class="text-ink-muted mt-0.5 text-xs">0 = unlimited. Billed to your Cloudflare account.</p>
                 </div>
                 <div class="w-28">
                     <TextInput
@@ -160,8 +161,8 @@
                         placeholder="0123456789abcdef…"
                     />
                 </Field>
-                <p class="text-muted-fg text-[11px] leading-relaxed text-pretty">
-                    Inference runs on <span class="text-zinc-300">your</span> Cloudflare account and is billed to you.
+                <p class="text-ink-muted text-[11px] leading-relaxed text-pretty">
+                    Inference runs on <span class="text-foreground">your</span> Cloudflare account and is billed to you.
                     Create a token at
                     <a
                         href="https://dash.cloudflare.com/profile/api-tokens"
@@ -170,14 +171,14 @@
                         class="text-brand underline underline-offset-2">dash.cloudflare.com/profile/api-tokens</a
                     >
                     → Create Custom Token → permission
-                    <span class="font-mono text-zinc-300">Account · Workers AI · Read</span>.
+                    <span class="text-foreground font-mono">Account · Workers AI · Read</span>.
                 </p>
             </div>
-            <div class="bg-border h-px"></div>
+            <div class="border-hair border-t"></div>
             <div class="flex items-center justify-between gap-3 py-3">
                 <div class="min-w-0">
-                    <p class="text-sm font-medium text-zinc-200">Vision model</p>
-                    <p class="text-muted-fg mt-0.5 text-xs text-pretty">
+                    <p class="text-foreground text-sm font-medium">Vision model</p>
+                    <p class="text-ink-muted mt-0.5 text-xs text-pretty">
                         Kimi K2.6 is benchmark-validated. Others are experimental — quality varies.
                     </p>
                 </div>
@@ -188,7 +189,7 @@
                         disabled={refreshingModels || !cloudflareConnected}
                         title="Refresh model list"
                         aria-label="Refresh models"
-                        class="text-muted-fg transition-colors hover:text-zinc-200 disabled:opacity-40"
+                        class="text-ink-muted hover:text-foreground transition-colors disabled:opacity-40"
                     >
                         <RefreshCw size={13} class={refreshingModels ? "animate-spin" : ""} />
                     </button>
@@ -196,7 +197,7 @@
                         <select
                             name="cloudflareModel"
                             bind:value={$form.cloudflareModel}
-                            class="border-border-strong bg-background w-full rounded-md border px-2.5 py-2 font-mono text-[11px] text-zinc-200 focus:border-[color:var(--brand)] focus:ring-2 focus:ring-[color:var(--brand-soft)] focus:outline-none"
+                            class={cn(inputBase, "px-2.5 py-2 text-[11px]")}
                         >
                             {#each modelOptions as opt (opt.id)}
                                 <option value={opt.id}>{opt.label}</option>
@@ -234,11 +235,11 @@
                     <TextInput name="notionDatabaseId" bind:value={$form.notionDatabaseId} />
                 </Field>
             </div>
-            <div class="bg-border h-px"></div>
+            <div class="border-hair border-t"></div>
             <div class="flex items-start justify-between gap-3 py-3">
                 <div>
-                    <p class="text-sm font-medium text-zinc-200">Auto-sync verified leads</p>
-                    <p class="text-muted-fg mt-1 text-xs text-pretty">
+                    <p class="text-foreground text-sm font-medium">Auto-sync verified leads</p>
+                    <p class="text-ink-muted mt-1 text-xs text-pretty">
                         HIGH and MED tiers get pushed automatically as a job runs.
                     </p>
                 </div>
@@ -249,11 +250,11 @@
                 />
                 <input type="hidden" name="notionAutoSync" value={$form.notionAutoSync ? "true" : "false"} />
             </div>
-            <div class="bg-border h-px"></div>
+            <div class="border-hair border-t"></div>
             <div class="flex items-start justify-between gap-3 py-3">
                 <div>
-                    <p class="text-sm font-medium text-zinc-200">Skip Instagram profile validation</p>
-                    <p class="text-muted-fg mt-1 text-xs text-pretty">
+                    <p class="text-foreground text-sm font-medium">Skip Instagram profile validation</p>
+                    <p class="text-ink-muted mt-1 text-xs text-pretty">
                         Trust extracted handles without an HTTP check — faster but allows 404s through.
                     </p>
                 </div>
@@ -268,11 +269,11 @@
                     value={$form.notionSkipValidation ? "true" : "false"}
                 />
             </div>
-            <div class="bg-border h-px"></div>
+            <div class="border-hair border-t"></div>
             <div class="flex items-center justify-between gap-3 py-3">
                 <div>
-                    <p class="text-sm font-medium text-zinc-200">Validation delay (ms)</p>
-                    <p class="text-muted-fg mt-0.5 text-xs">Throttle between Instagram HEAD requests.</p>
+                    <p class="text-foreground text-sm font-medium">Validation delay (ms)</p>
+                    <p class="text-ink-muted mt-0.5 text-xs">Throttle between Instagram HEAD requests.</p>
                 </div>
                 <div class="w-28">
                     <TextInput
@@ -285,11 +286,11 @@
                     />
                 </div>
             </div>
-            <div class="bg-border h-px"></div>
+            <div class="border-hair border-t"></div>
             <div class="flex items-center justify-between gap-3 py-3">
                 <div>
-                    <p class="text-sm font-medium text-zinc-200">Dedup keep-strategy</p>
-                    <p class="text-muted-fg mt-0.5 text-xs text-pretty">
+                    <p class="text-foreground text-sm font-medium">Dedup keep-strategy</p>
+                    <p class="text-ink-muted mt-0.5 text-xs text-pretty">
                         Which page survives when collapsing duplicate handles in Notion.
                     </p>
                 </div>
@@ -297,7 +298,7 @@
                     <select
                         name="dedupKeepStrategy"
                         bind:value={$form.dedupKeepStrategy}
-                        class="border-border-strong bg-background w-full rounded-md border px-2.5 py-2 text-xs text-zinc-200 focus:border-[color:var(--brand)] focus:ring-2 focus:ring-[color:var(--brand-soft)] focus:outline-none"
+                        class={cn(inputBase, "px-2.5 py-2 text-xs")}
                     >
                         <option value="best">Best score</option>
                         <option value="oldest">Oldest</option>
@@ -310,10 +311,9 @@
         {@render section(FileText, "Notion", "Credentials used to push verified handles into your CRM.", notionBody)}
 
         <div
-            class="border-border-strong sticky bottom-4 z-30 flex items-center justify-between gap-3 rounded-lg border p-3 backdrop-blur-md"
-            style="background: hsl(240 5.9% 10% / 0.85);"
+            class="border-hair bg-card/85 sticky bottom-4 z-30 flex items-center justify-between gap-3 rounded-[var(--radius)] border p-3 backdrop-blur-md"
         >
-            <div class="text-muted-fg flex items-center gap-2 text-xs">
+            <div class="text-ink-muted flex items-center gap-2 text-xs">
                 {#if $submitting}
                     <Spinner size="sm" color="brand" /> Saving…
                 {:else if $message}
@@ -334,20 +334,20 @@
     {#snippet maintenanceBody()}
         <div class="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <p class="text-sm font-medium text-zinc-200">Notion deduplication</p>
-                <p class="text-muted-fg mt-1 text-xs text-pretty">
+                <p class="text-foreground text-sm font-medium">Notion deduplication</p>
+                <p class="text-ink-muted mt-1 text-xs text-pretty">
                     Scans your full database and archives losers using the keep-strategy.
                 </p>
             </div>
             <form method="POST" action="?/dedup" use:enhance class="flex items-center gap-2">
-                <label class="text-muted-fg inline-flex cursor-pointer items-center gap-1.5 text-[11px]">
+                <label class="text-ink-muted inline-flex cursor-pointer items-center gap-1.5 text-[11px]">
                     <input type="checkbox" name="dryRun" value="true" checked class="cursor-pointer" />
                     Dry run
                 </label>
                 <Button type="submit" variant="brand" size="sm">Run dedup</Button>
             </form>
         </div>
-        <div class="bg-border h-px"></div>
+        <div class="border-hair border-t"></div>
         <form
             method="POST"
             action="?/importLegacy"
@@ -373,8 +373,8 @@
             }}
         >
             <div>
-                <p class="text-sm font-medium text-zinc-200">Legacy markdown import</p>
-                <p class="text-muted-fg mt-1 text-xs text-pretty">
+                <p class="text-foreground text-sm font-medium">Legacy markdown import</p>
+                <p class="text-ink-muted mt-1 text-xs text-pretty">
                     Paste the contents of <span class="font-mono">verified_usernames.md</span> from the Python CLI.
                 </p>
             </div>
@@ -383,7 +383,7 @@
                 rows="5"
                 bind:value={legacyMarkdown}
                 placeholder="Paste markdown…"
-                class="border-border-strong bg-background w-full rounded-lg border px-3 py-2 font-mono text-xs text-zinc-200 placeholder:text-zinc-500 focus:border-[color:var(--brand)] focus:ring-2 focus:ring-[color:var(--brand-soft)] focus:outline-none"
+                class={cn(inputBase, "text-xs")}
             ></textarea>
             <div class="flex justify-end">
                 <Button
@@ -397,7 +397,7 @@
                 </Button>
             </div>
         </form>
-        <div class="bg-border h-px"></div>
+        <div class="border-hair border-t"></div>
         <form
             method="POST"
             action="?/importLegacy"
@@ -424,8 +424,8 @@
             }}
         >
             <div>
-                <p class="text-sm font-medium text-zinc-200">Legacy Notion import</p>
-                <p class="text-muted-fg mt-1 text-xs text-pretty">
+                <p class="text-foreground text-sm font-medium">Legacy Notion import</p>
+                <p class="text-ink-muted mt-1 text-xs text-pretty">
                     Scan an existing Notion database into Leads. Idempotent — re-running is safe.
                 </p>
             </div>
@@ -461,7 +461,7 @@
         <div class="flex flex-col gap-3 py-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
                 <p class="text-tier-failed-fg text-sm font-medium">Reset to defaults</p>
-                <p class="text-muted-fg mt-1 text-xs text-pretty">
+                <p class="text-ink-muted mt-1 text-xs text-pretty">
                     Wipes settings only (including encrypted Notion + Cloudflare tokens). Jobs and leads are unaffected.
                 </p>
             </div>

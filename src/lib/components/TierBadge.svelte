@@ -53,8 +53,8 @@
 {#if v}
     <span
         class={cn(
-            "status-transition inline-flex shrink-0 items-center rounded-full border font-mono font-semibold tracking-[0.10em] uppercase",
-            s ? "gap-1.5 px-2 py-[2px] text-[10px]" : "gap-1.5 px-2.5 py-0.5 text-[11px]"
+            "status-transition inline-flex shrink-0 items-center gap-1.5 rounded-full border font-mono font-semibold tracking-[0.10em] uppercase ease-[var(--ease)]",
+            s ? "px-2 py-[2px] text-[10px]" : "px-2.5 py-0.5 text-[11px]"
         )}
         style="background: {v.bg}; color: {v.fg}; border-color: {v.bd};"
     >
@@ -65,5 +65,5 @@
         {v.label}
     </span>
 {:else}
-    <span class="text-muted-fg font-mono text-[10px]">—</span>
+    <span class="text-ink-muted font-mono text-[10px]">—</span>
 {/if}

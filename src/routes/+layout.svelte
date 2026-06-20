@@ -1,6 +1,5 @@
 <script lang="ts">
     import "../app.css";
-    import { ModeWatcher } from "mode-watcher";
     import { Toaster } from "svelte-sonner";
     import { page } from "$app/state";
     import AppBar from "$lib/components/AppBar.svelte";
@@ -26,7 +25,6 @@
     <title>Username Extractor</title>
 </svelte:head>
 
-<ModeWatcher defaultMode="dark" />
 <Toaster richColors theme="dark" position="bottom-right" toastOptions={{ class: "font-sans text-xs" }} />
 
 {#if isLogin}

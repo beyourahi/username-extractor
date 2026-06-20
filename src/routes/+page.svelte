@@ -3,6 +3,7 @@
     import { goto } from "$app/navigation";
     import { toast } from "svelte-sonner";
     import { Sparkles, AlertTriangle, Cloud } from "@lucide/svelte";
+    import { Eyebrow } from "$lib/ds";
     import HeroHeading from "$lib/components/HeroHeading.svelte";
     import UploadDropzone from "$lib/components/UploadDropzone.svelte";
     import Switch from "$lib/components/Switch.svelte";
@@ -112,11 +113,10 @@
 
     {#if !cloudflareConnected}
         <div
-            class="border-brand/40 fade-in flex w-full max-w-md items-start gap-2.5 rounded-lg border px-3.5 py-2.5 text-xs text-pretty"
-            style="background: var(--brand-soft);"
+            class="border-brand-border bg-brand-soft fade-in flex w-full max-w-md items-start gap-2.5 rounded-[var(--radius)] border px-3.5 py-2.5 text-xs text-pretty"
         >
             <Cloud size={15} class="text-brand mt-px shrink-0" />
-            <span class="text-zinc-200">
+            <span class="text-foreground">
                 Connect your Cloudflare account to run extractions — inference is billed to you, not us.
                 <a href="/settings" class="text-brand font-medium underline-offset-2 hover:underline">Connect now</a>
             </span>
@@ -125,7 +125,7 @@
 
     {#if !notionConfigured}
         <div
-            class="border-tier-med-border bg-tier-med-bg text-tier-med-fg fade-in flex w-full max-w-md items-start gap-2 rounded-lg border px-3 py-2 text-xs text-pretty"
+            class="border-tier-med-border bg-tier-med-bg text-tier-med-fg fade-in flex w-full max-w-md items-start gap-2 rounded-[var(--radius)] border px-3 py-2 text-xs text-pretty"
         >
             <AlertTriangle size={14} class="mt-px shrink-0" />
             <span>
@@ -149,17 +149,17 @@
 
         <div class="flex w-full max-w-sm flex-col gap-4">
             <div class="mb-1 flex items-center gap-3">
-                <div class="bg-border h-px flex-1"></div>
-                <span class="text-muted-fg text-[11px] font-medium tracking-[0.16em] uppercase">This run</span>
-                <div class="bg-border h-px flex-1"></div>
+                <div class="border-hair flex-1 border-t"></div>
+                <Eyebrow>This run</Eyebrow>
+                <div class="border-hair flex-1 border-t"></div>
             </div>
 
-            <div class="border-border-strong bg-card rounded-xl border p-4 backdrop-blur-sm">
+            <div class="border-hair bg-card rounded-[var(--radius)] border p-4 sm:p-5">
                 <div class="space-y-4">
                     <div class="flex items-start justify-between gap-3">
                         <div>
-                            <p class="text-sm font-medium text-zinc-200">Diagnostics</p>
-                            <p class="text-muted-fg mt-1 text-xs text-pretty">
+                            <p class="text-foreground text-sm font-medium">Diagnostics</p>
+                            <p class="text-ink-muted mt-1 text-xs text-pretty">
                                 Saves raw model responses to R2 for replay.
                             </p>
                         </div>
@@ -170,25 +170,20 @@
                             disabled={submitting}
                         />
                     </div>
-                    <div class="bg-border h-px"></div>
+                    <div class="border-hair border-t"></div>
                     <dl class="space-y-2 text-xs">
                         <div class="flex items-center justify-between gap-3">
-                            <dt class="text-muted-fg shrink-0">Vision model</dt>
-                            <dd
-                                class="truncate text-right text-[11px] whitespace-nowrap"
-                                style="font-family: var(--font-mono); color: hsl(0 0% 80%);"
-                            >
+                            <dt class="text-ink-muted shrink-0">Vision model</dt>
+                            <dd class="text-foreground truncate text-right font-mono text-[11px] whitespace-nowrap">
                                 {data.cloudflareModel}
                             </dd>
                         </div>
                         <div class="flex items-center justify-between gap-3">
-                            <dt class="text-muted-fg shrink-0">Auto-sync to Notion</dt>
+                            <dt class="text-ink-muted shrink-0">Auto-sync to Notion</dt>
                             <dd class="flex items-center gap-1.5 whitespace-nowrap">
-                                <span
-                                    class="h-1.5 w-1.5 rounded-full"
-                                    style="background: {notionConfigured ? 'var(--brand)' : 'var(--muted-foreground)'};"
+                                <span class="h-1.5 w-1.5 rounded-full {notionConfigured ? 'bg-brand' : 'bg-ink-muted'}"
                                 ></span>
-                                <span class="text-zinc-300">{notionConfigured ? "Enabled" : "Off"}</span>
+                                <span class="text-foreground">{notionConfigured ? "Enabled" : "Off"}</span>
                             </dd>
                         </div>
                     </dl>
@@ -210,7 +205,7 @@
                 {submitting ? "Uploading…" : `Run extraction${files.length > 0 ? ` · ${files.length}` : ""}`}
             </Button>
 
-            <p class="text-muted-fg text-center text-[11px]">Verified handles auto-sync to your Notion CRM.</p>
+            <p class="text-ink-muted text-center text-[11px]">Verified handles auto-sync to your Notion CRM.</p>
         </div>
     </div>
 </div>

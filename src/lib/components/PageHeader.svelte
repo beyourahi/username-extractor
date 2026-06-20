@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { Snippet } from "svelte";
+    import { Heading } from "$lib/ds";
     import { cn } from "$lib/utils/cn";
 
     let {
@@ -17,11 +18,11 @@
 
 <header class={cn("flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between", className)}>
     <div>
-        <h1 class="text-2xl font-black tracking-tight sm:text-3xl" style="letter-spacing: -0.02em;">
+        <Heading as="h1" size="title-sm">
             {title}
-        </h1>
+        </Heading>
         {#if subtitle}
-            <p class="text-muted-fg mt-1 max-w-prose text-xs sm:text-sm">
+            <p class="text-ink-muted mt-1 max-w-prose text-sm">
                 {subtitle}
             </p>
         {/if}

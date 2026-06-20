@@ -32,14 +32,14 @@
     } = $props();
 
     const base =
-        "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium sleek disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]";
+        "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium sleek disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]";
 
     const variants: Record<Variant, string> = {
-        outline: "border border-border-strong bg-transparent text-zinc-200 hover:bg-secondary hover:text-white",
-        ghost: "text-zinc-300 hover:bg-secondary hover:text-white",
-        destructive: "bg-destructive text-white hover:bg-[hsl(0_62%_45%)]",
-        brand: "bg-brand text-white hover:bg-[hsl(160_84%_34%)]",
-        soft: "bg-secondary text-white hover:bg-[hsl(240_4%_22%)]"
+        outline: "border border-hair bg-transparent text-foreground hover:border-signal hover:bg-ink-2",
+        ghost: "text-ink-muted hover:bg-ink-2 hover:text-foreground",
+        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        brand: "bg-brand text-brand-foreground hover:bg-brand/90",
+        soft: "bg-ink-2 text-foreground hover:bg-secondary"
     };
 
     const sizes: Record<Size, string> = {

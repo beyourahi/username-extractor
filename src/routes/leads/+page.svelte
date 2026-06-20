@@ -135,10 +135,10 @@
         {/snippet}
     </PageHeader>
 
-    <form bind:this={formEl} method="GET" class="border-border bg-card rounded-lg border p-3">
+    <form bind:this={formEl} method="GET" class="border-hair bg-card rounded-[var(--radius)] border p-4 sm:p-5">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div class="relative flex-1">
-                <Search size={13} class="absolute top-1/2 left-3 -translate-y-1/2 text-zinc-500" />
+                <Search size={13} class="text-ink-muted absolute top-1/2 left-3 z-10 -translate-y-1/2" />
                 <TextInput
                     type="search"
                     name="q"
@@ -152,28 +152,28 @@
                     <button
                         type="button"
                         onclick={() => chipNav("tier", c.v)}
-                        class="sleek inline-flex h-7 shrink-0 items-center rounded-full border px-2.5 text-[11px] font-medium whitespace-nowrap"
+                        class="sleek inline-flex h-7 shrink-0 items-center rounded-full border px-3 font-mono text-[11px] whitespace-nowrap uppercase"
                         style={chipStyle((data.tier ?? "") === c.v, c.tone as "default" | "brand" | "med" | "failed")}
                     >
                         {c.l}
                     </button>
                 {/each}
 
-                <div class="bg-border-strong mx-1 h-5 w-px"></div>
+                <div class="bg-hair mx-1 h-5 w-px"></div>
 
                 {#each notionChips as c (c.v)}
                     <button
                         type="button"
                         onclick={() => chipNav("notion", c.v)}
-                        class="sleek inline-flex h-7 shrink-0 items-center rounded-full border px-2.5 text-[11px] font-medium whitespace-nowrap"
+                        class="sleek inline-flex h-7 shrink-0 items-center rounded-full border px-3 font-mono text-[11px] whitespace-nowrap uppercase"
                         style={chipStyle((data.notion ?? "") === c.v, c.tone)}
                     >
                         {c.l}
                     </button>
                 {/each}
 
-                <div class="bg-border-strong mx-1 h-5 w-px"></div>
-                <label class="text-muted-fg inline-flex items-center gap-2 text-[11px]">
+                <div class="bg-hair mx-1 h-5 w-px"></div>
+                <label class="text-ink-muted inline-flex items-center gap-2 font-mono text-[11px]">
                     <Switch
                         checked={Boolean(data.archived)}
                         onchange={(v) => setArchived(v)}
@@ -201,46 +201,46 @@
             {/snippet}
         </EmptyState>
     {:else}
-        <div class="border-border bg-card overflow-hidden rounded-lg border">
+        <div class="border-hair bg-card overflow-hidden rounded-[var(--radius)] border">
             <div
-                class="border-border text-muted-fg hidden gap-3 border-b px-4 py-2.5 sm:grid sm:grid-cols-[minmax(180px,1fr)_80px_70px_150px_120px_80px]"
+                class="border-hair text-ink-muted hidden gap-3 border-b px-4 py-2.5 font-mono text-[10px] tracking-[0.14em] uppercase sm:grid sm:grid-cols-[minmax(180px,1fr)_80px_70px_150px_120px_80px]"
             >
-                <span class="text-[10px] tracking-[0.12em] uppercase">Username</span>
-                <span class="text-[10px] tracking-[0.12em] uppercase">Tier</span>
-                <span class="text-right text-[10px] tracking-[0.12em] uppercase">Conf</span>
-                <span class="text-[10px] tracking-[0.12em] uppercase">Source job</span>
-                <span class="text-[10px] tracking-[0.12em] uppercase">Notion</span>
-                <span class="text-right text-[10px] tracking-[0.12em] uppercase">Actions</span>
+                <span>Username</span>
+                <span>Tier</span>
+                <span class="text-right">Conf</span>
+                <span>Source job</span>
+                <span>Notion</span>
+                <span class="text-right">Actions</span>
             </div>
             {#each data.leads as l, i (l.id)}
                 <div
-                    class="status-transition hover:bg-secondary/30 flex flex-col gap-2 px-4 py-3 sm:grid sm:grid-cols-[minmax(180px,1fr)_80px_70px_150px_120px_80px] sm:items-center sm:gap-3"
-                    style={i ? "border-top: 1px solid var(--border);" : undefined}
+                    class="status-transition hover:bg-ink-2/50 flex flex-col gap-2 px-4 py-3 sm:grid sm:grid-cols-[minmax(180px,1fr)_80px_70px_150px_120px_80px] sm:items-center sm:gap-3"
+                    style={i ? "border-top: 1px solid var(--hair);" : undefined}
                 >
                     <div class="flex items-center gap-2">
-                        <ExternalLink size={13} class="shrink-0 text-zinc-500" />
+                        <ExternalLink size={13} class="text-ink-muted shrink-0" />
                         <a
                             href={l.igUrl}
                             target="_blank"
                             rel="noreferrer"
-                            class="truncate font-mono text-sm font-semibold text-zinc-100 hover:underline"
+                            class="text-foreground truncate font-mono text-sm font-semibold hover:underline"
                         >
                             @{l.username}
                         </a>
                     </div>
                     <TierBadge tier={l.tier as Tier} size="sm" />
-                    <span class="font-mono text-xs text-zinc-400 tabular-nums sm:text-right"
+                    <span class="text-ink-muted font-mono text-xs tabular-nums sm:text-right"
                         >{l.confidence.toFixed(0)}%</span
                     >
                     {#if l.sourceJobId}
                         <a
                             href={`/jobs/${l.sourceJobId}`}
-                            class="sleek truncate text-left font-mono text-[11px] whitespace-nowrap text-zinc-500 hover:text-zinc-300"
+                            class="sleek text-ink-muted hover:text-foreground truncate text-left font-mono text-[11px] whitespace-nowrap"
                         >
                             {l.sourceJobId.slice(0, 18)}
                         </a>
                     {:else}
-                        <span class="text-muted-fg font-mono text-[11px]">—</span>
+                        <span class="text-ink-muted font-mono text-[11px]">—</span>
                     {/if}
                     <NotionBadge status={l.notionStatus as NotionStatus} size="sm" />
                     <div class="flex items-center gap-1 sm:justify-end">
@@ -276,7 +276,7 @@
                         </Button>
                     </div>
                     {#if l.createdAt}
-                        <p class="text-muted-fg col-span-full -mt-1 font-mono text-[10px] sm:hidden">
+                        <p class="text-ink-muted col-span-full -mt-1 font-mono text-[10px] sm:hidden">
                             {fmtDate(l.createdAt)}
                         </p>
                     {/if}
@@ -284,7 +284,7 @@
             {/each}
             <Pagination page={data.page} pageSize={data.pageSize} total={data.total} baseHref={baseQuery} />
         </div>
-        <p class="text-muted-fg text-center text-[11px]">
+        <p class="text-ink-muted text-center font-mono text-[11px]">
             Showing {data.leads.length} of {data.total} leads.
         </p>
     {/if}

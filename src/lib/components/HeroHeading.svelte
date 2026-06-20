@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { cn } from "$lib/utils/cn";
+    import { cn, Heading } from "$lib/ds";
 
     let {
         emoji = "🔎",
@@ -16,16 +16,18 @@
     const s = $derived(size === "sm");
 </script>
 
-<div class={cn("text-center", s ? "space-y-2" : "space-y-4 sm:space-y-6")}>
+<div class={cn("w-full text-center", s ? "space-y-2" : "space-y-4 sm:space-y-6")}>
     <p class={s ? "text-3xl" : "text-4xl sm:text-5xl"}>{emoji}</p>
     <div class="space-y-1.5">
-        <h1
-            class={cn("font-black tracking-tight", s ? "text-xl" : "text-2xl sm:text-3xl lg:text-4xl")}
-            style="font-weight: 900; letter-spacing: -0.02em;"
+        <Heading
+            as="h1"
+            size={s ? "title-sm" : "title"}
+            weight={600}
+            class={cn("tracking-tight text-balance", s ? "" : "sm:text-title-lg")}
         >
             {title}
-        </h1>
-        <p class={cn("text-muted-fg", s ? "text-xs" : "text-xs sm:text-sm lg:text-base")}>
+        </Heading>
+        <p class={cn("text-ink-muted", s ? "text-caption" : "text-body sm:text-lead")}>
             {tagline}
         </p>
     </div>

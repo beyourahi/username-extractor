@@ -19,18 +19,20 @@
 
 <div
     class={cn(
-        "border-border-strong grid place-items-center rounded-lg border border-dashed px-6 py-16 text-center",
+        "border-hair bg-card/40 grid w-full place-items-center rounded-[var(--radius)] border border-dashed px-6 py-16 text-center",
         className
     )}
 >
     <div class="flex max-w-md flex-col items-center gap-3">
         {#if icon}
-            <div class="text-zinc-600">{@render icon()}</div>
+            <div class="bg-ink-2 text-ink-muted grid size-11 place-items-center rounded-lg">
+                {@render icon()}
+            </div>
         {/if}
-        <h2 class="text-sm font-semibold tracking-tight text-zinc-200">
+        <h2 class="text-foreground text-sm font-semibold tracking-tight">
             {title}
         </h2>
-        <p class="text-muted-fg text-xs leading-relaxed text-pretty">
+        <p class="text-ink-muted text-xs leading-relaxed text-pretty">
             {description}
         </p>
         {#if action}

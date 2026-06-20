@@ -15,17 +15,15 @@
     } = $props();
 
     const badge = tv({
-        base: "inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-[2px] font-mono text-[10px] font-medium uppercase tracking-[0.10em]",
+        base: "inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-1 font-mono text-[11px] font-medium uppercase tracking-[0.10em]",
         variants: {
             tone: {
-                default: "border-border-strong text-muted-fg bg-transparent",
-                success:
-                    "border-[color:var(--status-active-border)] bg-[color:var(--status-active-bg)] text-[color:var(--status-active-fg)]",
-                warning:
-                    "border-[color:var(--tier-med-border)] bg-[color:var(--tier-med-bg)] text-[color:var(--tier-med-fg)]",
-                danger: "border-[color:var(--tier-failed-border)] bg-[color:var(--tier-failed-bg)] text-[color:var(--tier-failed-fg)]",
-                info: "border-[color:var(--brand-border)] bg-[color:var(--brand-soft)] text-[color:var(--brand)]",
-                brand: "border-[color:var(--brand-border)] bg-[color:var(--brand-soft)] text-[color:var(--brand)]"
+                default: "border-hair bg-transparent text-ink-muted",
+                success: "border-status-active-border bg-status-active-bg text-status-active-fg",
+                warning: "border-tier-med-border bg-tier-med-bg text-tier-med-fg",
+                danger: "border-tier-failed-border bg-tier-failed-bg text-tier-failed-fg",
+                info: "border-brand-border bg-brand-soft text-brand",
+                brand: "border-brand-border bg-brand-soft text-brand"
             }
         }
     });

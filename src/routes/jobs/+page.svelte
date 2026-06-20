@@ -30,7 +30,7 @@
     const past = $derived(data.jobs.filter((j) => j.status !== "pending" && j.status !== "running"));
 </script>
 
-<main class="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pt-8 pb-8 sm:px-6 sm:pt-10">
+<main class="mx-auto flex w-full max-w-7xl flex-col gap-6 px-[var(--shell-x)] pt-8 pb-8 sm:pt-10">
     <PageHeader title="Jobs" subtitle="Every extraction batch you've run, newest first.">
         {#snippet actions()}
             <Button variant="brand" size="default" href="/">
@@ -52,81 +52,81 @@
         </EmptyState>
     {:else}
         {#each live as j (j.id)}
-            <div class="border-brand-border bg-brand-soft fade-in rounded-lg border-2">
+            <div class="border-brand-border bg-brand-soft fade-in rounded-[var(--radius)] border">
                 <a href={`/jobs/${j.id}`} class="flex w-full items-center gap-3 p-4 text-left">
                     <div class="bg-brand-soft flex h-10 w-10 items-center justify-center rounded-full">
                         <Spinner size="sm" color="brand" />
                     </div>
                     <div class="flex-1">
                         <div class="flex items-center gap-2">
-                            <p class="text-sm font-semibold text-zinc-100">Currently running</p>
+                            <p class="text-body text-foreground font-semibold">Currently running</p>
                             <span
-                                class="border-brand-border text-brand inline-flex items-center gap-1.5 rounded-full border px-2 py-[1px] text-[10px]"
+                                class="border-brand-border text-brand inline-flex items-center gap-1.5 rounded-full border px-2 py-[1px] font-mono text-[10px] uppercase"
                             >
-                                <span class="status-dot-pulse bg-brand h-1.5 w-1.5 rounded-full"></span>
+                                <span class="status-dot-pulse bg-status-active h-1.5 w-1.5 rounded-full"></span>
                                 LIVE
                             </span>
                         </div>
-                        <p class="text-muted-fg mt-0.5 font-mono text-xs">
+                        <p class="text-ink-muted mt-0.5 font-mono text-xs">
                             {j.id} · {j.counts.verified}/{j.imageCount} processed
                         </p>
                     </div>
-                    <ChevronRight size={16} class="text-zinc-500" />
+                    <ChevronRight size={16} class="text-ink-muted" />
                 </a>
             </div>
         {/each}
 
-        <div class="border-border bg-card overflow-hidden rounded-lg border">
+        <div class="border-hair bg-card overflow-hidden rounded-[var(--radius)] border">
             <div
-                class="border-border text-muted-fg hidden gap-3 border-b px-4 py-2.5 sm:grid sm:grid-cols-[minmax(220px,1fr)_80px_110px_120px_90px_24px]"
+                class="border-hair text-ink-muted text-micro hidden gap-3 border-b px-4 py-2.5 font-mono tracking-[0.14em] uppercase sm:grid sm:grid-cols-[minmax(220px,1fr)_80px_110px_120px_90px_24px]"
             >
-                <span class="text-[10px] tracking-[0.12em] uppercase">Job</span>
-                <span class="text-right text-[10px] tracking-[0.12em] uppercase">Images</span>
-                <span class="text-right text-[10px] tracking-[0.12em] uppercase">Verified</span>
-                <span class="text-right text-[10px] tracking-[0.12em] uppercase">Status</span>
-                <span class="text-right text-[10px] tracking-[0.12em] uppercase">Elapsed</span>
+                <span>Job</span>
+                <span class="text-right">Images</span>
+                <span class="text-right">Verified</span>
+                <span class="text-right">Status</span>
+                <span class="text-right">Elapsed</span>
                 <span></span>
             </div>
             <div>
                 {#each past as job, i (job.id)}
                     <a
                         href={`/jobs/${job.id}`}
-                        class="status-transition hover:bg-secondary/50 flex w-full flex-col gap-2 px-4 py-3 text-left sm:grid sm:grid-cols-[minmax(220px,1fr)_80px_110px_120px_90px_24px] sm:items-center sm:gap-3"
-                        style={i ? "border-top: 1px solid var(--border);" : undefined}
+                        class="status-transition hover:bg-ink-2/40 flex w-full flex-col gap-2 px-4 py-3 text-left sm:grid sm:grid-cols-[minmax(220px,1fr)_80px_110px_120px_90px_24px] sm:items-center sm:gap-3"
+                        style={i ? "border-top: 1px solid var(--hair);" : undefined}
                     >
                         <div class="min-w-0">
                             <div class="flex items-center gap-2">
-                                <span class="font-mono text-sm font-semibold whitespace-nowrap text-zinc-100"
+                                <span class="text-foreground font-mono text-sm font-semibold whitespace-nowrap"
                                     >{job.id.slice(0, 18)}</span
                                 >
                                 {#if job.status === "completed"}
                                     <span
-                                        class="border-status-active-border text-status-active-fg inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-[1px] text-[10px]"
+                                        class="border-status-active-border bg-status-active-bg text-status-active-fg inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-[1px] font-mono text-[10px] uppercase"
                                     >
                                         <Check size={9} /> done
                                     </span>
                                 {:else if job.status === "cancelled"}
                                     <span
-                                        class="border-status-inactive-border text-status-inactive-fg inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-[1px] text-[10px]"
+                                        class="border-status-inactive-border bg-status-inactive-bg text-status-inactive-fg inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-[1px] font-mono text-[10px] uppercase"
                                     >
                                         <X size={9} /> cancelled
                                     </span>
                                 {:else if job.status === "failed"}
                                     <span
-                                        class="border-tier-failed-border text-tier-failed-fg inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-[1px] text-[10px]"
+                                        class="border-tier-failed-border bg-tier-failed-bg text-tier-failed-fg inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-[1px] font-mono text-[10px] uppercase"
                                     >
                                         <X size={9} /> failed
                                     </span>
                                 {/if}
                             </div>
-                            <p class="text-muted-fg mt-0.5 truncate text-[11px]">
+                            <p class="text-ink-muted mt-0.5 truncate text-[11px]">
                                 {relTime(job.createdAt)} · <span class="font-mono">{job.vlmModel}</span>
                             </p>
                         </div>
-                        <p class="font-mono text-zinc-300 tabular-nums sm:text-right">{job.imageCount}</p>
+                        <p class="text-ink-muted font-mono tabular-nums sm:text-right">{job.imageCount}</p>
                         <div class="font-mono whitespace-nowrap sm:text-right">
                             <span class="text-brand tabular-nums">{job.counts.verified ?? 0}</span>
-                            <span class="text-zinc-600 tabular-nums">/{job.imageCount}</span>
+                            <span class="text-ink-muted tabular-nums">/{job.imageCount}</span>
                         </div>
                         <div class="flex flex-wrap items-center gap-1.5 sm:justify-end">
                             {#if (job.counts.review ?? 0) > 0}
@@ -148,10 +148,10 @@
                                 </span>
                             {/if}
                         </div>
-                        <p class="font-mono text-xs whitespace-nowrap text-zinc-400 tabular-nums sm:text-right">
+                        <p class="text-ink-muted font-mono text-xs whitespace-nowrap tabular-nums sm:text-right">
                             {elapsedFmt(job.completedAt ? job.completedAt - job.createdAt : null)}
                         </p>
-                        <ChevronRight size={14} class="hidden text-zinc-600 sm:inline" />
+                        <ChevronRight size={14} class="text-ink-muted hidden sm:inline" />
                     </a>
                 {/each}
             </div>
