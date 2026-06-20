@@ -6,7 +6,7 @@
     "compatibility_flags": ["nodejs_compat"],
     "compatibility_date": "2025-05-29",
     // Never expose the public *.workers.dev URL — this worker is served only on its
-    // Cloudflare Access-gated custom domain (username-extractor.dropoutstudio.co).
+    // Better Auth (Google OAuth) gated custom domain (username-extractor.dropoutstudio.co).
     "workers_dev": false,
     "preview_urls": false,
     "assets": {
