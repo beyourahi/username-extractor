@@ -1,5 +1,13 @@
 <script lang="ts">
-    import { Upload, Layers, Users as UsersIcon, Settings as SettingsIcon, ChevronDown, Search } from "@lucide/svelte";
+    import {
+        Upload,
+        Layers,
+        Users as UsersIcon,
+        Settings as SettingsIcon,
+        ChevronDown,
+        Search,
+        LogIn
+    } from "@lucide/svelte";
     import UserChip from "./UserChip.svelte";
     import { signOut as authSignOut } from "$lib/auth-client";
     import { cn } from "$lib/utils/cn";
@@ -115,6 +123,14 @@
 
             {#if userEmail}
                 <UserChip email={userEmail} onSignOut={signOut} />
+            {:else}
+                <a
+                    href="/login"
+                    class="sleek border-hair bg-card text-foreground hover:border-signal flex h-9 items-center gap-2 rounded-full border px-3.5 text-xs font-medium backdrop-blur-sm"
+                >
+                    <LogIn size={14} class="text-ink-muted" aria-hidden="true" />
+                    <span>Sign in</span>
+                </a>
             {/if}
         </div>
     </div>

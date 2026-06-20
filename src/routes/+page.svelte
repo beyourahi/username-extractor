@@ -2,7 +2,7 @@
     import { untrack } from "svelte";
     import { goto } from "$app/navigation";
     import { toast } from "svelte-sonner";
-    import { Sparkles, AlertTriangle, Cloud } from "@lucide/svelte";
+    import { Sparkles, AlertTriangle, Cloud, LogIn } from "@lucide/svelte";
     import { Eyebrow } from "$lib/ds";
     import HeroHeading from "$lib/components/HeroHeading.svelte";
     import UploadDropzone from "$lib/components/UploadDropzone.svelte";
@@ -21,6 +21,7 @@
     let files = $state<File[]>([]);
     let diagnostics = $state<boolean>(untrack(() => Boolean(data.diagnosticsDefault)));
     let submitting = $state(false);
+    const signedIn = $derived(Boolean(data.signedIn));
     const notionConfigured = $derived(Boolean(data.notionConfigured));
     const cloudflareConnected = $derived(Boolean(data.cloudflareConnected));
 
@@ -111,7 +112,17 @@
 <div class="flex w-full grow flex-col items-center justify-center gap-10 px-4 py-10 sm:gap-14 sm:py-14 lg:gap-20">
     <HeroHeading />
 
-    {#if !cloudflareConnected}
+    {#if !signedIn}
+        <div
+            class="border-brand-border bg-brand-soft fade-in flex w-full max-w-md items-start gap-2.5 rounded-[var(--radius)] border px-3.5 py-2.5 text-xs text-pretty"
+        >
+            <LogIn size={15} class="text-brand mt-px shrink-0" />
+            <span class="text-foreground">
+                Sign in to run extractions — screenshots are processed on your own Cloudflare account, billed to you.
+                <a href="/login" class="text-brand font-medium underline-offset-2 hover:underline">Sign in</a>
+            </span>
+        </div>
+    {:else if !cloudflareConnected}
         <div
             class="border-brand-border bg-brand-soft fade-in flex w-full max-w-md items-start gap-2.5 rounded-[var(--radius)] border px-3.5 py-2.5 text-xs text-pretty"
         >
@@ -123,7 +134,7 @@
         </div>
     {/if}
 
-    {#if !notionConfigured}
+    {#if signedIn && !notionConfigured}
         <div
             class="border-tier-med-border bg-tier-med-bg text-tier-med-fg fade-in flex w-full max-w-md items-start gap-2 rounded-[var(--radius)] border px-3 py-2 text-xs text-pretty"
         >

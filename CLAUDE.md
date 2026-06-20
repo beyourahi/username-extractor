@@ -85,7 +85,7 @@ The discriminated `Message` union in `src/lib/types/messages.ts` is the canonica
 `src/hooks.server.ts` is the single auth chokepoint (replaces the former Cloudflare Access gate):
 
 - The Better Auth instance is built **per request** in `createAuth` (`src/lib/server/auth.ts`) — Workers has no long-lived module state and the D1 binding arrives per request. **Google OAuth is the only sign-in method** (`emailAndPassword` is disabled); the browser client is `src/lib/auth-client.ts`.
-- `handle` resolves the session → `event.locals.user/session` plus the preserved `event.locals.userId/userEmail` contract (so the protected routes are unchanged). Central gate: unauthenticated browser request → `303 /login`; `/api/*` → `401`. Public surface = `/login` + `/api/auth/*` (Better Auth's own routes).
+- `handle` resolves the session → `event.locals.user/session` plus the preserved `event.locals.userId/userEmail` contract (so the protected routes are unchanged). **Auth is optional, not a wall** (like the sibling tools): central gate sends unauthenticated browser requests to *gated* routes → `303 /login`; `/api/*` → `401`. Public surface = `/` (browsable guest homepage) + `/login` + `/api/auth/*` (Better Auth's own routes). The homepage shows the upload UI to guests with a "Sign in to run" prompt; `/jobs`, `/leads`, `/settings`, and every other `/api/*` route stay gated — actually running an extraction still requires sign-in + a connected Cloudflare account (`isPublicPath` in `hooks.server.ts` is the allowlist).
 - Rate limiting is two-tier: Better Auth's **D1-backed** limiter (`rate_limits` table, 20/60s) on `/api/auth/*`, plus an app-level in-memory 5/min on `/api/notion/dedup` + `/api/import/legacy`. A defensive CSP + security-header set is stamped on **every** response (including 401/redirect short-circuits).
 - Dev/preview bypass: `E2E_BYPASS_AUTH=1` (or `true`) in `.dev.vars` **only** (never `wrangler.jsonc`) synthesizes an `e2e-test-user` so local runs skip the Google round-trip.
 - Production: self-serve Google login, served only at `username-extractor.dropoutstudio.co`; the public `*.workers.dev` URL is disabled (`workers_dev: false`, `preview_urls: false`).
@@ -123,8 +123,8 @@ The legacy `env.AI` + AI-Gateway path (`src/lib/server/ai/gateway.ts#runVisionWi
 
 | Path                                     | Purpose                                                                                       |
 | ---------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `/`                                      | Upload + start new job                                                                        |
-| `/login`                                 | Google sign-in (Better Auth) — the only public page                                           |
+| `/`                                      | Upload + start new job (public — guests can browse; running requires sign-in)                  |
+| `/login`                                 | Google sign-in (Better Auth); UI mirrors the sibling tools + "Back to homepage" link to `/`   |
 | `/jobs`                                  | Job history                                                                                   |
 | `/jobs/[id]`                             | Live job progress (WebSocket via `/api/jobs/[id]/ws`)                                         |
 | `/leads`                                 | Lifetime verified leads                                                                       |

@@ -11,9 +11,10 @@ import { users } from "$lib/server/schema";
  * Pipeline:
  *  1. Resolve the Better Auth session → `event.locals.user/session` and the preserved
  *     contract `event.locals.userId/userEmail` (so the ~18 protected routes are unchanged).
- *  2. Central gate: unauthenticated browser requests → 303 /login; /api/* → 401. Public
- *     surface = `/login` + `/api/auth/*` (Better Auth's own routes). Static assets are
- *     served by the ASSETS binding before `handle` runs.
+ *  2. Central gate: unauthenticated browser requests to gated routes → 303 /login; /api/* → 401.
+ *     Auth is optional — public surface = `/` (browsable guest homepage) + `/login` +
+ *     `/api/auth/*` (Better Auth's own routes). Extraction still requires sign-in (the
+ *     `/api/*` mutations stay gated). Static assets are served by ASSETS before `handle` runs.
  *  3. In-memory 5/min rate limit on RATE_LIMIT_PATHS (app-level, distinct from Better Auth's
  *     D1 limiter on the auth endpoints).
  *  4. SECURITY_HEADERS stamped on EVERY response (including the 401/redirect short-circuits).
@@ -81,7 +82,10 @@ function applySecurityHeaders(response: Response): Response {
 }
 
 function isPublicPath(pathname: string): boolean {
-    return pathname === "/login" || pathname.startsWith("/api/auth/");
+    // Auth is optional, not a wall: the homepage is browsable signed-out (sign-in is an
+    // invitation, surfaced in the AppBar + on the upload form). /jobs, /leads, /settings and
+    // every /api/* route except Better Auth's own stay gated — extraction needs a session.
+    return pathname === "/" || pathname === "/login" || pathname.startsWith("/api/auth/");
 }
 
 function nullAuthLocals(event: Parameters<Handle>[0]["event"]): void {

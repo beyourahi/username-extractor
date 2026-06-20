@@ -1,7 +1,9 @@
 <!--
     Login screen. Single "Continue with Google" → Better Auth social OAuth (the only
     sign-in method). The $effect force-redirects if a session is already present on mount.
-    Rendered on a bare layout (no AppBar/Footer — see +layout.svelte).
+    Auth is optional — "Back to homepage" returns guests to the browsable app at `/`.
+    Rendered on a bare layout (no AppBar/Footer — see +layout.svelte). UI mirrors the
+    sibling tools' login (day-zero / invoice-generator / order-processor).
 -->
 <script lang="ts">
     import { authClient } from "$lib/auth-client";
@@ -11,38 +13,41 @@
     import HeroHeading from "$lib/components/HeroHeading.svelte";
     import { Cta, cn } from "$lib/ds";
 
-    let loading = $state(false);
+    let isLoading = $state(false);
     let error = $state<string | null>(null);
 
-    const redirectTo = $derived(page.url.searchParams.get("redirect") ?? "/");
+    const redirectUrl = $derived(page.url.searchParams.get("redirect") ?? "/");
 
     const session = authClient.useSession();
     $effect(() => {
-        if (browser && $session.data?.user) goto(redirectTo);
+        if (browser && $session.data?.user) goto(redirectUrl);
     });
 
-    async function signInGoogle() {
-        loading = true;
+    const handleGoogleLogin = async () => {
+        isLoading = true;
         error = null;
+
         try {
-            await authClient.signIn.social({ provider: "google", callbackURL: redirectTo });
-        } catch {
-            error = "Couldn't start Google sign-in. Please try again.";
-            loading = false;
+            await authClient.signIn.social({ provider: "google", callbackURL: redirectUrl });
+        } catch (e) {
+            error = "Failed to sign in with Google. Please try again.";
+            console.error(e);
+        } finally {
+            isLoading = false;
         }
-    }
+    };
 </script>
 
 <svelte:head>
-    <title>Sign in · Username Extractor</title>
+    <title>Sign In · Username Extractor</title>
 </svelte:head>
 
-<div class="flex grow flex-col items-center justify-center gap-8 px-4 sm:gap-10 lg:gap-12">
+<div class="flex grow flex-col items-center justify-center gap-8 overflow-hidden px-4 sm:gap-10 sm:px-6 lg:gap-12">
     <HeroHeading />
 
     {#if error}
         <div
-            class="border-tier-failed-border bg-tier-failed-bg text-tier-failed-fg max-w-sm rounded-xl border px-4 py-2.5 text-center text-sm text-pretty"
+            class="border-hair bg-destructive/10 text-destructive max-w-sm rounded-xl border px-4 py-2.5 text-center text-sm text-pretty"
             role="alert"
         >
             {error}
@@ -52,12 +57,12 @@
     <Cta
         variant="primary"
         arrow={false}
-        onclick={signInGoogle}
-        disabled={loading}
-        class={cn("min-w-[264px] justify-center py-[15px]", loading && "cursor-wait")}
+        onclick={handleGoogleLogin}
+        disabled={isLoading}
+        class={cn("min-w-[260px] justify-center py-[15px]", isLoading && "cursor-wait")}
     >
         <span class="inline-flex items-center gap-2.5">
-            {#if loading}
+            {#if isLoading}
                 <span
                     class="border-background/40 size-4 animate-spin rounded-full border-2 border-t-transparent"
                     aria-hidden="true"
@@ -86,7 +91,25 @@
         </span>
     </Cta>
 
-    <p class="text-ink-muted max-w-xs text-center text-[11px] text-pretty">
-        After signing in you'll connect your own Cloudflare account — extractions run on your account, billed to you.
+    <p class="text-ink-muted max-w-sm text-center text-sm text-pretty">
+        Sign in with your Google account to get started
     </p>
+
+    <Cta variant="secondary" href="/" arrow={false} class="min-w-[260px] justify-center py-[15px]">
+        <span class="inline-flex items-center gap-2.5">
+            <svg
+                class="size-4 transition-transform duration-300 ease-[var(--ease)] group-hover:-translate-x-0.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.25"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+            >
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            <span>Back to homepage</span>
+        </span>
+    </Cta>
 </div>
