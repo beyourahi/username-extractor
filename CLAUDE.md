@@ -121,27 +121,27 @@ The legacy `env.AI` + AI-Gateway path (`src/lib/server/ai/gateway.ts#runVisionWi
 
 ### Route map
 
-| Path                                     | Purpose                                                                      |
-| ---------------------------------------- | ---------------------------------------------------------------------------- |
-| `/`                                      | Upload + start new job                                                       |
-| `/login`                                 | Google sign-in (Better Auth) — the only public page                         |
-| `/jobs`                                  | Job history                                                                  |
-| `/jobs/[id]`                             | Live job progress (WebSocket via `/api/jobs/[id]/ws`)                        |
-| `/leads`                                 | Lifetime verified leads                                                      |
-| `/settings`                              | Notion config + Cloudflare account/model picker + diagnostics defaults       |
-| `/api/jobs` (`POST` create / `GET` list) | Job CRUD; `POST` `multi` mode creates an empty job for chunked folder upload |
-| `/api/jobs/[id]/items` (`POST` / `GET`)  | `POST` append an upload chunk (`appendItemsToJob`); `GET` list items         |
-| `/api/jobs/[id]/items/[item_id]/retry`   | Per-item retry                                                               |
-| `/api/jobs/[id]/finalize`                | Mark chunked upload done (`upload_complete=1`) → unblocks finalization       |
-| `/api/jobs/[id]/cancel`                  | Cancel a running job (broadcasts `job.cancelled`)                            |
-| `/api/jobs/[id]/ws`                      | WebSocket upgrade → JobCoordinator DO                                        |
-| `/api/leads` (`GET`)                     | CSV export of the filtered leads view (text/csv attachment)                  |
-| `/api/leads/[id]/{archive,notion-sync}`  | Manual lead actions                                                          |
-| `/api/notion/dedup`                      | Smart dedup vs Notion DB; honors `keep_strategy` + `dry_run` from JSON body  |
-| `/api/import/legacy`                     | One-shot import from CLI `verified_usernames.md` or existing Notion DB       |
-| `/api/r2/[...key]`                       | Authenticated R2 byte access (debug/preview)                                 |
-| `/api/debug/[job_id]/[stem]`             | Diagnostic raw model response, gated by `diagnostics` flag on the job        |
-| `/api/auth/*`                            | Better Auth handler — Google sign-in/out + OAuth callback (dispatched in `hooks.server.ts`) |
+| Path                                     | Purpose                                                                                       |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `/`                                      | Upload + start new job                                                                        |
+| `/login`                                 | Google sign-in (Better Auth) — the only public page                                           |
+| `/jobs`                                  | Job history                                                                                   |
+| `/jobs/[id]`                             | Live job progress (WebSocket via `/api/jobs/[id]/ws`)                                         |
+| `/leads`                                 | Lifetime verified leads                                                                       |
+| `/settings`                              | Notion config + Cloudflare account/model picker + diagnostics defaults                        |
+| `/api/jobs` (`POST` create / `GET` list) | Job CRUD; `POST` `multi` mode creates an empty job for chunked folder upload                  |
+| `/api/jobs/[id]/items` (`POST` / `GET`)  | `POST` append an upload chunk (`appendItemsToJob`); `GET` list items                          |
+| `/api/jobs/[id]/items/[item_id]/retry`   | Per-item retry                                                                                |
+| `/api/jobs/[id]/finalize`                | Mark chunked upload done (`upload_complete=1`) → unblocks finalization                        |
+| `/api/jobs/[id]/cancel`                  | Cancel a running job (broadcasts `job.cancelled`)                                             |
+| `/api/jobs/[id]/ws`                      | WebSocket upgrade → JobCoordinator DO                                                         |
+| `/api/leads` (`GET`)                     | CSV export of the filtered leads view (text/csv attachment)                                   |
+| `/api/leads/[id]/{archive,notion-sync}`  | Manual lead actions                                                                           |
+| `/api/notion/dedup`                      | Smart dedup vs Notion DB; honors `keep_strategy` + `dry_run` from JSON body                   |
+| `/api/import/legacy`                     | One-shot import from CLI `verified_usernames.md` or existing Notion DB                        |
+| `/api/r2/[...key]`                       | Authenticated R2 byte access (debug/preview)                                                  |
+| `/api/debug/[job_id]/[stem]`             | Diagnostic raw model response, gated by `diagnostics` flag on the job                         |
+| `/api/auth/*`                            | Better Auth handler — Google sign-in/out + OAuth callback (dispatched in `hooks.server.ts`)   |
 | `/api/cf/models` (`GET`)                 | Vision models on the user's connected CF account; KV-cached 24h, `?refresh=1` forces re-fetch |
 
 ## Code style
@@ -153,7 +153,8 @@ The legacy `env.AI` + AI-Gateway path (`src/lib/server/ai/gateway.ts#runVisionWi
 - **Server-only code** lives under `src/lib/server/` (enforced by SvelteKit). Client imports of anything in this tree will fail at build.
 - **Snake_case** is intentional on the WebSocket wire format and Notion sync payloads — they match the PRD and the legacy CLI's output. Do not rename these to camelCase.
 - Tests are co-located in `__tests__/` subdirectories next to the module under test (e.g. `src/lib/extract/__tests__/clean.test.ts`). Vitest is configured with `environment: "node"`.
-- **Design primitives in `src/lib/components/`** — `Button`, `TextInput`, `Field`, `Switch`, `Spinner`, `Badge`, `Eyebrow`, `HeroHeading`, `AppBar`, `Footer`, `UserChip`. Reuse these before authoring bespoke styled elements. HSL design tokens live in `src/app.css` under `@theme inline` — read from there, don't hardcode colors.
+- **Design system:** the UI runs on the **vendored Dropout DS** at `src/lib/ds/` (imported via `$lib/ds`: `Cta`, `Heading`, `Eyebrow`, `Input`, `Tile`, `cn`, + base-class consts `inputBase`/`labelBase`/`tileBase`/`pillBase`). **Never hand-edit `src/lib/ds/`** — edit upstream and re-vendor with `bun run sync-ds` (or the global `dropout-ds-sync`); `.prettierignore` excludes `src/lib/ds` so `bun run format` leaves it byte-identical to upstream (eslint does **not** ignore it). App is **dark-only** via `app.html`'s `class="dark"` (no `<ModeWatcher>` — the DS `:root` is light, so the class pins dark). DS tokens (ink ramp, `signal`, `hair`, type scale, Google Sans fonts, `--ease`, shell vars) come from `ds/styles/tokens.css`; `src/app.css` only adds the **tool layer** — the mint `--brand` accent + the functional `--status-*`/`--tier-*` colors (OKLCH) — and the bespoke keyframe utilities (`scan-line`/`shimmer`/`spin`/`status-dot-pulse`/`slide-in`/`fade-in`). Read colors from these tokens; never hardcode hex/hsl/oklch in markup.
+- **Design primitives in `src/lib/components/`** — `Button`, `TextInput`, `Field`, `Switch`, `Spinner`, `Badge`, `TierBadge`, `NotionBadge`, `Eyebrow`, `HeroHeading`, `PageHeader`, `AppBar`, `Footer`, `UserChip`, etc. — are DS-styled wrappers/compositions. Reuse them before authoring bespoke styled elements.
 
 ## Required env / bindings
 
@@ -166,7 +167,7 @@ Local (create `.dev.vars` — there is no `.example` template in the repo):
 | `GOOGLE_CLIENT_ID`            | Google OAuth client id                                                                      |
 | `GOOGLE_CLIENT_SECRET`        | Google OAuth client secret                                                                  |
 | `E2E_BYPASS_AUTH`             | `1`/`true` → synthesize an `e2e-test-user` and skip Google (local/preview only)             |
-| `NOTION_TOKEN_ENCRYPTION_KEY` | `openssl rand -base64 32` — encrypts BOTH the Notion token and the BYO Cloudflare token      |
+| `NOTION_TOKEN_ENCRYPTION_KEY` | `openssl rand -base64 32` — encrypts BOTH the Notion token and the BYO Cloudflare token     |
 
 Production secrets (`wrangler secret put`):
 
