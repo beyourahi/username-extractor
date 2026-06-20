@@ -76,6 +76,8 @@ GET /api/jobs/[id]/ws     browser subscribes; renders item.started / item.comple
 
 **D1 is the source of truth.** The DO is a best-effort broadcast relay — if it crashes, the consumer keeps writing and the UI resyncs on reconnect. Never use the DO for durable state.
 
+**Two upload modes feed this pipeline.** Single/small batches POST images inline to `/api/jobs` (`createJob` uploads + enqueues at create time). Folder drops use **chunked multi mode**: `POST /api/jobs` creates an empty job with `upload_complete=0`, the client streams images in chunks to `POST /api/jobs/[id]/items` (`appendItemsToJob`), then `POST /api/jobs/[id]/finalize` sets `upload_complete=1` to unblock `maybeFinalizeJob`. The `upload_complete` flag exists to gate finalization — without it, an early chunk whose items all finish processing during upload would mark the whole job done before later chunks land. Multi mode reserves the daily quota up front against the client-declared total. AVIF/BMP/TIFF are normalized to JPEG **client-side** via canvas (`src/lib/utils/normalizeImage.ts`) before upload, since Workers AI can't decode them.
+
 The discriminated `Message` union in `src/lib/types/messages.ts` is the canonical WebSocket wire format. Snake_case keys are intentional (matches the PRD spec; the client renders them directly). Older `JobItemUpdate` / `JobStreamMessage` shapes are kept for in-progress UI compatibility — new code targets `Message`.
 
 ### Auth: Cloudflare Access + dev fallback
@@ -83,7 +85,7 @@ The discriminated `Message` union in `src/lib/types/messages.ts` is the canonica
 `src/hooks.server.ts` is the single auth chokepoint:
 
 - Production: verifies `Cf-Access-Jwt-Assertion` against the Access JWKS using `ACCESS_TEAM_DOMAIN` + `ACCESS_AUDIENCE`. On success, upserts a `users` row keyed on the Access subject and sets `event.locals.userId` / `userEmail`.
-- Local: if `ALLOW_DEV_AUTH=1` is set (via `.dev.vars`) **and** no JWT header is present, falls back to a stub `dev-user` and inserts the FK target. **`ALLOW_DEV_AUTH=1` is currently in `wrangler.jsonc` `vars` for convenience — remove before production deploy and set via `wrangler secret` or `.dev.vars` only.**
+- Local: if `ALLOW_DEV_AUTH=1` is set (via `.dev.vars`) **and** no JWT header is present, falls back to a stub `dev-user` and inserts the FK target. **`ALLOW_DEV_AUTH` lives in `.dev.vars` only (local) — it is NOT in `wrangler.jsonc` and must never be. Production is gated by a real Cloudflare Access app on the custom domain; `ACCESS_AUDIENCE` + `NOTION_TOKEN_ENCRYPTION_KEY` are set as `wrangler secret`s, the public `*.workers.dev` URL is disabled (`workers_dev: false`), and the worker is served only at `username-extractor.dropoutstudio.co`.**
 - Also enforces a 5 req/min in-memory rate limit on `/api/notion/dedup` and `/api/import/legacy`, and stamps a defensive CSP + security-header set on every response.
 
 All authenticated route handlers read `event.locals.userId` — never trust a userId from the request body.
@@ -97,7 +99,7 @@ User Notion tokens are encrypted at rest using AES-GCM keyed by `NOTION_TOKEN_EN
 
 ### Persistence layout
 
-- **D1 (`username-extractor`)** — `users`, `user_settings`, `jobs`, `job_items`, `leads`. Schema in `src/lib/server/schema.ts` (Drizzle). All timestamps are Unix epoch ms in `INTEGER` columns (SQLite has no native datetime). Migrations live in `migrations/`.
+- **D1 (`username-extractor`)** — `users`, `user_settings`, `jobs`, `job_items`, `leads`. Schema in `src/lib/server/schema.ts` (Drizzle). All timestamps are Unix epoch ms in `INTEGER` columns (SQLite has no native datetime). Migrations live in `migrations/`. Non-obvious columns: `jobs.upload_complete` (gates chunked-upload finalization) and `user_settings.dedup_keep_strategy` (`best`/`oldest`/`newest`).
 - **R2 (`username-extractor-uploads`)** — raw screenshot bytes. Keys are namespaced per job. A nightly cron (`0 3 * * *`) in `src/lib/server/cron/sweep.ts` reaps stale objects.
 - **KV (`username_extractor_kv`)** — short-lived caches (e.g. Instagram URL validator).
 - **Workers AI** — `@cf/moonshotai/kimi-k2.6` vision model. Routed through AI Gateway when `AI_GATEWAY_SLUG` is set, for observability.
@@ -112,12 +114,15 @@ User Notion tokens are encrypted at rest using AES-GCM keyed by `NOTION_TOKEN_EN
 | `/jobs/[id]`                             | Live job progress (WebSocket via `/api/jobs/[id]/ws`)                  |
 | `/leads`                                 | Lifetime verified leads                                                |
 | `/settings`                              | Notion config + diagnostics defaults                                   |
-| `/api/jobs` (`POST` create / `GET` list) | Job CRUD                                                               |
-| `/api/jobs/[id]/items[/[item_id]/retry]` | Item access + per-item retry                                           |
+| `/api/jobs` (`POST` create / `GET` list) | Job CRUD; `POST` `multi` mode creates an empty job for chunked folder upload |
+| `/api/jobs/[id]/items` (`POST` / `GET`)  | `POST` append an upload chunk (`appendItemsToJob`); `GET` list items   |
+| `/api/jobs/[id]/items/[item_id]/retry`   | Per-item retry                                                         |
+| `/api/jobs/[id]/finalize`                | Mark chunked upload done (`upload_complete=1`) → unblocks finalization |
 | `/api/jobs/[id]/cancel`                  | Cancel a running job (broadcasts `job.cancelled`)                      |
 | `/api/jobs/[id]/ws`                      | WebSocket upgrade → JobCoordinator DO                                  |
+| `/api/leads` (`GET`)                     | CSV export of the filtered leads view (text/csv attachment)           |
 | `/api/leads/[id]/{archive,notion-sync}`  | Manual lead actions                                                    |
-| `/api/notion/dedup`                      | Run smart dedup against user's Notion DB                               |
+| `/api/notion/dedup`                      | Smart dedup vs Notion DB; honors `keep_strategy` + `dry_run` from JSON body |
 | `/api/import/legacy`                     | One-shot import from CLI `verified_usernames.md` or existing Notion DB |
 | `/api/r2/[...key]`                       | Authenticated R2 byte access (debug/preview)                           |
 | `/api/debug/[job_id]/[stem]`             | Diagnostic raw model response, gated by `diagnostics` flag on the job  |
@@ -158,8 +163,10 @@ Bindings (declared in `wrangler.jsonc`): `DB` (D1), `R2`, `KV`, `AI`, `QUEUE` (p
 - **`bun run dev` ≠ Workers runtime.** Use `bun run preview` whenever you touch the queue consumer, the DO, the cron sweep, or AI Gateway routing.
 - **`wrap-worker.mjs` is silent if it works.** If `_worker.js` post-build looks like the SvelteKit-generated file (no `import { queueConsumer }`), the wrap step didn't run — check `bun run build` output for `[wrap-worker]`.
 - **Schema changes need two steps:** edit `src/lib/server/schema.ts`, then `bun run db:generate` to emit a migration, then `bun run db:migrate:local` (and `db:migrate` for prod). Don't hand-edit files in `migrations/`.
+- **D1 caps bound parameters at ~100/query.** `job_items` rows bind ~8 params each, so inserts are sub-batched at 10 rows/insert (`INSERT_BATCH` in `src/lib/server/jobs/create.ts`) — a single INSERT of a large chunk overflows the limit. Respect this for any new bulk insert.
+- **Image normalization is client-side.** AVIF/BMP/TIFF are converted to JPEG via canvas in `src/lib/utils/normalizeImage.ts` before upload because Workers AI can't decode AVIF; web-safe formats pass through. The server trusts already-decodable bytes — don't re-add server-side decode.
 - **`worker-configuration.d.ts` is generated.** After changing `wrangler.jsonc` bindings, run `bun run cf-typegen` to refresh the ambient types.
-- **CSRF trustedOrigins** in `svelte.config.js` includes the dev ports and the production hostname `username-extractor.dropoutstudio.com`. Add new hostnames here when binding additional routes.
+- **CSRF trustedOrigins** in `svelte.config.js` includes the dev ports and the production hostname `username-extractor.dropoutstudio.co`. Add new hostnames here when binding additional routes.
 - **WebSocket reconnect contract:** the client passes `?last_event_id=<n>` to `/api/jobs/[id]/ws`; the DO replays missed completed items from D1. Don't bypass this for "snapshot" loads — it's the resync path.
 - **CPU limit raised to 300s** (`limits.cpu_ms` in `wrangler.jsonc`) for the queue consumer's worst-case batch. Keep an eye on this if you add expensive per-item work.
 - **Workers AI model id is `@cf/moonshotai/kimi-k2.6`** — the PRD spec's `@cf/moonshot/...` (no `ai`) is a typo; don't copy it.
