@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Image as ImageIcon, AlertTriangle, Check } from "@lucide/svelte";
+    import { Image as ImageIcon, AlertTriangle, Check, FolderOpen } from "@lucide/svelte";
     import Spinner from "./Spinner.svelte";
     import Button from "./Button.svelte";
     import Eyebrow from "./Eyebrow.svelte";
@@ -8,11 +8,13 @@
     let {
         disabled = false,
         processing = false,
+        progressLabel = "Creating job…",
         onfiles,
-        accept = ".png,.jpg,.jpeg,.webp,.bmp,.tiff,image/*"
+        accept = ".png,.jpg,.jpeg,.webp,.bmp,.tiff,.avif,image/*"
     }: {
         disabled?: boolean;
         processing?: boolean;
+        progressLabel?: string;
         onfiles: (files: File[]) => void;
         accept?: string;
     } = $props();
@@ -21,6 +23,7 @@
     let files = $state<File[]>([]);
     let error = $state<string | null>(null);
     let input: HTMLInputElement | undefined = $state();
+    let folderInput: HTMLInputElement | undefined = $state();
 
     function commit(list: File[]) {
         files = list;
@@ -28,16 +31,54 @@
     }
 
     function validate(list: File[]): File[] {
-        return list.filter((f) => /\.(png|jpe?g|webp|bmp|tiff)$/i.test(f.name) || f.type.startsWith("image/"));
+        return list.filter((f) => /\.(png|jpe?g|webp|bmp|tiff|avif)$/i.test(f.name) || f.type.startsWith("image/"));
     }
 
-    function onDrop(e: DragEvent) {
+    // Recursively collect File objects from a dropped directory entry. webkitGetAsEntry
+    // must be called synchronously in the drop handler (see onDrop) before any await.
+    async function readEntryFiles(entry: FileSystemEntry, out: File[]): Promise<void> {
+        if (entry.isFile) {
+            const file = await new Promise<File>((resolve, reject) =>
+                (entry as FileSystemFileEntry).file(resolve, reject)
+            );
+            out.push(file);
+        } else if (entry.isDirectory) {
+            const reader = (entry as FileSystemDirectoryEntry).createReader();
+            const readBatch = () =>
+                new Promise<FileSystemEntry[]>((resolve, reject) => reader.readEntries(resolve, reject));
+            let batch = await readBatch();
+            while (batch.length > 0) {
+                for (const e of batch) await readEntryFiles(e, out);
+                batch = await readBatch(); // readEntries returns in batches; loop until empty.
+            }
+        }
+    }
+
+    async function onDrop(e: DragEvent) {
         e.preventDefault();
         dragOver = false;
         if (disabled || processing || !e.dataTransfer) return;
-        const dropped = validate(Array.from(e.dataTransfer.files));
+
+        // Grab directory entries synchronously — the DataTransfer is invalidated after await.
+        const entries: FileSystemEntry[] = [];
+        const items = e.dataTransfer.items;
+        if (items && items.length && typeof items[0]?.webkitGetAsEntry === "function") {
+            for (const it of Array.from(items)) {
+                const entry = it.webkitGetAsEntry?.();
+                if (entry) entries.push(entry);
+            }
+        }
+
+        let collected: File[] = [];
+        if (entries.length > 0) {
+            for (const entry of entries) await readEntryFiles(entry, collected);
+        } else {
+            collected = Array.from(e.dataTransfer.files);
+        }
+
+        const dropped = validate(collected);
         if (dropped.length === 0) {
-            error = "Please drop image files (PNG, JPG, WebP, BMP, TIFF).";
+            error = "No images found. Drop image files or a folder of them (PNG, JPG, WebP, AVIF, BMP, TIFF).";
             return;
         }
         error = null;
@@ -58,15 +99,21 @@
         if (!target.files) return;
         const picked = validate(Array.from(target.files));
         if (picked.length === 0) {
-            error = "Please pick image files (PNG, JPG, WebP, BMP, TIFF).";
+            error = "Please pick image files (PNG, JPG, WebP, AVIF, BMP, TIFF).";
             return;
         }
         error = null;
         commit([...files, ...picked]);
+        target.value = ""; // allow re-selecting the same files/folder
     }
 
     function openPicker() {
         if (!disabled && !processing) input?.click();
+    }
+
+    function openFolderPicker(e: MouseEvent) {
+        e.stopPropagation();
+        if (!disabled && !processing) folderInput?.click();
     }
 
     function clearError(e: MouseEvent) {
@@ -108,6 +155,17 @@
             onchange={onSelect}
             disabled={disabled || processing}
         />
+        <!-- Second input: whole-folder selection. webkitdirectory ignores `accept`,
+             so validate() filters the result down to images. -->
+        <input
+            bind:this={folderInput}
+            type="file"
+            multiple
+            webkitdirectory
+            class="hidden"
+            onchange={onSelect}
+            disabled={disabled || processing}
+        />
 
         {#if error}
             <div class="flex flex-col items-center gap-3 px-4 text-center">
@@ -118,7 +176,7 @@
         {:else if processing}
             <div class="flex flex-col items-center gap-4">
                 <Spinner size="lg" color="brand" />
-                <p class="text-muted-fg text-sm">Creating job…</p>
+                <p class="text-muted-fg text-sm tabular-nums">{progressLabel}</p>
             </div>
         {:else if files.length > 0}
             <div class="flex flex-col items-center gap-4 px-4 text-center">
@@ -133,14 +191,28 @@
                 <p class="text-sm text-zinc-300">
                     Drop more, or hit <span class="font-semibold text-white">Run extraction</span>
                 </p>
+                <button
+                    type="button"
+                    onclick={openFolderPicker}
+                    class="sleek text-muted-fg inline-flex items-center gap-1.5 text-xs hover:text-zinc-300"
+                >
+                    <FolderOpen size={12} /> Add a folder
+                </button>
             </div>
         {:else}
             <div class="flex flex-col items-center gap-4 px-4 sm:gap-6">
                 <ImageIcon size={40} class="text-zinc-500" strokeWidth={1.5} />
                 <div class="flex flex-col items-center gap-1.5 text-center">
-                    <p class="text-base font-medium text-zinc-300 sm:text-lg">Drop your screenshots here</p>
-                    <p class="text-muted-fg text-xs sm:text-sm">or click to browse · PNG, JPG, WebP up to 50</p>
+                    <p class="text-base font-medium text-zinc-300 sm:text-lg">Drop screenshots or a whole folder</p>
+                    <p class="text-muted-fg text-xs sm:text-sm">click to browse files · PNG · JPG · WebP · AVIF</p>
                 </div>
+                <button
+                    type="button"
+                    onclick={openFolderPicker}
+                    class="sleek border-border-strong text-muted-fg inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs hover:text-zinc-200"
+                >
+                    <FolderOpen size={13} /> Select a folder
+                </button>
             </div>
         {/if}
     </div>

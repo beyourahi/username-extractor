@@ -56,6 +56,18 @@
         return s ? `/leads?${s}` : "/leads";
     });
 
+    // CSV export of the current filtered view. Content-Disposition on the endpoint
+    // makes the browser download rather than navigate.
+    const csvHref = $derived.by(() => {
+        const params = new SvelteURLSearchParams();
+        params.set("format", "csv");
+        if (data.q) params.set("q", data.q);
+        if (data.tier) params.set("tier", data.tier);
+        if (data.notion) params.set("notion", data.notion);
+        if (data.archived) params.set("archived", "1");
+        return `/api/leads?${params.toString()}`;
+    });
+
     // Local mirror of filter state for chip-based interaction. Form submission
     // updates the URL; server reload returns the matching slice.
     let queryLocal = $state(untrack(() => data.q ?? ""));
@@ -109,7 +121,14 @@
         subtitle={`${data.total} lifetime verified handles. Dedup uses this list as source of truth.`}
     >
         {#snippet actions()}
-            <Button variant="outline" size="sm" href="/leads.csv" title="Export coming soon" aria-label="Export">
+            <Button
+                variant="outline"
+                size="sm"
+                href={csvHref}
+                download="leads.csv"
+                title="Export current view as CSV"
+                aria-label="Export leads as CSV"
+            >
                 <Download size={13} /> Export
             </Button>
             <Button variant="outline" size="sm" href="/settings"><RefreshCw size={13} /> Sync pending</Button>

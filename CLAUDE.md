@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-**Username Extractor** is the production web port of the legacy Python CLI [`extract_usernames`](https://github.com/beyourahi/extract_usernames). It extracts Instagram usernames from batches of profile screenshots, deduplicates them against a lifetime leads table, and syncs verified results to Notion.
+**Username Extractor** is the production successor to the legacy Python CLI [`extract_usernames`](https://github.com/beyourahi/extract_usernames) (now **retired & archived, read-only**). It extracts Instagram usernames from batches of profile screenshots — including dropping a whole folder of AVIF screenshots, which are normalized to JPEG client-side and streamed up as one chunked job — deduplicates them against a lifetime leads table, and syncs verified results to Notion.
 
 **Stack:** SvelteKit 5 (Svelte 5 runes) + Bun + Tailwind v4 + Cloudflare Workers (D1, R2, KV, Queues, Durable Objects, Workers AI, Analytics Engine).
 

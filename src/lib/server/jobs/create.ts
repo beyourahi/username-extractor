@@ -48,6 +48,14 @@ export interface CreateJobInput {
     userId: string;
     files: File[];
     diagnostics: boolean;
+    /**
+     * Chunked-upload mode for large folders. When true the job is created with
+     * `upload_complete = 0` (and may start with zero files); remaining images are
+     * streamed in via `appendItemsToJob` and the client calls `/finalize` when done.
+     */
+    multi?: boolean;
+    /** Declared total image count, used to reserve quota up front in multi mode. Defaults to `files.length`. */
+    expectedTotal?: number;
 }
 
 export interface CreateJobResult {
@@ -55,7 +63,7 @@ export interface CreateJobResult {
     itemCount: number;
 }
 
-const DEFAULT_DAILY_QUOTA = 1000;
+const DEFAULT_DAILY_QUOTA = 50000;
 const VLM_MODEL = "@cf/moonshotai/kimi-k2.6";
 
 function sanitizeFilename(name: string): string {
@@ -98,23 +106,30 @@ async function loadUsedToday(db: Db, userId: string): Promise<number> {
     return typeof total === "number" ? total : Number(total ?? 0);
 }
 
-export async function createJob(input: CreateJobInput): Promise<CreateJobResult> {
-    const { db, env, userId, files, diagnostics } = input;
+export interface AppendItemsInput {
+    db: Db;
+    env: CreateJobEnv;
+    jobId: string;
+    userId: string;
+    files: File[];
+    diagnostics: boolean;
+}
 
-    if (files.length === 0) {
-        throw new Error("createJob: at least one file is required");
-    }
+/**
+ * Uploads a chunk of files to R2, inserts their `job_items` rows, bumps
+ * `jobs.image_count`, then enqueues one message per item. Shared by `createJob`
+ * (initial files) and the `/api/jobs/[id]/items` append endpoint (later chunks).
+ *
+ * Ordering invariant (DO NOT reorder): R2 put → `job_items` INSERT → `QUEUE.send`.
+ * The consumer assumes the row exists when it dequeues. A mid-loop R2/D1 failure
+ * leaves orphan blobs/rows that the nightly sweep reaps; the client retries the chunk.
+ * The caller MUST have already inserted the parent `jobs` row (FK target).
+ */
+export async function appendItemsToJob(input: AppendItemsInput): Promise<number> {
+    const { db, env, jobId, userId, files, diagnostics } = input;
+    if (files.length === 0) return 0;
 
-    // Step 1: quota
-    const [limit, used] = await Promise.all([loadQuota(db, userId), loadUsedToday(db, userId)]);
-    if (used + files.length > limit) {
-        throw new QuotaExceededError(used, limit, files.length);
-    }
-
-    // Step 2: R2 uploads + row construction (interleaved so a partial failure leaves no D1 rows).
-    const jobId = crypto.randomUUID();
     const now = Date.now();
-
     type ItemRow = typeof jobItems.$inferInsert;
     const itemRows: ItemRow[] = [];
     const queueMessages: QueueMessage[] = [];
@@ -151,28 +166,61 @@ export async function createJob(input: CreateJobInput): Promise<CreateJobResult>
         queueMessages.push(msg);
     }
 
-    // Step 3: D1 inserts (jobs first to satisfy job_items FK).
+    // D1 caps bound parameters per query (~100). Each row binds ~8, so a 50-image
+    // chunk in one INSERT would blow the limit — sub-batch the insert to stay under it.
+    const INSERT_BATCH = 10;
+    for (let i = 0; i < itemRows.length; i += INSERT_BATCH) {
+        await db.insert(jobItems).values(itemRows.slice(i, i + INSERT_BATCH));
+    }
+    await db
+        .update(jobs)
+        .set({ imageCount: sql`${jobs.imageCount} + ${itemRows.length}` })
+        .where(eq(jobs.id, jobId));
+
+    // Enqueue last — job_items rows MUST exist by now (consumer reads them).
+    for (const m of queueMessages) {
+        await env.QUEUE.send(m);
+        emit(env, "item_queued", { jobId, userId, itemId: m.item_id });
+    }
+
+    return itemRows.length;
+}
+
+export async function createJob(input: CreateJobInput): Promise<CreateJobResult> {
+    const { db, env, userId, files, diagnostics, multi = false, expectedTotal } = input;
+
+    if (!multi && files.length === 0) {
+        throw new Error("createJob: at least one file is required");
+    }
+
+    // Step 1: quota. Multi mode reserves against the client-declared total so the
+    // whole folder is admitted (or rejected) up front rather than mid-upload.
+    const reserve = multi ? Math.max(expectedTotal ?? files.length, files.length) : files.length;
+    const [limit, used] = await Promise.all([loadQuota(db, userId), loadUsedToday(db, userId)]);
+    if (used + reserve > limit) {
+        throw new QuotaExceededError(used, limit, reserve);
+    }
+
+    const jobId = crypto.randomUUID();
+    const now = Date.now();
+
+    // Step 2: create the parent job row first (job_items FK target). image_count
+    // starts at 0 and is bumped by appendItemsToJob as chunks land.
     await db.insert(jobs).values({
         id: jobId,
         userId,
         status: "pending",
         vlmModel: VLM_MODEL,
         diagnostics: diagnostics ? 1 : 0,
-        imageCount: files.length,
+        imageCount: 0,
+        uploadComplete: multi ? 0 : 1,
         createdAt: now
     });
 
-    if (itemRows.length > 0) {
-        await db.insert(jobItems).values(itemRows);
-    }
-
-    // Step 4: enqueue. job_items rows MUST exist by now — consumer reads them.
-    for (const m of queueMessages) {
-        await env.QUEUE.send(m);
-        emit(env, "item_queued", { jobId, userId, itemId: m.item_id });
-    }
+    // Step 3: upload + enqueue any initial files (none in pure chunked mode).
+    const itemCount = await appendItemsToJob({ db, env, jobId, userId, files, diagnostics });
 
     emit(env, "job_created", { jobId, userId });
 
-    return { jobId, itemCount: files.length };
+    return { jobId, itemCount };
 }

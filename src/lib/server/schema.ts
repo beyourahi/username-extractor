@@ -29,7 +29,9 @@ export const userSettings = sqliteTable("user_settings", {
     notionAutoSync: integer("notion_auto_sync").notNull().default(0),
     notionSkipValidation: integer("notion_skip_validation").notNull().default(0),
     notionValidationDelayMs: integer("notion_validation_delay_ms").notNull().default(2000),
-    dailyImageQuota: integer("daily_image_quota").notNull().default(1000)
+    dailyImageQuota: integer("daily_image_quota").notNull().default(1000),
+    /** Notion post-job dedup winner strategy: 'best' | 'oldest' | 'newest'. See `src/lib/notion/dedup.ts#KeepStrategy`. */
+    dedupKeepStrategy: text("dedup_keep_strategy").notNull().default("best")
 });
 
 /** `status`: pending | running | completed | cancelled | failed. Mirror in `$lib/types/messages` JobStatus. */
@@ -44,6 +46,14 @@ export const jobs = sqliteTable(
         vlmModel: text("vlm_model").notNull(),
         diagnostics: integer("diagnostics").notNull(),
         imageCount: integer("image_count").notNull(),
+        /**
+         * 1 once the client has finished uploading every chunk of a job; 0 while a
+         * chunked folder upload is still streaming items in. `maybeFinalizeJob`
+         * refuses to complete a job until this is 1, so an early chunk draining
+         * before later chunks arrive can't prematurely mark the job done.
+         * Defaults to 1 — the legacy single-POST path is complete on creation.
+         */
+        uploadComplete: integer("upload_complete").notNull().default(1),
         /** JSON written by the post-job NotionDeduplicator (`src/lib/notion/dedup.ts`). Shape: `{ duplicate_groups, duplicates_found, duplicates_removed, errors }`. */
         dedupSummary: text("dedup_summary"),
         createdAt: integer("created_at").notNull(),

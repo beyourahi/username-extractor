@@ -128,15 +128,15 @@ export class NotionDatabaseManager {
         return instance;
     }
 
-/**
- * Normalizes user-supplied database IDs to the 32-char hex form expected by
- * the Notion API. Accepts:
- *   - Raw:        `300472d4ce5181aa83f2000b8ae958d2`
- *   - Dashed:     `300472d4-ce51-81aa-83f2-000b8ae958d2`
- *   - URL:        `https://notion.so/300472d4ce5181aa83f2000b8ae958d2`
- *   - URL w/ qs:  `https://notion.so/300472d4-ce51-...?v=...`
- * Returns empty string for falsy input.
- */
+    /**
+     * Normalizes user-supplied database IDs to the 32-char hex form expected by
+     * the Notion API. Accepts:
+     *   - Raw:        `300472d4ce5181aa83f2000b8ae958d2`
+     *   - Dashed:     `300472d4-ce51-81aa-83f2-000b8ae958d2`
+     *   - URL:        `https://notion.so/300472d4ce5181aa83f2000b8ae958d2`
+     *   - URL w/ qs:  `https://notion.so/300472d4-ce51-...?v=...`
+     * Returns empty string for falsy input.
+     */
     static cleanDatabaseId(raw: string): string {
         if (!raw) {
             return "";

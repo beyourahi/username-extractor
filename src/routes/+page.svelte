@@ -9,12 +9,37 @@
     import Button from "$lib/components/Button.svelte";
     import Spinner from "$lib/components/Spinner.svelte";
 
+    import { normalizeAll } from "$lib/utils/normalizeImage";
+
     let { data } = $props();
+
+    // Files-per-request for chunked folder uploads. A single multipart POST can't
+    // carry hundreds of MB; folders stream up in batches that share one job.
+    const CHUNK = 50;
 
     let files = $state<File[]>([]);
     let diagnostics = $state<boolean>(untrack(() => Boolean(data.diagnosticsDefault)));
     let submitting = $state(false);
     const notionConfigured = $derived(Boolean(data.notionConfigured));
+
+    // Progress surface for the dropzone while preparing/uploading large folders.
+    let phase = $state<"idle" | "preparing" | "creating" | "uploading">("idle");
+    let prepared = $state(0);
+    let uploaded = $state(0);
+    let total = $state(0);
+    const progressLabel = $derived.by(() => {
+        if (phase === "preparing") return `Preparing ${prepared}/${total}…`;
+        if (phase === "uploading") return `Uploading ${uploaded}/${total}…`;
+        return "Creating job…";
+    });
+
+    async function postChunk(url: string, chunk: File[]) {
+        const form = new FormData();
+        for (const f of chunk) form.append("files", f);
+        const res = await fetch(url, { method: "POST", body: form });
+        if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+        return res;
+    }
 
     async function submit() {
         if (files.length === 0) {
@@ -22,25 +47,57 @@
             return;
         }
         submitting = true;
+        total = files.length;
         try {
-            const form = new FormData();
-            for (const f of files) form.append("files", f);
-            form.append("diagnostics", diagnostics ? "true" : "false");
+            // 1. Normalize AVIF/BMP/TIFF → JPEG so the model can read them (web-safe pass through).
+            phase = "preparing";
+            prepared = 0;
+            const prepd = await normalizeAll(files, (d) => (prepared = d));
 
-            const res = await fetch("/api/jobs", { method: "POST", body: form });
-            if (!res.ok) {
-                const body = await res.text();
-                throw new Error(`${res.status} ${body}`);
+            let jobId: string | undefined;
+
+            if (prepd.length <= CHUNK) {
+                // Small batch → single multipart POST (legacy path, unchanged).
+                phase = "creating";
+                const form = new FormData();
+                for (const f of prepd) form.append("files", f);
+                form.append("diagnostics", diagnostics ? "true" : "false");
+                const res = await fetch("/api/jobs", { method: "POST", body: form });
+                if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+                const json = (await res.json()) as { jobId?: string; job_id?: string; id?: string };
+                jobId = json.jobId ?? json.job_id ?? json.id;
+            } else {
+                // Large folder → create one job, stream chunks, finalize.
+                phase = "creating";
+                const createRes = await fetch("/api/jobs", {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ multi: true, expectedTotal: prepd.length, diagnostics })
+                });
+                if (!createRes.ok) throw new Error(`${createRes.status} ${await createRes.text()}`);
+                const cj = (await createRes.json()) as { jobId?: string; job_id?: string; id?: string };
+                jobId = cj.jobId ?? cj.job_id ?? cj.id;
+                if (!jobId) throw new Error("Missing jobId in response");
+
+                phase = "uploading";
+                uploaded = 0;
+                for (let i = 0; i < prepd.length; i += CHUNK) {
+                    const chunk = prepd.slice(i, i + CHUNK);
+                    await postChunk(`/api/jobs/${jobId}/items`, chunk);
+                    uploaded += chunk.length;
+                }
+                const fin = await fetch(`/api/jobs/${jobId}/finalize`, { method: "POST" });
+                if (!fin.ok) throw new Error(`finalize ${fin.status} ${await fin.text()}`);
             }
-            const json = (await res.json()) as { jobId?: string; job_id?: string; id?: string };
-            const jobId = json.jobId ?? json.job_id ?? json.id;
+
             if (!jobId) throw new Error("Missing jobId in response");
-            toast.success(`Job queued · ${files.length} images`);
+            toast.success(`Job queued · ${prepd.length} images`);
             await goto(`/jobs/${jobId}`);
         } catch (e) {
             toast.error(e instanceof Error ? e.message : "Upload failed");
         } finally {
             submitting = false;
+            phase = "idle";
         }
     }
 </script>
@@ -64,7 +121,12 @@
         class="flex w-full max-w-md flex-col items-center justify-center gap-8 sm:max-w-xl sm:gap-10 lg:max-w-4xl lg:flex-row lg:items-start lg:gap-12 2xl:max-w-6xl"
     >
         <div class="w-full lg:max-w-lg">
-            <UploadDropzone disabled={submitting} processing={submitting} onfiles={(f) => (files = f)} />
+            <UploadDropzone
+                disabled={submitting}
+                processing={submitting}
+                {progressLabel}
+                onfiles={(f) => (files = f)}
+            />
         </div>
 
         <div class="flex w-full max-w-sm flex-col gap-4">

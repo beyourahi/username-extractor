@@ -98,7 +98,7 @@
                         name="dailyImageQuota"
                         bind:value={$form.dailyImageQuota}
                         min={0}
-                        max={10000}
+                        max={100000}
                         class="text-right"
                     />
                     {#if $errors.dailyImageQuota}
@@ -179,6 +179,26 @@
                         max={60000}
                         class="text-right"
                     />
+                </div>
+            </div>
+            <div class="bg-border h-px"></div>
+            <div class="flex items-center justify-between gap-3 py-3">
+                <div>
+                    <p class="text-sm font-medium text-zinc-200">Dedup keep-strategy</p>
+                    <p class="text-muted-fg mt-0.5 text-xs text-pretty">
+                        Which page survives when collapsing duplicate handles in Notion.
+                    </p>
+                </div>
+                <div class="w-36">
+                    <select
+                        name="dedupKeepStrategy"
+                        bind:value={$form.dedupKeepStrategy}
+                        class="border-border-strong bg-background w-full rounded-md border px-2.5 py-2 text-xs text-zinc-200 focus:border-[color:var(--brand)] focus:ring-2 focus:ring-[color:var(--brand-soft)] focus:outline-none"
+                    >
+                        <option value="best">Best score</option>
+                        <option value="oldest">Oldest</option>
+                        <option value="newest">Newest</option>
+                    </select>
                 </div>
             </div>
         {/snippet}

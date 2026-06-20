@@ -567,7 +567,7 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
     await maybeFinalizeJob(env, db, jobId, userId, startedAt);
 }
 
-async function maybeFinalizeJob(
+export async function maybeFinalizeJob(
     env: ConsumerEnv,
     db: Db,
     jobId: string,
@@ -578,13 +578,17 @@ async function maybeFinalizeJob(
     if (remaining > 0) return;
 
     const jobRows = await db
-        .select({ status: jobs.status, createdAt: jobs.createdAt })
+        .select({ status: jobs.status, createdAt: jobs.createdAt, uploadComplete: jobs.uploadComplete })
         .from(jobs)
         .where(eq(jobs.id, jobId))
         .limit(1);
     const jobRow = jobRows[0];
     if (!jobRow) return;
     if (jobRow.status === "completed" || jobRow.status === "cancelled") return;
+    // Chunked folder upload still streaming: don't complete until the client
+    // calls /finalize (sets upload_complete=1). Otherwise an early chunk draining
+    // before later chunks arrive would prematurely mark the whole job done.
+    if (!jobRow.uploadComplete) return;
 
     // Post-job Notion dedup: walks the user's Notion database and collapses
     // duplicates that may pre-date this job. See `src/lib/notion/dedup.ts`.

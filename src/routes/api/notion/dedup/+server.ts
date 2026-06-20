@@ -17,7 +17,7 @@ import { deduplicate, type NotionRow } from "$lib/notion/dedup";
  * Property-name detection duplicates the logic in `NotionDatabaseManager` and
  * the consumer's `runPostJobDedup`. Keep all three in sync if the heuristic changes.
  */
-export const POST: RequestHandler = async ({ url, locals, platform }) => {
+export const POST: RequestHandler = async ({ url, request, locals, platform }) => {
     if (!locals.userId || !platform?.env) {
         throw error(503, "platform unavailable");
     }
@@ -26,7 +26,8 @@ export const POST: RequestHandler = async ({ url, locals, platform }) => {
     const settingsRows = await db
         .select({
             tok: schema.userSettings.notionTokenEncrypted,
-            dbId: schema.userSettings.notionDatabaseId
+            dbId: schema.userSettings.notionDatabaseId,
+            keepStrategy: schema.userSettings.dedupKeepStrategy
         })
         .from(schema.userSettings)
         .where(eq(schema.userSettings.userId, locals.userId))
@@ -37,7 +38,20 @@ export const POST: RequestHandler = async ({ url, locals, platform }) => {
         throw error(400, "Notion is not configured for this user");
     }
 
-    const dryRun = url.searchParams.get("dry_run") === "1";
+    // dry_run can arrive as a query param (?dry_run=1) or in a JSON body
+    // ({ dry_run: true }) — the settings page posts the latter.
+    let dryRun = url.searchParams.get("dry_run") === "1";
+    if (!dryRun && (request.headers.get("content-type") ?? "").includes("application/json")) {
+        try {
+            const body = (await request.json()) as { dry_run?: boolean };
+            dryRun = body.dry_run === true;
+        } catch {
+            // No/invalid JSON body — treat as a non-dry-run live request.
+        }
+    }
+
+    const keepStrategy: "best" | "oldest" | "newest" =
+        s.keepStrategy === "oldest" || s.keepStrategy === "newest" ? s.keepStrategy : "best";
 
     const key = await deriveTokenKey(platform.env.NOTION_TOKEN_ENCRYPTION_KEY);
     const token = await decryptNotionToken(new Uint8Array(s.tok as ArrayBuffer), key);
@@ -106,7 +120,7 @@ export const POST: RequestHandler = async ({ url, locals, platform }) => {
     const result = await deduplicate({
         client,
         rows,
-        keepStrategy: "best",
+        keepStrategy,
         dryRun
     });
 

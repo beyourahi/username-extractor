@@ -58,7 +58,8 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
             notionAutoSync: Boolean(row?.notionAutoSync),
             notionSkipValidation: Boolean(row?.notionSkipValidation),
             notionValidationDelayMs: row?.notionValidationDelayMs ?? 2000,
-            dailyImageQuota: row?.dailyImageQuota ?? 1000
+            dailyImageQuota: row?.dailyImageQuota ?? 50000,
+            dedupKeepStrategy: (row?.dedupKeepStrategy as "best" | "oldest" | "newest" | undefined) ?? "best"
         },
         zod4(settingsSchema)
     );
@@ -96,7 +97,8 @@ export const actions: Actions = {
             notionAutoSync: form.data.notionAutoSync ? 1 : 0,
             notionSkipValidation: form.data.notionSkipValidation ? 1 : 0,
             notionValidationDelayMs: form.data.notionValidationDelayMs,
-            dailyImageQuota: form.data.dailyImageQuota
+            dailyImageQuota: form.data.dailyImageQuota,
+            dedupKeepStrategy: form.data.dedupKeepStrategy
         };
         if (tokenBlob) {
             updateData.notionTokenEncrypted = tokenBlob;
