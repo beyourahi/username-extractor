@@ -17,7 +17,7 @@
         "enabled": true
     },
     "vars": {
-        "ACCESS_TEAM_DOMAIN": "beyourahi.cloudflareaccess.com"
+        "BETTER_AUTH_URL": "https://username-extractor.dropoutstudio.co"
     },
     "limits": {
         "cpu_ms": 300000

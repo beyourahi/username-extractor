@@ -18,6 +18,8 @@
     });
 
     const path = $derived(page.url.pathname);
+    // /login renders on a bare canvas — no app chrome (AppBar/Footer/wizard).
+    const isLogin = $derived(path === "/login");
 </script>
 
 <svelte:head>
@@ -27,14 +29,22 @@
 <ModeWatcher defaultMode="dark" />
 <Toaster richColors theme="dark" position="bottom-right" toastOptions={{ class: "font-sans text-xs" }} />
 
-<div class="bg-background flex min-h-dvh flex-col">
-    <AppBar currentPath={path} userEmail={data?.userEmail ?? null} />
+{#if isLogin}
+    <div class="bg-background flex min-h-dvh flex-col">
+        <main class="flex grow flex-col">
+            {@render children()}
+        </main>
+    </div>
+{:else}
+    <div class="bg-background flex min-h-dvh flex-col">
+        <AppBar currentPath={path} userEmail={data?.userEmail ?? null} />
 
-    <main class="flex grow flex-col">
-        {@render children()}
-    </main>
+        <main class="flex grow flex-col">
+            {@render children()}
+        </main>
 
-    <Footer />
-</div>
+        <Footer />
+    </div>
 
-<FirstRunWizard open={showWizard} onclose={() => (showWizard = false)} />
+    <FirstRunWizard open={showWizard} onclose={() => (showWizard = false)} />
+{/if}

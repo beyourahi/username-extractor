@@ -2,13 +2,17 @@
 /// <reference types="@cloudflare/workers-types" />
 
 import type { UserSettings } from "$lib/server/schema";
+import type { Auth } from "$lib/server/auth";
 
 declare global {
     namespace App {
         interface Locals {
-            /** Set by `hooks.server.ts` from the Cloudflare Access JWT. Null until Access is wired (Phase 0). */
+            /** Derived by `hooks.server.ts` from the Better Auth session (`session.user.id/.email`).
+             *  Preserved as the app-wide contract so protected routes read these, not the session. */
             userId: string | null;
             userEmail: string | null;
+            user: Auth["$Infer"]["Session"]["user"] | null;
+            session: Auth["$Infer"]["Session"]["session"] | null;
             userSettings?: UserSettings | null;
         }
 
@@ -22,10 +26,15 @@ declare global {
                 JOB_COORDINATOR: DurableObjectNamespace;
                 ANALYTICS: AnalyticsEngineDataset;
                 ASSETS: Fetcher;
-                /** Workers Secret. AES-GCM key for at-rest encryption of Notion tokens in D1 (`user_settings.notion_token_encrypted`). NFR-6. */
+                /** Workers Secret. AES-GCM key for at-rest encryption of Notion + Cloudflare tokens in D1. NFR-6. */
                 NOTION_TOKEN_ENCRYPTION_KEY: string;
-                /** Optional. When set, `env.AI.run` is invoked with the `gateway` option (see `src/lib/server/ai/gateway.ts`). */
-                AI_GATEWAY_TOKEN: string;
+                // Better Auth (Google OAuth). Secrets via `wrangler secret put`; BETTER_AUTH_URL is a var.
+                BETTER_AUTH_SECRET: string;
+                BETTER_AUTH_URL: string;
+                GOOGLE_CLIENT_ID: string;
+                GOOGLE_CLIENT_SECRET: string;
+                /** `.dev.vars` only — local/preview auth bypass. Never set in production. */
+                E2E_BYPASS_AUTH?: string;
             };
             cf: CfProperties;
             ctx: ExecutionContext;

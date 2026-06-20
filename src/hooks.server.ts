@@ -1,23 +1,27 @@
 import type { Handle } from "@sveltejs/kit";
-import { getDb } from "$lib/server/db";
+import { svelteKitHandler } from "better-auth/svelte-kit";
+import { building } from "$app/environment";
+import { drizzle } from "drizzle-orm/d1";
+import { createAuth, type AuthEnv } from "$lib/server/auth";
 import { users } from "$lib/server/schema";
-import { verifyAccessJwt, ensureUserRow } from "$lib/server/access";
 
 /**
- * Auth + hardening middleware. Every request to a SvelteKit route passes through `handle`.
+ * Auth + hardening middleware. Every dynamic request passes through `handle`.
  *
  * Pipeline:
- *  1. `verifyAccessJwt` against the Cf-Access-Jwt-Assertion header (NFR-7).
- *  2. `ensureUserRow` upserts a `users` row keyed on `claims.sub`; populates `event.locals.userId/userEmail`.
- *  3. In-memory token bucket rate limits (5/min/user) on RATE_LIMIT_PATHS only.
- *  4. SECURITY_HEADERS applied to every response (including the 401 short-circuit).
+ *  1. Resolve the Better Auth session → `event.locals.user/session` and the preserved
+ *     contract `event.locals.userId/userEmail` (so the ~18 protected routes are unchanged).
+ *  2. Central gate: unauthenticated browser requests → 303 /login; /api/* → 401. Public
+ *     surface = `/login` + `/api/auth/*` (Better Auth's own routes). Static assets are
+ *     served by the ASSETS binding before `handle` runs.
+ *  3. In-memory 5/min rate limit on RATE_LIMIT_PATHS (app-level, distinct from Better Auth's
+ *     D1 limiter on the auth endpoints).
+ *  4. SECURITY_HEADERS stamped on EVERY response (including the 401/redirect short-circuits).
  *
- * Dev escape hatch: when ALLOW_DEV_AUTH=1 *and* no Access header is present,
- * a synthetic "dev-user" row is upserted so FK constraints from job/lead
- * inserts hold. Production must never set this flag.
+ * Dev escape hatch: `E2E_BYPASS_AUTH=1`/`true` (via `.dev.vars` ONLY — never wrangler.jsonc)
+ * synthesizes a user so local/preview runs skip the Google round-trip.
  *
- * Rate-limit state is per-isolate; multiple isolates ⇒ users can exceed the
- * declared cap. Acceptable for a soft anti-abuse measure, not a hard quota.
+ * Rate-limit state is per-isolate; acceptable as a soft anti-abuse measure, not a hard quota.
  */
 
 interface RateBucket {
@@ -56,9 +60,16 @@ const SECURITY_HEADERS: Record<string, string> = {
         "default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https: wss:; font-src 'self' data: https://fonts.gstatic.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 };
 
+/**
+ * Stamps SECURITY_HEADERS on the response. Mutates in place when possible (preserves
+ * multiple Set-Cookie headers from the auth handler); clones only when the headers are
+ * immutable (e.g. proxied fetch responses).
+ */
 function applySecurityHeaders(response: Response): Response {
-    // Workers can return responses with immutable headers (e.g. from `fetch()` proxies); clone before mutating.
     try {
+        for (const [k, v] of Object.entries(SECURITY_HEADERS)) response.headers.set(k, v);
+        return response;
+    } catch {
         const headers = new Headers(response.headers);
         for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
         return new Response(response.body, {
@@ -66,95 +77,129 @@ function applySecurityHeaders(response: Response): Response {
             statusText: response.statusText,
             headers
         });
-    } catch {
-        return response;
     }
 }
 
+function isPublicPath(pathname: string): boolean {
+    return pathname === "/login" || pathname.startsWith("/api/auth/");
+}
+
+function nullAuthLocals(event: Parameters<Handle>[0]["event"]): void {
+    event.locals.userId = null;
+    event.locals.userEmail = null;
+    event.locals.user = null;
+    event.locals.session = null;
+}
+
 export const handle: Handle = async ({ event, resolve }) => {
-    const env = event.platform?.env as
-        | {
-              ALLOW_DEV_AUTH?: string;
-              ACCESS_TEAM_DOMAIN?: string;
-              ACCESS_AUDIENCE?: string;
-              DB?: D1Database;
-          }
-        | undefined;
+    if (building) return resolve(event);
 
-    const allowDev = env?.ALLOW_DEV_AUTH === "1";
-    const token = event.request.headers.get("Cf-Access-Jwt-Assertion");
+    const env = event.platform?.env as (Partial<AuthEnv> & { DB?: D1Database; E2E_BYPASS_AUTH?: string }) | undefined;
+    const db = env?.DB;
 
-    let userId: string | null;
-    let userEmail: string | null;
-
-    const claims = await verifyAccessJwt(token, {
-        ACCESS_TEAM_DOMAIN: env?.ACCESS_TEAM_DOMAIN,
-        ACCESS_AUDIENCE: env?.ACCESS_AUDIENCE
-    });
-
-    if (claims) {
-        userEmail = claims.email;
-        if (event.platform && env?.DB) {
-            try {
-                const db = getDb(event.platform);
-                userId = await ensureUserRow(db, claims.sub, claims.email);
-            } catch {
-                // DB upsert failed (binding missing / migrations not applied). Continue with a
-                // synthetic `cf:<sub>` id so downstream handlers can surface their own error.
-                userId = `cf:${claims.sub}`;
-            }
-        } else {
-            userId = `cf:${claims.sub}`;
+    // No DB binding ⇒ auth can't run; treat as unauthenticated (gate still applies).
+    if (!db) {
+        nullAuthLocals(event);
+        if (!isPublicPath(event.url.pathname)) {
+            return applySecurityHeaders(gateResponse(event));
         }
-    } else if (!token && allowDev) {
-        userId = "dev-user";
-        userEmail = "dev@local";
-        // Upsert the dev-user row so FK targets exist for `jobs.user_id`, `leads.user_id`, etc.
-        if (event.platform && env?.DB) {
-            try {
-                const db = getDb(event.platform);
-                await db
-                    .insert(users)
-                    .values({ id: "dev-user", cfAccessSubject: "dev-user", createdAt: Date.now() })
-                    .onConflictDoNothing();
-            } catch {
-                // `users` table may not be migrated yet; let downstream queries error explicitly.
-            }
-        }
-    } else {
-        // No JWT and no dev escape ⇒ 401. Static assets bypass `handle` via the ASSETS binding,
-        // so this branch only fires on dynamic routes.
-        return applySecurityHeaders(
-            new Response("Unauthorized", {
-                status: 401,
-                headers: { "content-type": "text/plain" }
-            })
-        );
+        return applySecurityHeaders(await resolve(event));
     }
 
-    event.locals.userId = userId;
-    event.locals.userEmail = userEmail;
+    // Dev/preview bypass — env-gated (NOT url-gated), lives in `.dev.vars` only.
+    if (env?.E2E_BYPASS_AUTH === "1" || env?.E2E_BYPASS_AUTH === "true") {
+        const now = new Date();
+        const userId = "e2e-test-user";
+        try {
+            await drizzle(db)
+                .insert(users)
+                .values({
+                    id: userId,
+                    email: "e2e@test.local",
+                    emailVerified: true,
+                    name: "E2E Test User",
+                    image: null,
+                    createdAt: now,
+                    updatedAt: now
+                })
+                .onConflictDoNothing();
+        } catch {
+            // users table may not be migrated yet; downstream queries surface their own error
+        }
+        event.locals.userId = userId;
+        event.locals.userEmail = "e2e@test.local";
+        event.locals.user = {
+            id: userId,
+            email: "e2e@test.local",
+            emailVerified: true,
+            name: "E2E Test User",
+            image: null,
+            createdAt: now,
+            updatedAt: now
+        } as App.Locals["user"];
+        event.locals.session = null;
+        return applySecurityHeaders(await resolve(event));
+    }
 
-    if (userId && isRateLimitedPath(event.url.pathname)) {
+    const authEnv: AuthEnv = {
+        BETTER_AUTH_SECRET: env?.BETTER_AUTH_SECRET ?? "",
+        BETTER_AUTH_URL: env?.BETTER_AUTH_URL ?? "http://localhost:5173",
+        GOOGLE_CLIENT_ID: env?.GOOGLE_CLIENT_ID ?? "",
+        GOOGLE_CLIENT_SECRET: env?.GOOGLE_CLIENT_SECRET ?? ""
+    };
+    const auth = createAuth(db, authEnv);
+
+    // A getSession failure must not 500 the app — treat as unauthenticated.
+    try {
+        const session = await auth.api.getSession({ headers: event.request.headers });
+        if (session) {
+            event.locals.session = session.session;
+            event.locals.user = session.user;
+            event.locals.userId = session.user.id;
+            event.locals.userEmail = session.user.email;
+        } else {
+            nullAuthLocals(event);
+        }
+    } catch {
+        nullAuthLocals(event);
+    }
+
+    // Central gate — runs before Better Auth dispatch so unauth users can still reach /login + /api/auth/*.
+    if (!event.locals.userId && !isPublicPath(event.url.pathname)) {
+        return applySecurityHeaders(gateResponse(event));
+    }
+
+    // App-level rate limit (kept). Better Auth has its own D1 limiter on /api/auth/*.
+    if (event.locals.userId && isRateLimitedPath(event.url.pathname)) {
         const bucketPath = RATE_LIMIT_PATHS.find(
             (p) => event.url.pathname === p || event.url.pathname.startsWith(p + "/")
         );
-        if (bucketPath && !takeRateToken(userId, bucketPath)) {
+        if (bucketPath && !takeRateToken(event.locals.userId, bucketPath)) {
             return applySecurityHeaders(
                 new Response(
                     JSON.stringify({
                         error: "rate_limited",
                         message: `Too many requests; limit is ${RATE_LIMIT_MAX}/min`
                     }),
-                    {
-                        status: 429,
-                        headers: { "content-type": "application/json" }
-                    }
+                    { status: 429, headers: { "content-type": "application/json" } }
                 )
             );
         }
     }
 
-    const response = await resolve(event);
+    // Better Auth dispatches /api/auth/*; everything else falls through to `resolve`.
+    const response = await svelteKitHandler({ event, resolve, auth, building });
     return applySecurityHeaders(response);
 };
+
+/** Browser navigation → 303 to /login (with return path); API request → 401 JSON. */
+function gateResponse(event: Parameters<Handle>[0]["event"]): Response {
+    if (event.url.pathname.startsWith("/api/")) {
+        return new Response(JSON.stringify({ error: "unauthorized" }), {
+            status: 401,
+            headers: { "content-type": "application/json" }
+        });
+    }
+    const to = encodeURIComponent(event.url.pathname + event.url.search);
+    return new Response(null, { status: 303, headers: { location: `/login?redirect=${to}` } });
+}

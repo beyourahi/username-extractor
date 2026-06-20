@@ -1,6 +1,7 @@
 <script lang="ts">
     import { Upload, Layers, Users as UsersIcon, Settings as SettingsIcon, ChevronDown, Search } from "@lucide/svelte";
     import UserChip from "./UserChip.svelte";
+    import { signOut as authSignOut } from "$lib/auth-client";
     import { cn } from "$lib/utils/cn";
 
     let {
@@ -26,10 +27,14 @@
     let mobileOpen = $state(false);
 
     async function signOut() {
-        // `/cdn-cgi/access/logout` is the platform-provided logout for Cloudflare Access.
+        // Better Auth sign-out, then back to the login screen.
         if (typeof window === "undefined") return;
-        const url = "/cdn-cgi/access/logout";
-        window.location.href = url;
+        try {
+            await authSignOut();
+        } catch {
+            // ignore — redirect to /login regardless so the user lands somewhere sane
+        }
+        window.location.href = "/login";
     }
 </script>
 
