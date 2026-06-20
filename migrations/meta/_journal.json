@@ -5,15 +5,8 @@
         {
             "idx": 0,
             "version": "6",
-            "when": 1779167901429,
-            "tag": "0000_parched_human_cannonball",
-            "breakpoints": true
-        },
-        {
-            "idx": 1,
-            "version": "6",
-            "when": 1781934045908,
-            "tag": "0001_daffy_dark_phoenix",
+            "when": 1781942821470,
+            "tag": "0000_elite_mandarin",
             "breakpoints": true
         }
     ]
