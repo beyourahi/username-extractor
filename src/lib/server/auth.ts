@@ -12,6 +12,8 @@
  */
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { oneTap } from "better-auth/plugins";
+import { passkey } from "@better-auth/passkey";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "./schema";
 
@@ -25,6 +27,14 @@ export interface AuthEnv {
 export const createAuth = (d1: D1Database, env: AuthEnv) => {
     const db = drizzle(d1, { schema });
 
+    // Passkeys (incl. Face ID / Touch ID / Android biometrics — platform authenticators)
+    // are bound to the rpID (registrable domain) and the request origin must match exactly.
+    // Both are derived from BETTER_AUTH_URL so dev (localhost), preview, and prod all work.
+    const authUrl = new URL(env.BETTER_AUTH_URL);
+    const isLocal = authUrl.hostname === "localhost" || authUrl.hostname === "127.0.0.1";
+    const rpID = authUrl.hostname;
+    const passkeyOrigin = isLocal ? ["http://localhost:5173", "http://localhost:8787"] : authUrl.origin;
+
     return betterAuth({
         database: drizzleAdapter(db, {
             provider: "sqlite",
@@ -32,6 +42,11 @@ export const createAuth = (d1: D1Database, env: AuthEnv) => {
             schema
         }),
         baseURL: env.BETTER_AUTH_URL,
+        // Mount auth routes under /auth (not the default /api/auth) so the derived OAuth
+        // callback is {baseURL}/auth/callback/google — matching the redirect URI registered
+        // in Google Console (https://username-extractor.dropoutstudio.co/auth/callback/google).
+        // The browser client (auth-client.ts) sets the SAME basePath; they must stay in sync.
+        basePath: "/auth",
         secret: env.BETTER_AUTH_SECRET,
         emailAndPassword: {
             enabled: false
@@ -42,6 +57,22 @@ export const createAuth = (d1: D1Database, env: AuthEnv) => {
                 clientSecret: env.GOOGLE_CLIENT_SECRET
             }
         },
+        plugins: [
+            // Google One Tap — frictionless overlay on the existing Google OAuth (no new
+            // provider, no new table). Reuses the configured Google client; the browser
+            // client (auth-client.ts) supplies the public client id.
+            oneTap(),
+            // Passkey / WebAuthn = device biometrics (Face ID / Touch ID / fingerprint).
+            // `userVerification: "required"` forces the biometric/PIN gesture. Attachment is
+            // left unset so platform biometrics AND roaming security keys can both register;
+            // the biometric (platform) path is chosen per-registration in /settings.
+            passkey({
+                rpID,
+                rpName: "Username Extractor",
+                origin: passkeyOrigin,
+                authenticatorSelection: { residentKey: "preferred", userVerification: "required" }
+            })
+        ],
         session: {
             expiresIn: 60 * 60 * 24 * 7, // 7 days
             updateAge: 60 * 60 * 24, // refresh once per day

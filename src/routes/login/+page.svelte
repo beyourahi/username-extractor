@@ -1,6 +1,7 @@
 <!--
-    Login screen. Single "Continue with Google" → Better Auth social OAuth (the only
-    sign-in method). The $effect force-redirects if a session is already present on mount.
+    Login screen. "Continue with Google" → Better Auth social OAuth, plus Google One Tap
+    (auto-prompted when configured) and "Sign in with a passkey" (WebAuthn — Face ID / Touch
+    ID / fingerprint). The $effect force-redirects if a session is already present on mount.
     Auth is optional — "Back to homepage" returns guests to the browsable app at `/`.
     Rendered on a bare layout (no AppBar/Footer — see +layout.svelte). UI mirrors the
     sibling tools' login (day-zero / invoice-generator / order-processor).
@@ -10,17 +11,33 @@
     import { browser } from "$app/environment";
     import { page } from "$app/state";
     import { goto } from "$app/navigation";
+    import { env as publicEnv } from "$env/dynamic/public";
+    import { Fingerprint } from "@lucide/svelte";
     import HeroHeading from "$lib/components/HeroHeading.svelte";
     import { Cta, cn } from "$lib/ds";
 
     let isLoading = $state(false);
     let error = $state<string | null>(null);
+    // Passkeys need WebAuthn; hide the option where the browser can't do it.
+    let webauthnAvailable = $state(browser && typeof window !== "undefined" && !!window.PublicKeyCredential);
 
     const redirectUrl = $derived(page.url.searchParams.get("redirect") ?? "/");
+    // One Tap only fires when a public Google client id is configured (see auth-client.ts).
+    const oneTapConfigured = browser && !!publicEnv.PUBLIC_GOOGLE_CLIENT_ID;
 
     const session = authClient.useSession();
+    let oneTapTried = false;
     $effect(() => {
-        if (browser && $session.data?.user) goto(redirectUrl);
+        if (!browser) return;
+        if ($session.data?.user) {
+            goto(redirectUrl);
+            return;
+        }
+        // Auto-prompt Google One Tap once; on success the session effect redirects.
+        if (oneTapConfigured && !oneTapTried) {
+            oneTapTried = true;
+            authClient.oneTap({ fetchOptions: { onSuccess: () => goto(redirectUrl) } }).catch(() => {});
+        }
     });
 
     const handleGoogleLogin = async () => {
@@ -31,6 +48,24 @@
             await authClient.signIn.social({ provider: "google", callbackURL: redirectUrl });
         } catch (e) {
             error = "Failed to sign in with Google. Please try again.";
+            console.error(e);
+        } finally {
+            isLoading = false;
+        }
+    };
+
+    const handlePasskeyLogin = async () => {
+        isLoading = true;
+        error = null;
+        try {
+            const res = await authClient.signIn.passkey();
+            if (res?.error) {
+                error = "Passkey sign-in failed or was cancelled.";
+            } else {
+                goto(redirectUrl);
+            }
+        } catch (e) {
+            error = "Passkey sign-in failed. Please try again.";
             console.error(e);
         } finally {
             isLoading = false;
@@ -92,6 +127,21 @@
             </span>
         </Cta>
 
+        {#if webauthnAvailable}
+            <Cta
+                variant="secondary"
+                arrow={false}
+                onclick={handlePasskeyLogin}
+                disabled={isLoading}
+                class={cn("min-w-[260px] justify-center py-[15px]", isLoading && "cursor-wait")}
+            >
+                <span class="inline-flex items-center gap-2.5">
+                    <Fingerprint class="size-4" aria-hidden="true" />
+                    <span>Sign in with a passkey</span>
+                </span>
+            </Cta>
+        {/if}
+
         <Cta variant="secondary" href="/" arrow={false} class="min-w-[260px] justify-center py-[15px]">
             <span class="inline-flex items-center gap-2.5">
                 <svg
@@ -112,6 +162,8 @@
     </div>
 
     <p class="text-ink-muted max-w-sm text-center text-sm text-pretty">
-        Sign in with your Google account to get started
+        {webauthnAvailable
+            ? "Sign in with Google — or use a passkey (Face ID, Touch ID, fingerprint) once you've added one in Settings."
+            : "Sign in with your Google account to get started"}
     </p>
 </div>

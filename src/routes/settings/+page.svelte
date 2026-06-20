@@ -1,10 +1,23 @@
 <script lang="ts">
-    import { untrack } from "svelte";
+    import { untrack, onMount } from "svelte";
     import { superForm } from "sveltekit-superforms";
     import { toast } from "svelte-sonner";
     import { enhance } from "$app/forms";
     import { invalidateAll } from "$app/navigation";
-    import { Sparkles, RefreshCw, Upload, Trash2, FileText, Check, AlertTriangle, Cloud } from "@lucide/svelte";
+    import { browser } from "$app/environment";
+    import { authClient } from "$lib/auth-client";
+    import {
+        Sparkles,
+        RefreshCw,
+        Upload,
+        Trash2,
+        FileText,
+        Check,
+        AlertTriangle,
+        Cloud,
+        Fingerprint,
+        KeyRound
+    } from "@lucide/svelte";
     import { Heading, cn, inputBase } from "$lib/ds";
     import PageHeader from "$lib/components/PageHeader.svelte";
     import Button from "$lib/components/Button.svelte";
@@ -75,6 +88,86 @@
     let legacyNotionDatabaseId = $state("");
     let legacyMarkdownSubmitting = $state(false);
     let legacyNotionSubmitting = $state(false);
+
+    // ── Passkeys (WebAuthn = device biometrics: Face ID / Touch ID / fingerprint) ──────────
+    type PasskeyRow = { id: string; name?: string | null; createdAt?: string | Date | null };
+    let passkeys = $state<PasskeyRow[]>([]);
+    let passkeysLoading = $state(true);
+    let passkeyBusy = $state(false);
+    let webauthnAvailable = $state(false);
+
+    // Friendly default name from the UA — stored as the passkey label.
+    function deviceLabel() {
+        const ua = browser ? navigator.userAgent : "";
+        if (/iPhone|iPad|iPod/.test(ua)) return "iPhone (Face ID / Touch ID)";
+        if (/Macintosh/.test(ua)) return "Mac (Touch ID)";
+        if (/Android/.test(ua)) return "Android (fingerprint / face)";
+        if (/Windows/.test(ua)) return "Windows Hello";
+        return "This device";
+    }
+
+    function formatDate(d: string | Date) {
+        const date = typeof d === "string" ? new Date(d) : d;
+        return Number.isNaN(date.getTime())
+            ? ""
+            : date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+    }
+
+    async function loadPasskeys() {
+        passkeysLoading = true;
+        try {
+            const res = await authClient.passkey.listUserPasskeys();
+            passkeys = (res?.data ?? []) as PasskeyRow[];
+        } catch {
+            passkeys = [];
+        } finally {
+            passkeysLoading = false;
+        }
+    }
+
+    onMount(() => {
+        webauthnAvailable = typeof window !== "undefined" && !!window.PublicKeyCredential;
+        if (webauthnAvailable) loadPasskeys();
+        else passkeysLoading = false;
+    });
+
+    // attachment "platform" → device biometric (Face ID / Touch ID / fingerprint);
+    // omitted → browser default (allows roaming security keys too).
+    async function addPasskey(attachment?: "platform") {
+        passkeyBusy = true;
+        try {
+            const res = await authClient.passkey.addPasskey({
+                name: deviceLabel(),
+                ...(attachment ? { authenticatorAttachment: attachment } : {})
+            });
+            if (res?.error) toast.error(res.error.message || "Couldn't add passkey.");
+            else {
+                toast.success("Passkey added.");
+                await loadPasskeys();
+            }
+        } catch {
+            toast.error("Passkey registration was cancelled.");
+        } finally {
+            passkeyBusy = false;
+        }
+    }
+
+    async function removePasskey(id: string) {
+        if (!confirm("Remove this passkey? You won't be able to sign in with it anymore.")) return;
+        passkeyBusy = true;
+        try {
+            const res = await authClient.passkey.deletePasskey({ id });
+            if (res?.error) toast.error(res.error.message || "Couldn't remove passkey.");
+            else {
+                toast.success("Passkey removed.");
+                await loadPasskeys();
+            }
+        } catch {
+            toast.error("Couldn't remove passkey.");
+        } finally {
+            passkeyBusy = false;
+        }
+    }
 </script>
 
 {#snippet section(icon: Component<{ size?: number; class?: string }>, title: string, subtitle: string, body: Snippet)}
@@ -330,6 +423,84 @@
             </div>
         </div>
     </form>
+
+    {#snippet passkeysBody()}
+        <div class="flex flex-col gap-3 py-3">
+            {#if !webauthnAvailable}
+                <p class="text-ink-muted text-xs text-pretty">
+                    This browser can't use passkeys. Open the app in Safari, Chrome, or Edge on a device with Face ID,
+                    Touch ID, or a fingerprint sensor.
+                </p>
+            {:else}
+                {#if passkeysLoading}
+                    <div class="text-ink-muted flex items-center gap-2 py-2 text-xs">
+                        <Spinner size="sm" color="brand" /> Loading passkeys…
+                    </div>
+                {:else if passkeys.length === 0}
+                    <p class="text-ink-muted text-xs text-pretty">
+                        No passkeys yet. Add one to sign in with Face ID, Touch ID, or your fingerprint instead of
+                        Google.
+                    </p>
+                {:else}
+                    <ul class="flex flex-col gap-2">
+                        {#each passkeys as pk (pk.id)}
+                            <li
+                                class="border-hair bg-ink-2/40 flex items-center justify-between gap-3 rounded-[10px] border px-3 py-2.5"
+                            >
+                                <div class="flex min-w-0 items-center gap-2.5">
+                                    <Fingerprint size={15} class="text-brand shrink-0" />
+                                    <div class="min-w-0">
+                                        <p class="text-foreground truncate text-sm font-medium">
+                                            {pk.name || "Passkey"}
+                                        </p>
+                                        {#if pk.createdAt && formatDate(pk.createdAt)}
+                                            <p class="text-ink-muted text-[11px]">Added {formatDate(pk.createdAt)}</p>
+                                        {/if}
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onclick={() => removePasskey(pk.id)}
+                                    disabled={passkeyBusy}
+                                    aria-label="Remove passkey"
+                                    class="text-ink-muted hover:text-tier-failed-fg shrink-0 transition-colors disabled:opacity-40"
+                                >
+                                    <Trash2 size={14} />
+                                </button>
+                            </li>
+                        {/each}
+                    </ul>
+                {/if}
+                <div class="flex flex-wrap items-center gap-2 pt-1">
+                    <Button
+                        type="button"
+                        variant="brand"
+                        size="sm"
+                        disabled={passkeyBusy}
+                        onclick={() => addPasskey("platform")}
+                    >
+                        <Fingerprint size={13} /> Set up Face ID / Touch ID
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={passkeyBusy}
+                        onclick={() => addPasskey()}
+                    >
+                        <KeyRound size={13} /> Use a security key
+                    </Button>
+                </div>
+            {/if}
+        </div>
+    {/snippet}
+
+    {@render section(
+        Fingerprint,
+        "Passkeys",
+        "Sign in with Face ID, Touch ID, or a fingerprint instead of Google.",
+        passkeysBody
+    )}
 
     {#snippet maintenanceBody()}
         <div class="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">

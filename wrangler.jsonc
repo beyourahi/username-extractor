@@ -17,7 +17,11 @@
         "enabled": true
     },
     "vars": {
-        "BETTER_AUTH_URL": "https://username-extractor.dropoutstudio.co"
+        "BETTER_AUTH_URL": "https://username-extractor.dropoutstudio.co",
+        // Browser-exposed Google OAuth client id for One Tap (NOT a secret — it appears in
+        // every OAuth redirect). Set the real value here, or via `wrangler secret put
+        // PUBLIC_GOOGLE_CLIENT_ID`. Empty → One Tap stays off; the Google button still works.
+        "PUBLIC_GOOGLE_CLIENT_ID": ""
     },
     "limits": {
         "cpu_ms": 300000

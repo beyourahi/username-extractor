@@ -80,6 +80,30 @@ export const verifications = sqliteTable(
     (table) => [index("idx_verifications_identifier").on(table.identifier)]
 );
 
+// Passkey / WebAuthn credentials (@better-auth/passkey). Pluralized to `passkeys` by the
+// Drizzle adapter (`usePlural: true`). JS keys MUST match Better Auth's field names; SQL
+// columns stay snake_case. This is the device-biometric store — Face ID / Touch ID / Android
+// fingerprint register here as platform authenticators.
+export const passkeys = sqliteTable(
+    "passkeys",
+    {
+        id: text("id").primaryKey(),
+        name: text("name"),
+        publicKey: text("public_key").notNull(),
+        userId: text("user_id")
+            .notNull()
+            .references(() => users.id, { onDelete: "cascade" }),
+        credentialID: text("credential_id").notNull(),
+        counter: integer("counter").notNull(),
+        deviceType: text("device_type").notNull(),
+        backedUp: integer("backed_up", { mode: "boolean" }).notNull(),
+        transports: text("transports"),
+        createdAt: integer("created_at", { mode: "timestamp" }),
+        aaguid: text("aaguid")
+    },
+    (table) => [index("idx_passkeys_user_id").on(table.userId)]
+);
+
 // Better Auth's D1-backed rate limiter (auth.ts `rateLimit.storage: "database"`).
 export const rateLimits = sqliteTable(
     "rate_limits",

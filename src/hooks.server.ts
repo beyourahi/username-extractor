@@ -13,8 +13,8 @@ import { users } from "$lib/server/schema";
  *     contract `event.locals.userId/userEmail` (so the ~18 protected routes are unchanged).
  *  2. Central gate: unauthenticated browser requests to gated routes → 303 /login; /api/* → 401.
  *     Auth is optional — public surface = `/` (browsable guest homepage) + `/login` +
- *     `/api/auth/*` (Better Auth's own routes). Extraction still requires sign-in (the
- *     `/api/*` mutations stay gated). Static assets are served by ASSETS before `handle` runs.
+ *     `/auth/*` (Better Auth's own routes; basePath set in auth.ts). Extraction still requires
+ *     sign-in (the `/api/*` mutations stay gated). Static assets are served by ASSETS first.
  *  3. In-memory 5/min rate limit on RATE_LIMIT_PATHS (app-level, distinct from Better Auth's
  *     D1 limiter on the auth endpoints).
  *  4. SECURITY_HEADERS stamped on EVERY response (including the 401/redirect short-circuits).
@@ -56,9 +56,13 @@ const SECURITY_HEADERS: Record<string, string> = {
     "X-Frame-Options": "DENY",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "strict-origin-when-cross-origin",
-    "Permissions-Policy": "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+    // `identity-credentials-get` is required for the modern FedCM-based Google One Tap prompt.
+    "Permissions-Policy":
+        'camera=(), microphone=(), geolocation=(), interest-cohort=(), identity-credentials-get=(self "https://accounts.google.com")',
+    // Google One Tap loads the GSI script + renders a FedCM iframe from accounts.google.com,
+    // so script-src/style-src/frame-src must allow it. Passkey/WebAuthn needs no CSP change.
     "Content-Security-Policy":
-        "default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https: wss:; font-src 'self' data: https://fonts.gstatic.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        "default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com/gsi/client; connect-src 'self' https: wss:; frame-src https://accounts.google.com/gsi/; font-src 'self' data: https://fonts.gstatic.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 };
 
 /**
@@ -84,8 +88,9 @@ function applySecurityHeaders(response: Response): Response {
 function isPublicPath(pathname: string): boolean {
     // Auth is optional, not a wall: the homepage is browsable signed-out (sign-in is an
     // invitation, surfaced in the AppBar + on the upload form). /jobs, /leads, /settings and
-    // every /api/* route except Better Auth's own stay gated — extraction needs a session.
-    return pathname === "/" || pathname === "/login" || pathname.startsWith("/api/auth/");
+    // every /api/* route stay gated — extraction needs a session. Better Auth mounts its own
+    // routes under /auth/* (basePath in auth.ts), which must stay reachable signed-out.
+    return pathname === "/" || pathname === "/login" || pathname.startsWith("/auth/");
 }
 
 function nullAuthLocals(event: Parameters<Handle>[0]["event"]): void {
@@ -168,12 +173,12 @@ export const handle: Handle = async ({ event, resolve }) => {
         nullAuthLocals(event);
     }
 
-    // Central gate — runs before Better Auth dispatch so unauth users can still reach /login + /api/auth/*.
+    // Central gate — runs before Better Auth dispatch so unauth users can still reach /login + /auth/*.
     if (!event.locals.userId && !isPublicPath(event.url.pathname)) {
         return applySecurityHeaders(gateResponse(event));
     }
 
-    // App-level rate limit (kept). Better Auth has its own D1 limiter on /api/auth/*.
+    // App-level rate limit (kept). Better Auth has its own D1 limiter on /auth/*.
     if (event.locals.userId && isRateLimitedPath(event.url.pathname)) {
         const bucketPath = RATE_LIMIT_PATHS.find(
             (p) => event.url.pathname === p || event.url.pathname.startsWith(p + "/")
@@ -191,7 +196,7 @@ export const handle: Handle = async ({ event, resolve }) => {
         }
     }
 
-    // Better Auth dispatches /api/auth/*; everything else falls through to `resolve`.
+    // Better Auth dispatches /auth/*; everything else falls through to `resolve`.
     const response = await svelteKitHandler({ event, resolve, auth, building });
     return applySecurityHeaders(response);
 };

@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Username Extractor** is the production successor to the legacy Python CLI [`extract_usernames`](https://github.com/beyourahi/extract_usernames) (now **retired & archived, read-only**). It extracts Instagram usernames from batches of profile screenshots — including dropping a whole folder of AVIF screenshots, which are normalized to JPEG client-side and streamed up as one chunked job — deduplicates them against a lifetime leads table, and syncs verified results to Notion.
 
-**Stack:** SvelteKit 5 (Svelte 5 runes) + Bun + Tailwind v4 + Better Auth (Google OAuth) + Cloudflare Workers (D1, R2, KV, Queues, Durable Objects, Workers AI, Analytics Engine). Per-image inference runs on each **user's own Cloudflare account** (bring-your-own, billed to them) via the Workers AI REST API.
+**Stack:** SvelteKit 5 (Svelte 5 runes) + Bun + Tailwind v4 + Better Auth (Google OAuth + One Tap + passkey/biometric) + Cloudflare Workers (D1, R2, KV, Queues, Durable Objects, Workers AI, Analytics Engine). Per-image inference runs on each **user's own Cloudflare account** (bring-your-own, billed to them) via the Workers AI REST API.
 
 The algorithmic core — Levenshtein near-duplicate detection, tier-based confidence scoring, Notion smart dedup, username cleaning — is a verbatim port of the Python implementation. Files in `src/lib/extract/` and `src/lib/notion/dedup.ts` cite line numbers from the original. **Do not change behavior in these modules casually** — any change invalidates the recorded Kimi K2.6 accuracy benchmark.
 
@@ -80,13 +80,14 @@ GET /api/jobs/[id]/ws     browser subscribes; renders item.started / item.comple
 
 The discriminated `Message` union in `src/lib/types/messages.ts` is the canonical WebSocket wire format. Snake_case keys are intentional (matches the PRD spec; the client renders them directly). Older `JobItemUpdate` / `JobStreamMessage` shapes are kept for in-progress UI compatibility — new code targets `Message`.
 
-### Auth: Better Auth (Google OAuth)
+### Auth: Better Auth (Google OAuth + One Tap + passkey)
 
 `src/hooks.server.ts` is the single auth chokepoint (replaces the former Cloudflare Access gate):
 
-- The Better Auth instance is built **per request** in `createAuth` (`src/lib/server/auth.ts`) — Workers has no long-lived module state and the D1 binding arrives per request. **Google OAuth is the only sign-in method** (`emailAndPassword` is disabled); the browser client is `src/lib/auth-client.ts`.
-- `handle` resolves the session → `event.locals.user/session` plus the preserved `event.locals.userId/userEmail` contract (so the protected routes are unchanged). **Auth is optional, not a wall** (like the sibling tools): central gate sends unauthenticated browser requests to *gated* routes → `303 /login`; `/api/*` → `401`. Public surface = `/` (browsable guest homepage) + `/login` + `/api/auth/*` (Better Auth's own routes). The homepage shows the upload UI to guests with a "Sign in to run" prompt; `/jobs`, `/leads`, `/settings`, and every other `/api/*` route stay gated — actually running an extraction still requires sign-in + a connected Cloudflare account (`isPublicPath` in `hooks.server.ts` is the allowlist).
-- Rate limiting is two-tier: Better Auth's **D1-backed** limiter (`rate_limits` table, 20/60s) on `/api/auth/*`, plus an app-level in-memory 5/min on `/api/notion/dedup` + `/api/import/legacy`. A defensive CSP + security-header set is stamped on **every** response (including 401/redirect short-circuits).
+- The Better Auth instance is built **per request** in `createAuth` (`src/lib/server/auth.ts`) — Workers has no long-lived module state and the D1 binding arrives per request. **Sign-in = Google OAuth + Google One Tap (`oneTap()`) + passkey/WebAuthn** (`@better-auth/passkey` — Face ID / Touch ID / fingerprint + roaming security keys); `emailAndPassword` stays disabled. The browser client is `src/lib/auth-client.ts`. Auth routes are mounted at **`/auth`** (`basePath: "/auth"`, NOT the Better Auth default `/api/auth`), so the derived OAuth callback is `https://username-extractor.dropoutstudio.co/auth/callback/google` — this MUST match the redirect URI registered in Google Console. The server `basePath` and the client `basePath` (in `auth-client.ts`) must stay in sync.
+- **Passkeys (`@better-auth/passkey`) = device biometrics + security keys.** `rpID`/origin are derived from `BETTER_AUTH_URL` (so dev/preview/prod each resolve correctly); `userVerification: "required"` forces the biometric/PIN gesture; credentials persist in the `passkeys` D1 table; registration happens in `/settings`. **Google One Tap** (`oneTap()` server + `oneTapClient` browser) needs the browser-exposed `PUBLIC_GOOGLE_CLIENT_ID` — empty → One Tap stays off and the standard Google button still works.
+- `handle` resolves the session → `event.locals.user/session` plus the preserved `event.locals.userId/userEmail` contract (so the protected routes are unchanged). **Auth is optional, not a wall** (like the sibling tools): central gate sends unauthenticated browser requests to *gated* routes → `303 /login`; `/api/*` → `401`. Public surface = `/` (browsable guest homepage) + `/login` + `/auth/*` (Better Auth's own routes). The homepage shows the upload UI to guests with a "Sign in to run" prompt; `/jobs`, `/leads`, `/settings`, and every other `/api/*` route stay gated — actually running an extraction still requires sign-in + a connected Cloudflare account (`isPublicPath` in `hooks.server.ts` is the allowlist).
+- Rate limiting is two-tier: Better Auth's **D1-backed** limiter (`rate_limits` table, 20/60s) on `/auth/*`, plus an app-level in-memory 5/min on `/api/notion/dedup` + `/api/import/legacy`. A defensive CSP + security-header set is stamped on **every** response (including 401/redirect short-circuits).
 - Dev/preview bypass: `E2E_BYPASS_AUTH=1` (or `true`) in `.dev.vars` **only** (never `wrangler.jsonc`) synthesizes an `e2e-test-user` so local runs skip the Google round-trip.
 - Production: self-serve Google login, served only at `username-extractor.dropoutstudio.co`; the public `*.workers.dev` URL is disabled (`workers_dev: false`, `preview_urls: false`).
 
@@ -113,7 +114,7 @@ The legacy `env.AI` + AI-Gateway path (`src/lib/server/ai/gateway.ts#runVisionWi
 
 ### Persistence layout
 
-- **D1 (`username-extractor`)** — Better Auth tables (`users`, `sessions`, `accounts`, `verifications`, `rate_limits` — snake_case + plural, `usePlural: true`) plus app tables (`user_settings`, `jobs`, `job_items`, `leads`). Schema in `src/lib/server/schema.ts` (Drizzle). All timestamps are Unix epoch ms in `INTEGER` columns (SQLite has no native datetime). Migrations are a single consolidated baseline in `migrations/` (`0000_elite_mandarin.sql`). Non-obvious columns: `jobs.upload_complete` (gates chunked-upload finalization), `user_settings.dedup_keep_strategy` (`best`/`oldest`/`newest`), and `user_settings.cloudflare_token_encrypted`/`cloudflare_account_id`/`cloudflare_model` (the BYO Cloudflare creds).
+- **D1 (`username-extractor`)** — Better Auth tables (`users`, `sessions`, `accounts`, `verifications`, `passkeys`, `rate_limits` — snake_case + plural, `usePlural: true`) plus app tables (`user_settings`, `jobs`, `job_items`, `leads`). Schema in `src/lib/server/schema.ts` (Drizzle). All timestamps are Unix epoch ms in `INTEGER` columns (SQLite has no native datetime). Migrations live in `migrations/`: baseline `0000_elite_mandarin.sql` + `0001_tough_maggott.sql` (adds the `passkeys` table). Non-obvious columns: `jobs.upload_complete` (gates chunked-upload finalization), `user_settings.dedup_keep_strategy` (`best`/`oldest`/`newest`), and `user_settings.cloudflare_token_encrypted`/`cloudflare_account_id`/`cloudflare_model` (the BYO Cloudflare creds).
 - **R2 (`username-extractor-uploads`)** — raw screenshot bytes. Keys are namespaced per job. A nightly cron (`0 3 * * *`) in `src/lib/server/cron/sweep.ts` reaps stale objects.
 - **KV (`username_extractor_kv`)** — short-lived caches (Instagram URL validator + per-account `cf-models:<accountId>` vision-model lists, 24h TTL).
 - **Workers AI** — per-item inference runs on the **user's own** Cloudflare account via REST (see "Per-user Cloudflare inference" above), default model `@cf/moonshotai/kimi-k2.6`. The bound `env.AI` binding remains declared but is no longer used per-item.
@@ -124,11 +125,11 @@ The legacy `env.AI` + AI-Gateway path (`src/lib/server/ai/gateway.ts#runVisionWi
 | Path                                     | Purpose                                                                                       |
 | ---------------------------------------- | --------------------------------------------------------------------------------------------- |
 | `/`                                      | Upload + start new job (public — guests can browse; running requires sign-in)                  |
-| `/login`                                 | Google sign-in (Better Auth); UI mirrors the sibling tools + "Back to homepage" link to `/`   |
+| `/login`                                 | Google sign-in + One Tap + passkey/biometric (Better Auth); "Back to homepage" link to `/`    |
 | `/jobs`                                  | Job history                                                                                   |
 | `/jobs/[id]`                             | Live job progress (WebSocket via `/api/jobs/[id]/ws`)                                         |
 | `/leads`                                 | Lifetime verified leads                                                                       |
-| `/settings`                              | Notion config + Cloudflare account/model picker + diagnostics defaults                        |
+| `/settings`                              | Notion config + Cloudflare account/model picker + passkey registration + diagnostics defaults |
 | `/api/jobs` (`POST` create / `GET` list) | Job CRUD; `POST` `multi` mode creates an empty job for chunked folder upload                  |
 | `/api/jobs/[id]/items` (`POST` / `GET`)  | `POST` append an upload chunk (`appendItemsToJob`); `GET` list items                          |
 | `/api/jobs/[id]/items/[item_id]/retry`   | Per-item retry                                                                                |
@@ -141,7 +142,7 @@ The legacy `env.AI` + AI-Gateway path (`src/lib/server/ai/gateway.ts#runVisionWi
 | `/api/import/legacy`                     | One-shot import from CLI `verified_usernames.md` or existing Notion DB                        |
 | `/api/r2/[...key]`                       | Authenticated R2 byte access (debug/preview)                                                  |
 | `/api/debug/[job_id]/[stem]`             | Diagnostic raw model response, gated by `diagnostics` flag on the job                         |
-| `/api/auth/*`                            | Better Auth handler — Google sign-in/out + OAuth callback (dispatched in `hooks.server.ts`)   |
+| `/auth/*`                                | Better Auth handler — Google sign-in/out + OAuth callback (`basePath: "/auth"`; dispatched in `hooks.server.ts`) |
 | `/api/cf/models` (`GET`)                 | Vision models on the user's connected CF account; KV-cached 24h, `?refresh=1` forces re-fetch |
 
 ## Code style
@@ -168,12 +169,14 @@ Local (create `.dev.vars` — there is no `.example` template in the repo):
 | `GOOGLE_CLIENT_SECRET`        | Google OAuth client secret                                                                  |
 | `E2E_BYPASS_AUTH`             | `1`/`true` → synthesize an `e2e-test-user` and skip Google (local/preview only)             |
 | `NOTION_TOKEN_ENCRYPTION_KEY` | `openssl rand -base64 32` — encrypts BOTH the Notion token and the BYO Cloudflare token     |
+| `PUBLIC_GOOGLE_CLIENT_ID`     | *Optional, public* — browser Google client id that enables One Tap; empty → One Tap off, Google button still works |
 
 Production secrets (`wrangler secret put`):
 
 - `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (required — Better Auth Google OAuth)
 - `NOTION_TOKEN_ENCRYPTION_KEY` (required — encrypts the Notion and Cloudflare tokens in D1)
 - `BETTER_AUTH_URL` is set as a public `vars` entry in `wrangler.jsonc` (`https://username-extractor.dropoutstudio.co`), not a secret
+- `PUBLIC_GOOGLE_CLIENT_ID` is a public `vars` entry in `wrangler.jsonc` (empty by default; set it per-deploy to enable One Tap), not a secret
 - `AI_GATEWAY_SLUG`, `AI_GATEWAY_TOKEN` (optional — legacy `env.AI` gateway path; unused by per-item REST inference)
 
 Bindings (declared in `wrangler.jsonc`): `DB` (D1), `R2`, `KV`, `AI` (declared but unused per-item — inference is BYO over REST), `QUEUE` (producer for `image-jobs`, consumer batch 5, retries 3, DLQ `image-jobs-dlq`), `JOB_COORDINATOR` (DO), `ANALYTICS`, `ASSETS`.
@@ -182,7 +185,7 @@ Bindings (declared in `wrangler.jsonc`): `DB` (D1), `R2`, `KV`, `AI` (declared b
 
 - **Never create branches.** Workspace-wide rule from `~/Desktop/projects/CLAUDE.md`: parallel work uses `git worktree add ../username-extractor-<feature>` and commits land on `main`.
 - **`bun run dev` ≠ Workers runtime.** Use `bun run preview` whenever you touch the queue consumer, the DO, the cron sweep, or the BYO-Cloudflare REST inference path.
-- **Auth tables are Better Auth's.** `users`/`sessions`/`accounts`/`verifications`/`rate_limits` must stay snake_case + plural (`usePlural: true` in `auth.ts`) — renaming silently breaks the Drizzle adapter. Auth is built per-request in `hooks.server.ts`; set `E2E_BYPASS_AUTH=1` in `.dev.vars` to skip the Google round-trip locally.
+- **Auth tables are Better Auth's.** `users`/`sessions`/`accounts`/`verifications`/`passkeys`/`rate_limits` must stay snake_case + plural (`usePlural: true` in `auth.ts`) — renaming silently breaks the Drizzle adapter. Auth is built per-request in `hooks.server.ts`; set `E2E_BYPASS_AUTH=1` in `.dev.vars` to skip the Google round-trip locally.
 - **Inference is BYO-Cloudflare, not `env.AI`.** Per-item extraction calls the user's own account over REST (`run-rest.ts`), billed to them; a job won't start unless an account is connected (`createJob` throws `CloudflareNotConnectedError`). `CfInferenceError.kind` drives ack-vs-retry in the consumer (auth/model_unavailable → fail item, rate_limit → requeue, transport → one inline retry).
 - **`wrap-worker.mjs` is silent if it works.** If `_worker.js` post-build looks like the SvelteKit-generated file (no `import { queueConsumer }`), the wrap step didn't run — check `bun run build` output for `[wrap-worker]`.
 - **Schema changes need two steps:** edit `src/lib/server/schema.ts`, then `bun run db:generate` to emit a migration, then `bun run db:migrate:local` (and `db:migrate` for prod). Don't hand-edit files in `migrations/`.

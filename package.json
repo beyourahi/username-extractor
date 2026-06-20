@@ -54,6 +54,7 @@
         "wrangler": "^4.94.0"
     },
     "dependencies": {
+        "@better-auth/passkey": "1.6.20",
         "@lucide/svelte": "^1.16.0",
         "@notionhq/client": "^5.22.0",
         "@unpic/svelte": "^1.0.1",
