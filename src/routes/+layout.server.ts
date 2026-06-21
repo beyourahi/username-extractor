@@ -8,8 +8,15 @@ import { eq } from "drizzle-orm";
  * bindings degrade silently to `null` — the wizard re-prompts.
  */
 export const load: LayoutServerLoad = async ({ locals, platform }) => {
+    // Presentation-only projection of the already-resolved session user (name/email/image)
+    // for the AppBar's profile widget. No new auth/DB work — just surfaces what `locals.user`
+    // already holds so the navbar can show the user's picture (or the silhouette fallback).
+    const user = locals.user
+        ? { name: locals.user.name, email: locals.user.email, image: locals.user.image ?? null }
+        : null;
+
     if (!locals.userId || !platform?.env?.DB) {
-        return { userId: locals.userId, userEmail: locals.userEmail, userSettings: null };
+        return { userId: locals.userId, userEmail: locals.userEmail, user, userSettings: null };
     }
     try {
         const db = getDb(platform);
@@ -21,9 +28,10 @@ export const load: LayoutServerLoad = async ({ locals, platform }) => {
         return {
             userId: locals.userId,
             userEmail: locals.userEmail,
+            user,
             userSettings: rows[0] ?? null
         };
     } catch {
-        return { userId: locals.userId, userEmail: locals.userEmail, userSettings: null };
+        return { userId: locals.userId, userEmail: locals.userEmail, user, userSettings: null };
     }
 };

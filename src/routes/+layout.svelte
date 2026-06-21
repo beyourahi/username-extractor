@@ -37,7 +37,7 @@
         Skip to content
     </a>
     {#if !isLogin}
-        <AppBar currentPath={path} userEmail={data?.userEmail ?? null} />
+        <AppBar currentPath={path} user={data?.user ?? null} />
     {/if}
 
     <main id="main" tabindex="-1" class="flex grow flex-col outline-none">

@@ -1,30 +1,27 @@
+<!--
+    Global top bar. Matches the sibling tools' chrome: no logo/wordmark, icon-only controls,
+    labels revealed on hover. Because this is a multi-route app (unlike the single-page siblings),
+    it keeps a primary nav — rendered as icon-only links (Extract / Jobs / Leads) with a tooltip on
+    hover (desktop) or a dropdown menu (mobile). Account controls live in the sibling-parity
+    <User> cluster (avatar + Settings + Sign out); signed-out visitors get a Sign-in pill instead.
+-->
 <script lang="ts">
-    import {
-        Upload,
-        Layers,
-        Users as UsersIcon,
-        Settings as SettingsIcon,
-        ChevronDown,
-        Search,
-        LogIn
-    } from "@lucide/svelte";
-    import UserChip from "./UserChip.svelte";
-    import { signOut as authSignOut } from "$lib/auth-client";
+    import { Upload, Layers, Users as UsersIcon, ChevronDown, LogIn } from "@lucide/svelte";
+    import User from "./User.svelte";
     import { cn } from "$lib/utils/cn";
 
     let {
         currentPath = "/",
-        userEmail
+        user
     }: {
         currentPath?: string;
-        userEmail?: string | null;
+        user?: { name: string; email: string; image?: string | null } | null;
     } = $props();
 
     const items = [
         { href: "/", id: "upload", label: "Extract", icon: Upload },
         { href: "/jobs", id: "jobs", label: "Jobs", icon: Layers },
-        { href: "/leads", id: "leads", label: "Leads", icon: UsersIcon },
-        { href: "/settings", id: "settings", label: "Settings", icon: SettingsIcon }
+        { href: "/leads", id: "leads", label: "Leads", icon: UsersIcon }
     ];
 
     function isActive(href: string): boolean {
@@ -33,46 +30,29 @@
     }
 
     let mobileOpen = $state(false);
-
-    async function signOut() {
-        // Better Auth sign-out, then back to the login screen.
-        if (typeof window === "undefined") return;
-        try {
-            await authSignOut();
-        } catch {
-            // ignore — redirect to /login regardless so the user lands somewhere sane
-        }
-        window.location.href = "/login";
-    }
 </script>
 
 <header class="border-hair bg-background/80 sticky top-0 z-40 w-full border-b backdrop-blur-md">
     <div class="mx-auto flex h-14 w-full max-w-[var(--content-max)] items-center gap-3 px-[var(--content-x)]">
-        <a
-            href="/"
-            class="sleek flex shrink-0 touch-manipulation items-center gap-2 rounded-lg px-1.5 py-1 hover:opacity-80"
-            aria-label="Username Extractor home"
-        >
-            <Search size={16} class="text-brand" />
-            <span class="text-foreground text-sm font-semibold tracking-tight whitespace-nowrap"
-                >Username Extractor</span
-            >
-        </a>
-
-        <nav class="ml-2 hidden items-center gap-1 md:flex" aria-label="Primary">
+        <nav class="hidden items-center gap-1 md:flex" aria-label="Primary">
             {#each items as item (item.id)}
                 {@const Active = isActive(item.href)}
                 {@const Ic = item.icon}
                 <a
                     href={item.href}
-                    class={cn(
-                        "sleek inline-flex h-8 touch-manipulation items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium whitespace-nowrap",
-                        Active ? "bg-ink-2 text-foreground" : "text-ink-muted hover:text-foreground"
-                    )}
+                    aria-label={item.label}
                     aria-current={Active ? "page" : undefined}
+                    class={cn(
+                        "sleek group relative flex h-9 w-9 touch-manipulation items-center justify-center rounded-full",
+                        Active ? "bg-ink-2 text-foreground" : "text-ink-muted hover:bg-ink-2 hover:text-foreground"
+                    )}
                 >
-                    <Ic size={13} />
-                    {item.label}
+                    <Ic size={16} />
+                    <span
+                        class="bg-secondary text-foreground pointer-events-none absolute top-full left-1/2 z-10 mt-2 -translate-x-1/2 rounded-md px-2.5 py-1.5 text-xs font-medium whitespace-nowrap opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100"
+                    >
+                        {item.label}
+                    </span>
                 </a>
             {/each}
         </nav>
@@ -121,8 +101,8 @@
                 </div>
             </div>
 
-            {#if userEmail}
-                <UserChip email={userEmail} onSignOut={signOut} />
+            {#if user}
+                <User {user} />
             {:else}
                 <a
                     href="/login"

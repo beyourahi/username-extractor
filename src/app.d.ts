@@ -43,6 +43,8 @@ declare global {
         interface PageData {
             userId: Locals["userId"];
             userEmail: Locals["userEmail"];
+            /** Presentation projection of the session user for the AppBar profile widget. */
+            user?: { name: string; email: string; image: string | null } | null;
         }
 
         interface Error {
