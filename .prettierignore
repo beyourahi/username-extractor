@@ -5,3 +5,7 @@ docs/benchmark.md
 # sync-ds`. Never hand-format it (a reformat would diverge from upstream and be
 # reverted on the next sync). Its own repo owns its formatting.
 src/lib/ds
+
+# Generated Drizzle migrations — tool-generated snapshots/SQL; prettier reformatting
+# them fights drizzle's output and dirties the tree on every format run.
+migrations/
