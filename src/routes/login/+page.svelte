@@ -1,7 +1,7 @@
 <!--
     Login screen. "Continue with Google" → Better Auth social OAuth, plus Google One Tap
-    (auto-prompted when configured) and "Sign in with a passkey" (WebAuthn — Face ID / Touch
-    ID / fingerprint). The $effect force-redirects if a session is already present on mount.
+    (auto-prompted when configured) and "Use Face ID / Touch ID" (WebAuthn platform
+    biometric). The $effect force-redirects if a session is already present on mount.
     Auth is optional — "Back to homepage" returns guests to the browsable app at `/`.
     Rendered without the AppBar/first-run wizard, but WITH the global Footer (see
     +layout.svelte) — mirroring the sibling tools' login (day-zero / invoice-generator /
@@ -61,12 +61,12 @@
         try {
             const res = await authClient.signIn.passkey();
             if (res?.error) {
-                error = "Passkey sign-in failed or was cancelled.";
+                error = "Face ID / Touch ID sign-in failed or was cancelled.";
             } else {
                 goto(redirectUrl);
             }
         } catch (e) {
-            error = "Passkey sign-in failed. Please try again.";
+            error = "Face ID / Touch ID sign-in failed. Please try again.";
             console.error(e);
         } finally {
             isLoading = false;
@@ -138,7 +138,7 @@
             >
                 <span class="inline-flex items-center gap-2.5">
                     <Fingerprint class="size-4" aria-hidden="true" />
-                    <span>Sign in with a passkey</span>
+                    <span>Sign in with Face ID / Touch ID</span>
                 </span>
             </Cta>
         {/if}
@@ -164,7 +164,7 @@
 
     <p class="text-ink-muted max-w-sm text-center text-sm text-pretty">
         {webauthnAvailable
-            ? "Sign in with Google — or use a passkey (Face ID, Touch ID, fingerprint) once you've added one in Settings."
-            : "Sign in with your Google account to get started"}
+            ? "Sign in with Google — or use Face ID / Touch ID once you've set it up in Settings."
+            : "Sign in with your Google account to get started."}
     </p>
 </div>

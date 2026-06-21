@@ -71,7 +71,7 @@
                             <div>
                                 <p class="text-foreground text-sm font-medium">Diagnostics by default</p>
                                 <p class="text-ink-muted mt-1 text-xs text-pretty">
-                                    Save raw model responses for replay.
+                                    Save the raw AI response so you can review it later.
                                 </p>
                             </div>
                             <Switch
@@ -82,10 +82,10 @@
                         </div>
                         <div class="border-hair bg-card flex items-start justify-between gap-3 rounded-lg border p-3">
                             <div>
-                                <p class="text-foreground text-sm font-medium">Bring your own Cloudflare</p>
+                                <p class="text-foreground text-sm font-medium">Use your own Cloudflare account</p>
                                 <p class="text-ink-muted mt-1 text-xs text-pretty">
-                                    Extractions run on your Cloudflare account (billed to you). Connect it and pick a
-                                    model in Settings before your first job.
+                                    Extractions run on your own Cloudflare account. Connect it and pick a model in
+                                    Settings before your first job.
                                 </p>
                             </div>
                             <Cloud size={16} class="text-ink-muted mt-0.5 shrink-0" />
@@ -96,7 +96,7 @@
                         <Field
                             label="Notion integration token"
                             optional
-                            hint="Stored encrypted. Leave blank to set up later."
+                            hint="Stored securely. Leave blank to set up later."
                         >
                             <TextInput
                                 type="password"
@@ -110,7 +110,7 @@
                             <TextInput name="notionDatabaseId" bind:value={notionDatabaseId} placeholder="1a3b4c5d-…" />
                         </Field>
                         <p class="text-ink-muted text-caption text-pretty">
-                            Without Notion, verified handles still save to your Leads table. You'll see
+                            Without Notion, verified usernames still save to your Leads table. You'll see
                             <NotionBadge status="unconfigured" size="sm" /> badges until you connect.
                         </p>
                         <input type="hidden" name="notionAutoSync" value={notionToken ? "true" : "false"} />

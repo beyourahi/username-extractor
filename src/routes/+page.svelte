@@ -118,7 +118,7 @@
         >
             <LogIn size={15} class="text-brand mt-px shrink-0" />
             <span class="text-foreground">
-                Sign in to run extractions — screenshots are processed on your own Cloudflare account, billed to you.
+                Sign in to run extractions — screenshots are processed on your own Cloudflare account.
                 <a href="/login" class="text-brand font-medium underline-offset-2 hover:underline">Sign in</a>
             </span>
         </div>
@@ -128,7 +128,7 @@
         >
             <Cloud size={15} class="text-brand mt-px shrink-0" />
             <span class="text-foreground">
-                Connect your Cloudflare account to run extractions — inference is billed to you, not us.
+                Connect your Cloudflare account to run extractions — it runs on your own Cloudflare account.
                 <a href="/settings" class="text-brand font-medium underline-offset-2 hover:underline">Connect now</a>
             </span>
         </div>
@@ -171,7 +171,7 @@
                         <div>
                             <p class="text-foreground text-sm font-medium">Diagnostics</p>
                             <p class="text-ink-muted mt-1 text-xs text-pretty">
-                                Saves raw model responses to R2 for replay.
+                                Saves the raw AI response so you can review it later.
                             </p>
                         </div>
                         <Switch
@@ -184,7 +184,7 @@
                     <div class="border-hair border-t"></div>
                     <dl class="space-y-2 text-xs">
                         <div class="flex items-center justify-between gap-3">
-                            <dt class="text-ink-muted shrink-0">Vision model</dt>
+                            <dt class="text-ink-muted shrink-0">Image model</dt>
                             <dd class="text-foreground text-caption truncate text-right font-mono whitespace-nowrap">
                                 {data.cloudflareModel}
                             </dd>
@@ -216,7 +216,7 @@
                 {submitting ? "Uploading…" : `Run extraction${files.length > 0 ? ` · ${files.length}` : ""}`}
             </Button>
 
-            <p class="text-ink-muted text-caption text-center">Verified handles auto-sync to your Notion CRM.</p>
+            <p class="text-ink-muted text-caption text-center">Verified usernames auto-sync to your Notion database.</p>
         </div>
     </div>
 </div>

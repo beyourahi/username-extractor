@@ -302,7 +302,7 @@
     </div>
 
     {#if stream?.state.error}
-        <p class="text-tier-failed-fg text-xs text-pretty">Stream error: {stream.state.error}</p>
+        <p class="text-tier-failed-fg text-xs text-pretty">Live updates stopped: {stream.state.error}</p>
     {/if}
 </main>
 

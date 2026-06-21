@@ -89,7 +89,7 @@
                     @{item.username}
                 </a>
             {:else}
-                <p class="text-ink-muted text-sm italic">— no handle —</p>
+                <p class="text-ink-muted text-sm italic">— no username —</p>
             {/if}
 
             {#if item.tier}

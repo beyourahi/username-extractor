@@ -125,7 +125,7 @@ export const actions: Actions = {
         let tokenBlob: Uint8Array | null = null;
         if (form.data.notionToken && form.data.notionToken.length > 0) {
             if (!platform.env.NOTION_TOKEN_ENCRYPTION_KEY) {
-                return message(form, "encryption key not configured", { status: 500 });
+                return message(form, "Can't save tokens right now. Please try again later.", { status: 500 });
             }
             const key = await deriveTokenKey(platform.env.NOTION_TOKEN_ENCRYPTION_KEY);
             tokenBlob = await encryptNotionToken(form.data.notionToken, key);
@@ -142,7 +142,7 @@ export const actions: Actions = {
         }
         if (cfTokenProvided && cfAccountId) {
             if (!platform.env.NOTION_TOKEN_ENCRYPTION_KEY) {
-                return message(form, "encryption key not configured", { status: 500 });
+                return message(form, "Can't save tokens right now. Please try again later.", { status: 500 });
             }
             try {
                 const models = await listVisionModels({ accountId: cfAccountId, apiToken: form.data.cloudflareToken });
@@ -191,12 +191,12 @@ export const actions: Actions = {
             await db.update(schema.userSettings).set(updateData).where(eq(schema.userSettings.userId, locals.userId));
         }
 
-        return message(form, "saved");
+        return message(form, "Saved");
     },
 
     reset: async ({ locals, platform }) => {
         if (!locals.userId || !platform?.env?.DB) {
-            return fail(503, { error: "db unavailable" });
+            return fail(503, { error: "Can't reach your data right now. Please try again." });
         }
         const db = getDb(platform);
         await db.delete(schema.userSettings).where(eq(schema.userSettings.userId, locals.userId));
@@ -214,11 +214,11 @@ export const actions: Actions = {
                 body: JSON.stringify({ dry_run: dryRun })
             });
             if (!res.ok) {
-                return fail(res.status, { error: `dedup api failed: ${res.status}` });
+                return fail(res.status, { error: "Couldn't remove duplicates. Please try again." });
             }
             return { dedupResult: await res.json() };
         } catch (e) {
-            return fail(500, { error: e instanceof Error ? e.message : "dedup failed" });
+            return fail(500, { error: e instanceof Error ? e.message : "Couldn't remove duplicates." });
         }
     },
 
@@ -241,7 +241,7 @@ export const actions: Actions = {
         }
 
         if (!payload.markdown && !payload.notion) {
-            return fail(400, { error: "provide markdown or both notion token + database id" });
+            return fail(400, { error: "Paste markdown, or enter both a Notion token and database ID." });
         }
 
         try {
@@ -252,7 +252,7 @@ export const actions: Actions = {
             });
             if (!res.ok) {
                 const errorText = await res.text();
-                return fail(res.status, { error: errorText || `legacy import failed: ${res.status}` });
+                return fail(res.status, { error: errorText || "Import failed. Please try again." });
             }
             const json = (await res.json()) as {
                 imported_markdown: number;

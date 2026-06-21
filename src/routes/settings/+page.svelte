@@ -15,8 +15,7 @@
         Check,
         AlertTriangle,
         Cloud,
-        Fingerprint,
-        KeyRound
+        Fingerprint
     } from "@lucide/svelte";
     import { Heading, cn, inputBase } from "$lib/ds";
     import PageHeader from "$lib/components/PageHeader.svelte";
@@ -89,7 +88,7 @@
     let legacyMarkdownSubmitting = $state(false);
     let legacyNotionSubmitting = $state(false);
 
-    // ── Passkeys (WebAuthn = device biometrics: Face ID / Touch ID / fingerprint) ──────────
+    // ── Face ID / Touch ID (WebAuthn platform biometric: Face ID / Touch ID / fingerprint) ──
     type PasskeyRow = { id: string; name?: string | null; createdAt?: string | Date | null };
     let passkeys = $state<PasskeyRow[]>([]);
     let passkeysLoading = $state(true);
@@ -131,39 +130,39 @@
         else passkeysLoading = false;
     });
 
-    // attachment "platform" → device biometric (Face ID / Touch ID / fingerprint);
-    // omitted → browser default (allows roaming security keys too).
-    async function addPasskey(attachment?: "platform") {
+    // Always registers the device's built-in biometric (Face ID / Touch ID / fingerprint)
+    // via authenticatorAttachment: "platform".
+    async function addPasskey() {
         passkeyBusy = true;
         try {
             const res = await authClient.passkey.addPasskey({
                 name: deviceLabel(),
-                ...(attachment ? { authenticatorAttachment: attachment } : {})
+                authenticatorAttachment: "platform"
             });
-            if (res?.error) toast.error(res.error.message || "Couldn't add passkey.");
+            if (res?.error) toast.error(res.error.message || "Couldn't set up Face ID / Touch ID.");
             else {
-                toast.success("Passkey added.");
+                toast.success("Face ID / Touch ID is set up.");
                 await loadPasskeys();
             }
         } catch {
-            toast.error("Passkey registration was cancelled.");
+            toast.error("Setup was cancelled.");
         } finally {
             passkeyBusy = false;
         }
     }
 
     async function removePasskey(id: string) {
-        if (!confirm("Remove this passkey? You won't be able to sign in with it anymore.")) return;
+        if (!confirm("Remove Face ID / Touch ID? You won't be able to sign in with it anymore.")) return;
         passkeyBusy = true;
         try {
             const res = await authClient.passkey.deletePasskey({ id });
-            if (res?.error) toast.error(res.error.message || "Couldn't remove passkey.");
+            if (res?.error) toast.error(res.error.message || "Couldn't remove it.");
             else {
-                toast.success("Passkey removed.");
+                toast.success("Removed.");
                 await loadPasskeys();
             }
         } catch {
-            toast.error("Couldn't remove passkey.");
+            toast.error("Couldn't remove it.");
         } finally {
             passkeyBusy = false;
         }
@@ -189,7 +188,7 @@
 {/snippet}
 
 <main class="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 pt-8 pb-8 sm:px-6 sm:pt-10">
-    <PageHeader title="Settings" subtitle="Extraction defaults, Notion credentials, and maintenance tools." />
+    <PageHeader title="Settings" subtitle="Defaults, Notion connection, and cleanup tools." />
 
     <form method="POST" action="?/save" use:enhanceForm class="flex flex-col gap-8">
         {#snippet extractionBody()}
@@ -197,7 +196,7 @@
                 <div>
                     <p class="text-foreground text-sm font-medium">Diagnostics by default</p>
                     <p class="text-ink-muted mt-1 text-xs text-pretty">
-                        Save the raw model response to R2 alongside the parsed result.
+                        Save the raw AI response alongside each result so you can review it later.
                     </p>
                 </div>
                 <Switch
@@ -237,7 +236,7 @@
                     label="API token"
                     hint={cloudflareConnected
                         ? `Stored: ${maskedCloudflareToken} — leave blank to keep.`
-                        : "Scoped token with the Account · Workers AI · Read permission. Encrypted at rest."}
+                        : "An API token with the Account · Workers AI · Read permission. Stored securely."}
                 >
                     <TextInput
                         type="password"
@@ -255,8 +254,8 @@
                     />
                 </Field>
                 <p class="text-ink-muted text-caption leading-relaxed text-pretty">
-                    Inference runs on <span class="text-foreground">your</span> Cloudflare account and is billed to you.
-                    Create a token at
+                    Extractions run on <span class="text-foreground">your</span> own Cloudflare account. Create a token
+                    at
                     <a
                         href="https://dash.cloudflare.com/profile/api-tokens"
                         target="_blank"
@@ -270,9 +269,9 @@
             <div class="border-hair border-t"></div>
             <div class="flex items-center justify-between gap-3 py-3">
                 <div class="min-w-0">
-                    <p class="text-foreground text-sm font-medium">Vision model</p>
+                    <p class="text-foreground text-sm font-medium">Image model</p>
                     <p class="text-ink-muted mt-0.5 text-xs text-pretty">
-                        Kimi K2.6 is benchmark-validated. Others are experimental — quality varies.
+                        Kimi K2.6 is tested and recommended. Others are experimental and may be less reliable.
                     </p>
                 </div>
                 <div class="flex shrink-0 items-center gap-2">
@@ -304,7 +303,7 @@
         {@render section(
             Cloud,
             "Cloudflare account",
-            "Required — extractions run on your account, billed to you.",
+            "Required — extractions run on your own Cloudflare account.",
             cloudflareBody
         )}
 
@@ -314,7 +313,7 @@
                     label="Integration token"
                     hint={maskedToken
                         ? `Stored: ${maskedToken} — leave blank to keep.`
-                        : "Encrypted at rest. Masked after save."}
+                        : "Stored securely. You won't see it again after saving."}
                 >
                     <TextInput
                         type="password"
@@ -333,7 +332,7 @@
                 <div>
                     <p class="text-foreground text-sm font-medium">Auto-sync verified leads</p>
                     <p class="text-ink-muted mt-1 text-xs text-pretty">
-                        HIGH and MED tiers get pushed automatically as a job runs.
+                        High- and medium-confidence results are sent to Notion automatically as a job runs.
                     </p>
                 </div>
                 <Switch
@@ -346,9 +345,10 @@
             <div class="border-hair border-t"></div>
             <div class="flex items-start justify-between gap-3 py-3">
                 <div>
-                    <p class="text-foreground text-sm font-medium">Skip Instagram profile validation</p>
+                    <p class="text-foreground text-sm font-medium">Skip Instagram profile check</p>
                     <p class="text-ink-muted mt-1 text-xs text-pretty">
-                        Trust extracted handles without an HTTP check — faster but allows 404s through.
+                        Trust extracted usernames without checking the profile exists — faster, but lets dead links
+                        through.
                     </p>
                 </div>
                 <Switch
@@ -365,8 +365,8 @@
             <div class="border-hair border-t"></div>
             <div class="flex items-center justify-between gap-3 py-3">
                 <div>
-                    <p class="text-foreground text-sm font-medium">Validation delay (ms)</p>
-                    <p class="text-ink-muted mt-0.5 text-xs">Throttle between Instagram HEAD requests.</p>
+                    <p class="text-foreground text-sm font-medium">Wait between profile checks (ms)</p>
+                    <p class="text-ink-muted mt-0.5 text-xs">Wait time between Instagram profile checks (ms).</p>
                 </div>
                 <div class="w-28">
                     <TextInput
@@ -382,9 +382,9 @@
             <div class="border-hair border-t"></div>
             <div class="flex items-center justify-between gap-3 py-3">
                 <div>
-                    <p class="text-foreground text-sm font-medium">Dedup keep-strategy</p>
+                    <p class="text-foreground text-sm font-medium">When merging duplicates, keep</p>
                     <p class="text-ink-muted mt-0.5 text-xs text-pretty">
-                        Which page survives when collapsing duplicate handles in Notion.
+                        Which entry to keep when merging duplicate usernames in Notion.
                     </p>
                 </div>
                 <div class="w-36">
@@ -401,7 +401,7 @@
             </div>
         {/snippet}
 
-        {@render section(FileText, "Notion", "Credentials used to push verified handles into your CRM.", notionBody)}
+        {@render section(FileText, "Notion", "Connect Notion to send verified usernames to your database.", notionBody)}
 
         <div
             class="border-hair bg-card/85 sticky bottom-4 z-30 flex items-center justify-between gap-3 rounded-lg border p-3 backdrop-blur-md"
@@ -413,7 +413,7 @@
                     <Check size={12} class="text-brand" />
                     <span class="text-brand">Saved</span>
                 {:else}
-                    <span>Changes apply to subsequent jobs.</span>
+                    <span>Changes apply to new jobs.</span>
                 {/if}
             </div>
             <div class="flex items-center gap-2">
@@ -428,18 +428,17 @@
         <div class="flex flex-col gap-3 py-3">
             {#if !webauthnAvailable}
                 <p class="text-ink-muted text-xs text-pretty">
-                    This browser can't use passkeys. Open the app in Safari, Chrome, or Edge on a device with Face ID,
-                    Touch ID, or a fingerprint sensor.
+                    This browser can't use Face ID / Touch ID. Open the app on a device with Face ID, Touch ID, or a
+                    fingerprint sensor.
                 </p>
             {:else}
                 {#if passkeysLoading}
                     <div class="text-ink-muted flex items-center gap-2 py-2 text-xs">
-                        <Spinner size="sm" color="brand" /> Loading passkeys…
+                        <Spinner size="sm" color="brand" /> Loading…
                     </div>
                 {:else if passkeys.length === 0}
                     <p class="text-ink-muted text-xs text-pretty">
-                        No passkeys yet. Add one to sign in with Face ID, Touch ID, or your fingerprint instead of
-                        Google.
+                        Not set up yet. Add Face ID / Touch ID to sign in without Google.
                     </p>
                 {:else}
                     <ul class="flex flex-col gap-2">
@@ -451,7 +450,7 @@
                                     <Fingerprint size={15} class="text-brand shrink-0" />
                                     <div class="min-w-0">
                                         <p class="text-foreground truncate text-sm font-medium">
-                                            {pk.name || "Passkey"}
+                                            {pk.name || "Face ID / Touch ID"}
                                         </p>
                                         {#if pk.createdAt && formatDate(pk.createdAt)}
                                             <p class="text-ink-muted text-caption">Added {formatDate(pk.createdAt)}</p>
@@ -462,7 +461,7 @@
                                     type="button"
                                     onclick={() => removePasskey(pk.id)}
                                     disabled={passkeyBusy}
-                                    aria-label="Remove passkey"
+                                    aria-label="Remove Face ID / Touch ID"
                                     class="text-ink-muted hover:text-tier-failed-fg shrink-0 transition-colors disabled:opacity-40"
                                 >
                                     <Trash2 size={14} />
@@ -472,23 +471,8 @@
                     </ul>
                 {/if}
                 <div class="flex flex-wrap items-center gap-2 pt-1">
-                    <Button
-                        type="button"
-                        variant="brand"
-                        size="sm"
-                        disabled={passkeyBusy}
-                        onclick={() => addPasskey("platform")}
-                    >
+                    <Button type="button" variant="brand" size="sm" disabled={passkeyBusy} onclick={() => addPasskey()}>
                         <Fingerprint size={13} /> Set up Face ID / Touch ID
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={passkeyBusy}
-                        onclick={() => addPasskey()}
-                    >
-                        <KeyRound size={13} /> Use a security key
                     </Button>
                 </div>
             {/if}
@@ -497,17 +481,17 @@
 
     {@render section(
         Fingerprint,
-        "Passkeys",
-        "Sign in with Face ID, Touch ID, or a fingerprint instead of Google.",
+        "Face ID / Touch ID",
+        "Sign in with Face ID, Touch ID, or your fingerprint instead of Google.",
         passkeysBody
     )}
 
     {#snippet maintenanceBody()}
         <div class="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <p class="text-foreground text-sm font-medium">Notion deduplication</p>
+                <p class="text-foreground text-sm font-medium">Remove Notion duplicates</p>
                 <p class="text-ink-muted mt-1 text-xs text-pretty">
-                    Scans your full database and archives losers using the keep-strategy.
+                    Scans your whole database, keeps one of each username, and archives the rest based on your rule.
                 </p>
             </div>
             <form method="POST" action="?/dedup" use:enhance class="flex items-center gap-2">
@@ -515,7 +499,7 @@
                     <input type="checkbox" name="dryRun" value="true" checked class="cursor-pointer" />
                     Dry run
                 </label>
-                <Button type="submit" variant="brand" size="sm">Run dedup</Button>
+                <Button type="submit" variant="brand" size="sm">Remove duplicates</Button>
             </form>
         </div>
         <div class="border-hair border-t"></div>
@@ -544,9 +528,9 @@
             }}
         >
             <div>
-                <p class="text-foreground text-sm font-medium">Legacy markdown import</p>
+                <p class="text-foreground text-sm font-medium">Import from markdown</p>
                 <p class="text-ink-muted mt-1 text-xs text-pretty">
-                    Paste the contents of <span class="font-mono">verified_usernames.md</span> from the Python CLI.
+                    Paste the contents of your old <span class="font-mono">verified_usernames.md</span> file.
                 </p>
             </div>
             <textarea
@@ -595,9 +579,9 @@
             }}
         >
             <div>
-                <p class="text-foreground text-sm font-medium">Legacy Notion import</p>
+                <p class="text-foreground text-sm font-medium">Import from Notion</p>
                 <p class="text-ink-muted mt-1 text-xs text-pretty">
-                    Scan an existing Notion database into Leads. Idempotent — re-running is safe.
+                    Bring an existing Notion database into Leads. Safe to run more than once.
                 </p>
             </div>
             <div class="grid gap-2 sm:grid-cols-2">
@@ -626,14 +610,15 @@
         </form>
     {/snippet}
 
-    {@render section(RefreshCw, "Maintenance", "One-shot tools for cleaning historical state.", maintenanceBody)}
+    {@render section(RefreshCw, "Maintenance", "Tools for tidying up and importing old data.", maintenanceBody)}
 
     {#snippet resetBody()}
         <div class="flex flex-col gap-3 py-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
                 <p class="text-tier-failed-fg text-sm font-medium">Reset to defaults</p>
                 <p class="text-ink-muted mt-1 text-xs text-pretty">
-                    Wipes settings only (including encrypted Notion + Cloudflare tokens). Jobs and leads are unaffected.
+                    Clears your settings, including your saved Notion and Cloudflare tokens. Jobs and leads are
+                    unaffected.
                 </p>
             </div>
             <form

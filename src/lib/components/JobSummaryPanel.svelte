@@ -124,7 +124,7 @@
     {/if}
     {#if running}
         <p class="text-ink-muted text-caption text-center">
-            Live updates via WebSocket · results stream in as they're processed.
+            Live updates · results appear as each screenshot is processed.
         </p>
     {/if}
 </div>

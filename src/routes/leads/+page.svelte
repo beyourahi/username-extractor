@@ -36,7 +36,7 @@
             if (!res.ok) throw new Error(`${res.status}`);
             const body = (await res.json()) as { notionStatus?: string; error?: string | null };
             if (body.notionStatus === "added") toast.success("Notion · added");
-            else if (body.notionStatus === "invalid") toast.error("Instagram returned 404 · marked invalid");
+            else if (body.notionStatus === "invalid") toast.error("Profile not found · marked invalid");
             else if (body.notionStatus === "pending") toast.error(`Notion pending · ${body.error ?? "retry later"}`);
             else if (body.notionStatus === "unconfigured")
                 toast.error("Notion not configured · set token in /settings");
@@ -118,7 +118,7 @@
 <main class="mx-auto flex w-full max-w-[var(--content-max)] flex-col gap-6 px-[var(--content-x)] pt-8 pb-8 sm:pt-10">
     <PageHeader
         title="Leads"
-        subtitle={`${data.total} lifetime verified handles. Dedup uses this list as source of truth.`}
+        subtitle={`${data.total} verified usernames, all-time. Duplicate removal uses this list as the source of truth.`}
     >
         {#snippet actions()}
             <Button
