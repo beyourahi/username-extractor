@@ -22,6 +22,7 @@
     import PageHeader from "$lib/components/PageHeader.svelte";
     import Button from "$lib/components/Button.svelte";
     import Switch from "$lib/components/Switch.svelte";
+    import Select from "$lib/components/Select.svelte";
     import Field from "$lib/components/Field.svelte";
     import TextInput from "$lib/components/TextInput.svelte";
     import Spinner from "$lib/components/Spinner.svelte";
@@ -71,6 +72,10 @@
         }
         return opts;
     });
+
+    // Dry-run toggle for the Notion dedup form. Defaults on; Switch's hidden input
+    // submits "true"/"false", matching the server's data.get("dryRun") === "true".
+    let dryRun = $state(true);
 
     let refreshingModels = $state(false);
     async function refreshModels() {
@@ -295,15 +300,13 @@
                         <RefreshCw size={13} class={refreshingModels ? "animate-spin" : ""} />
                     </button>
                     <div class="w-56">
-                        <select
+                        <Select
                             name="cloudflareModel"
                             bind:value={$form.cloudflareModel}
-                            class={cn(inputBase, "text-caption px-2.5 py-2")}
-                        >
-                            {#each modelOptions as opt (opt.id)}
-                                <option value={opt.id}>{opt.label}</option>
-                            {/each}
-                        </select>
+                            items={modelOptions.map((opt) => ({ value: opt.id, label: opt.label }))}
+                            placeholder="Select a model"
+                            class="text-caption px-2.5 py-2"
+                        />
                     </div>
                 </div>
             </div>
@@ -397,15 +400,17 @@
                     </p>
                 </div>
                 <div class="w-36">
-                    <select
+                    <Select
                         name="dedupKeepStrategy"
                         bind:value={$form.dedupKeepStrategy}
-                        class={cn(inputBase, "px-2.5 py-2 text-xs")}
-                    >
-                        <option value="best">Best score</option>
-                        <option value="oldest">Oldest</option>
-                        <option value="newest">Newest</option>
-                    </select>
+                        items={[
+                            { value: "best", label: "Best score" },
+                            { value: "oldest", label: "Oldest" },
+                            { value: "newest", label: "Newest" }
+                        ]}
+                        placeholder="Keep strategy"
+                        class="px-2.5 py-2 text-xs"
+                    />
                 </div>
             </div>
         {/snippet}
@@ -503,11 +508,17 @@
                     Scans your whole database, keeps one of each username, and archives the rest based on your rule.
                 </p>
             </div>
-            <form method="POST" action="?/dedup" use:enhance class="flex items-center gap-2">
-                <label class="text-ink-muted text-caption inline-flex cursor-pointer items-center gap-1.5">
-                    <input type="checkbox" name="dryRun" value="true" checked class="cursor-pointer" />
-                    Dry run
-                </label>
+            <form method="POST" action="?/dedup" use:enhance class="flex flex-nowrap items-center gap-4">
+                <span class="text-ink-muted text-caption inline-flex items-center gap-2 whitespace-nowrap">
+                    <Switch
+                        id="dryRun"
+                        name="dryRun"
+                        checked={dryRun}
+                        onchange={(v) => (dryRun = v)}
+                        ariaLabel="Dry run"
+                    />
+                    <label for="dryRun" class="cursor-pointer">Dry run</label>
+                </span>
                 <Button type="submit" variant="brand" size="sm">Remove duplicates</Button>
             </form>
         </div>
