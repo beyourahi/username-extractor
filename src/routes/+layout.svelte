@@ -1,8 +1,11 @@
 <script lang="ts">
     import "../app.css";
     import { Toaster } from "svelte-sonner";
+    import { LogIn } from "@lucide/svelte";
     import { page } from "$app/state";
-    import AppBar from "$lib/components/AppBar.svelte";
+    import User from "$lib/components/User.svelte";
+    import HeroHeading from "$lib/components/HeroHeading.svelte";
+    import SectionTabs from "$lib/components/SectionTabs.svelte";
     import Footer from "$lib/components/Footer.svelte";
     import FirstRunWizard from "$lib/components/FirstRunWizard.svelte";
 
@@ -17,10 +20,14 @@
     });
 
     const path = $derived(page.url.pathname);
-    // /login drops the AppBar + first-run wizard (bare auth canvas) but KEEPS the global
-    // Footer — matching the sibling tools (day-zero / invoice-generator / order-processor),
-    // which render their footer on every route, login included.
+    // /login drops the account chrome + first-run wizard (bare auth canvas) but KEEPS the global
+    // Footer — matching the sibling tools (day-zero / invoice-generator / order-processor), which
+    // render their footer on every route, login included.
     const isLogin = $derived(path === "/login");
+    // The shared wordmark hero + section tabs ride the three primary routes only. Drill-downs
+    // (/jobs/[id]) plus /settings and /changelog are focused views — no hero/tabs there (those
+    // pages carry their own back affordance).
+    const showTabs = $derived(path === "/" || path === "/jobs" || path === "/leads");
 </script>
 
 <svelte:head>
@@ -36,13 +43,45 @@
     >
         Skip to content
     </a>
+
+    <!-- Account controls float top-right on every route (sibling-parity), except the bare /login canvas. -->
     {#if !isLogin}
-        <AppBar currentPath={path} user={data?.user ?? null} />
+        {#if data?.user}
+            <User user={data.user} />
+        {:else}
+            <div class="fixed top-4 right-4 z-50 sm:top-6 sm:right-6 lg:right-[var(--content-x)]">
+                <a
+                    href="/login"
+                    class="sleek border-hair bg-card text-foreground hover:border-signal flex h-10 touch-manipulation items-center gap-2 rounded-full border px-3.5 text-xs font-medium whitespace-nowrap backdrop-blur-sm"
+                >
+                    <LogIn size={14} class="text-ink-muted" aria-hidden="true" />
+                    <span>Sign in</span>
+                </a>
+            </div>
+        {/if}
     {/if}
 
-    <main id="main" tabindex="-1" class="flex grow flex-col outline-none">
-        {@render children()}
-    </main>
+    {#if showTabs}
+        <!-- Shared chrome: the wordmark hero sits on top (always), the section tabs directly
+             beneath it, and the active tab's content below — the same top on all three tabs. -->
+        <main
+            id="main"
+            tabindex="-1"
+            class="flex w-full grow flex-col px-[var(--content-x)] py-16 outline-none sm:py-20"
+        >
+            <div class="m-auto flex w-full flex-col items-center gap-12 sm:gap-16">
+                <div class="flex flex-col items-center gap-6 sm:gap-8">
+                    <HeroHeading />
+                    <SectionTabs />
+                </div>
+                {@render children()}
+            </div>
+        </main>
+    {:else}
+        <main id="main" tabindex="-1" class="flex grow flex-col outline-none">
+            {@render children()}
+        </main>
+    {/if}
 
     <Footer />
 </div>

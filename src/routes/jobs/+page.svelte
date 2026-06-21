@@ -1,6 +1,5 @@
 <script lang="ts">
     import { Plus, ChevronRight, Check, X, Search } from "@lucide/svelte";
-    import PageHeader from "$lib/components/PageHeader.svelte";
     import EmptyState from "$lib/components/EmptyState.svelte";
     import Pagination from "$lib/components/Pagination.svelte";
     import Button from "$lib/components/Button.svelte";
@@ -30,14 +29,13 @@
     const past = $derived(data.jobs.filter((j) => j.status !== "pending" && j.status !== "running"));
 </script>
 
-<div class="mx-auto flex w-full max-w-[var(--content-max)] flex-col gap-6 px-[var(--content-x)] pt-8 pb-8 sm:pt-10">
-    <PageHeader title="Jobs" subtitle="Every extraction batch you've run, newest first.">
-        {#snippet actions()}
-            <Button variant="brand" size="default" href="/">
-                <Plus size={13} /> New job
-            </Button>
-        {/snippet}
-    </PageHeader>
+<div class="flex w-full flex-col gap-6">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p class="text-ink-muted text-sm">Every extraction batch you've run, newest first.</p>
+        <Button variant="brand" size="default" href="/">
+            <Plus size={13} /> New job
+        </Button>
+    </div>
 
     {#if data.jobs.length === 0}
         <EmptyState title="No jobs yet" description="Upload screenshots from the home page to start your first job.">

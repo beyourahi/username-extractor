@@ -3,7 +3,6 @@
     import { SvelteURLSearchParams } from "svelte/reactivity";
     import { toast } from "svelte-sonner";
     import { Trash2, RefreshCw, Send, Search, ExternalLink, Download } from "@lucide/svelte";
-    import PageHeader from "$lib/components/PageHeader.svelte";
     import EmptyState from "$lib/components/EmptyState.svelte";
     import Pagination from "$lib/components/Pagination.svelte";
     import NotionBadge from "$lib/components/NotionBadge.svelte";
@@ -115,12 +114,12 @@
     }
 </script>
 
-<div class="mx-auto flex w-full max-w-[var(--content-max)] flex-col gap-6 px-[var(--content-x)] pt-8 pb-8 sm:pt-10">
-    <PageHeader
-        title="Leads"
-        subtitle={`${data.total} verified usernames, all-time. Duplicate removal uses this list as the source of truth.`}
-    >
-        {#snippet actions()}
+<div class="flex w-full flex-col gap-6">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p class="text-ink-muted max-w-prose text-sm text-pretty">
+            {data.total} verified usernames, all-time. Duplicate removal uses this list as the source of truth.
+        </p>
+        <div class="flex flex-wrap items-center gap-2">
             <Button
                 variant="outline"
                 size="sm"
@@ -132,8 +131,8 @@
                 <Download size={13} /> Export
             </Button>
             <Button variant="outline" size="sm" href="/settings"><RefreshCw size={13} /> Sync pending</Button>
-        {/snippet}
-    </PageHeader>
+        </div>
+    </div>
 
     <form bind:this={formEl} method="GET" class="border-hair bg-card rounded-lg border p-4 sm:p-5">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center">

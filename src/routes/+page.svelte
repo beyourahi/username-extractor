@@ -4,7 +4,6 @@
     import { toast } from "svelte-sonner";
     import { Sparkles, AlertTriangle, Cloud, LogIn } from "@lucide/svelte";
     import { Eyebrow } from "$lib/ds";
-    import HeroHeading from "$lib/components/HeroHeading.svelte";
     import UploadDropzone from "$lib/components/UploadDropzone.svelte";
     import Switch from "$lib/components/Switch.svelte";
     import Button from "$lib/components/Button.svelte";
@@ -109,9 +108,7 @@
     }
 </script>
 
-<div class="flex w-full grow flex-col items-center justify-center gap-10 px-4 py-10 sm:gap-14 sm:py-14 lg:gap-20">
-    <HeroHeading />
-
+<div class="flex w-full flex-col items-center gap-8 sm:gap-10">
     {#if !signedIn}
         <div
             class="border-brand-border bg-brand-soft fade-in flex w-full max-w-md items-start gap-2.5 rounded-lg border px-3.5 py-2.5 text-xs text-pretty"

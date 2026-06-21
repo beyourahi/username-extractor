@@ -4,7 +4,8 @@
     (day-zero / invoice-generator / order-processor): newest-first, grouped by date,
     the newest day tagged "Latest". Absolute dates only — relative dates ("x days ago")
     would mismatch the SSR render and trip hydration. Reachable signed-out via the
-    isPublicPath allowlist in hooks.server.ts; inherits the AppBar + Footer from +layout.svelte.
+    isPublicPath allowlist in hooks.server.ts; inherits the floating account controls + Footer
+    from +layout.svelte.
 -->
 <script lang="ts">
     import { CHANGELOG_ENTRIES, type ChangelogEntry } from "$lib/data/changelog";

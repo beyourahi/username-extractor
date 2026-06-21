@@ -7,6 +7,7 @@
     import { browser } from "$app/environment";
     import { authClient } from "$lib/auth-client";
     import {
+        ArrowLeft,
         Sparkles,
         RefreshCw,
         Upload,
@@ -188,7 +189,15 @@
 {/snippet}
 
 <div class="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 pt-8 pb-8 sm:px-6 sm:pt-10">
-    <PageHeader title="Settings" subtitle="Defaults, Notion connection, and cleanup tools." />
+    <div class="flex flex-col gap-5">
+        <a
+            href="/"
+            class="text-ink-muted hover:text-foreground focus-visible:outline-signal text-caption inline-flex w-fit touch-manipulation items-center gap-2 font-mono tracking-[0.18em] whitespace-nowrap uppercase transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+            <ArrowLeft class="size-3.5" /> Back to extractor
+        </a>
+        <PageHeader title="Settings" subtitle="Defaults, Notion connection, and cleanup tools." />
+    </div>
 
     <form method="POST" action="?/save" use:enhanceForm class="flex flex-col gap-8">
         {#snippet extractionBody()}
