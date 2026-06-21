@@ -12,7 +12,7 @@
     <p class="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 sm:justify-start">
         <a
             href="/changelog"
-            class="pointer-fine:hover:text-foreground whitespace-nowrap transition-colors ease-[var(--ease)]"
+            class="pointer-fine:hover:text-foreground touch-manipulation whitespace-nowrap transition-colors ease-[var(--ease)]"
         >
             Changelog
         </a>
@@ -21,7 +21,7 @@
             href="https://dropoutstudio.co/tools"
             target="_blank"
             rel="noopener noreferrer"
-            class="pointer-fine:hover:text-foreground whitespace-nowrap transition-colors ease-[var(--ease)]"
+            class="pointer-fine:hover:text-foreground touch-manipulation whitespace-nowrap transition-colors ease-[var(--ease)]"
         >
             Other tools
         </a>
@@ -31,7 +31,7 @@
             href="https://dropoutstudio.co"
             target="_blank"
             rel="noopener noreferrer"
-            class="pointer-fine:hover:text-foreground whitespace-nowrap transition-colors ease-[var(--ease)]"
+            class="pointer-fine:hover:text-foreground touch-manipulation whitespace-nowrap transition-colors ease-[var(--ease)]"
         >
             Designed by Dropout Studio
         </a>

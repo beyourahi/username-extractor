@@ -18,11 +18,11 @@
 
 <header class={cn("flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between", className)}>
     <div>
-        <Heading as="h1" size="title-sm">
+        <Heading as="h1" size="title-sm" class="text-balance">
             {title}
         </Heading>
         {#if subtitle}
-            <p class="text-ink-muted mt-1 max-w-prose text-sm">
+            <p class="text-ink-muted mt-1 max-w-prose text-sm text-pretty">
                 {subtitle}
             </p>
         {/if}

@@ -187,7 +187,7 @@
     </section>
 {/snippet}
 
-<main class="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 pt-8 pb-8 sm:px-6 sm:pt-10">
+<div class="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 pt-8 pb-8 sm:px-6 sm:pt-10">
     <PageHeader title="Settings" subtitle="Defaults, Notion connection, and cleanup tools." />
 
     <form method="POST" action="?/save" use:enhanceForm class="flex flex-col gap-8">
@@ -281,7 +281,7 @@
                         disabled={refreshingModels || !cloudflareConnected}
                         title="Refresh model list"
                         aria-label="Refresh models"
-                        class="text-ink-muted hover:text-foreground transition-colors disabled:opacity-40"
+                        class="text-ink-muted hover:text-foreground touch-manipulation transition-colors disabled:opacity-40"
                     >
                         <RefreshCw size={13} class={refreshingModels ? "animate-spin" : ""} />
                     </button>
@@ -462,7 +462,7 @@
                                     onclick={() => removePasskey(pk.id)}
                                     disabled={passkeyBusy}
                                     aria-label="Remove Face ID / Touch ID"
-                                    class="text-ink-muted hover:text-tier-failed-fg shrink-0 transition-colors disabled:opacity-40"
+                                    class="text-ink-muted hover:text-tier-failed-fg shrink-0 touch-manipulation transition-colors disabled:opacity-40"
                                 >
                                     <Trash2 size={14} />
                                 </button>
@@ -637,4 +637,4 @@
     {/snippet}
 
     {@render section(AlertTriangle, "Danger zone", "Destructive — confirm before clicking.", resetBody)}
-</main>
+</div>

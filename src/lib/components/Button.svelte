@@ -32,7 +32,7 @@
     } = $props();
 
     const base =
-        "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium sleek disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]";
+        "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium sleek touch-manipulation disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]";
 
     const variants: Record<Variant, string> = {
         outline: "border border-hair bg-transparent text-foreground hover:border-signal hover:bg-ink-2",

@@ -36,7 +36,7 @@
             tabindex="0"
             onfocus={() => (expanded = true)}
             onblur={() => (expanded = false)}
-            class="sleek border-hair bg-card text-foreground relative z-10 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border text-sm font-semibold backdrop-blur-sm"
+            class="sleek border-hair bg-card text-foreground relative z-10 flex h-9 w-9 shrink-0 touch-manipulation items-center justify-center overflow-hidden rounded-full border text-sm font-semibold backdrop-blur-sm"
             aria-label={email}
             role="button"
         >
@@ -60,7 +60,7 @@
             onmouseenter={() => (tooltip = true)}
             onmouseleave={() => (tooltip = false)}
             aria-label="Sign out"
-            class="sleek border-tier-failed-border bg-tier-failed-bg hover:bg-tier-failed group flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border backdrop-blur-sm"
+            class="sleek border-tier-failed-border bg-tier-failed-bg hover:bg-tier-failed group flex h-9 w-9 cursor-pointer touch-manipulation items-center justify-center rounded-full border backdrop-blur-sm"
         >
             <Power size={15} class="sleek text-tier-failed-fg group-hover:text-background" />
         </button>

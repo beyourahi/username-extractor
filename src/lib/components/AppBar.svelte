@@ -50,7 +50,7 @@
     <div class="mx-auto flex h-14 w-full max-w-[var(--content-max)] items-center gap-3 px-[var(--content-x)]">
         <a
             href="/"
-            class="sleek flex shrink-0 items-center gap-2 rounded-lg px-1.5 py-1 hover:opacity-80"
+            class="sleek flex shrink-0 touch-manipulation items-center gap-2 rounded-lg px-1.5 py-1 hover:opacity-80"
             aria-label="Username Extractor home"
         >
             <Search size={16} class="text-brand" />
@@ -66,7 +66,7 @@
                 <a
                     href={item.href}
                     class={cn(
-                        "sleek inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium",
+                        "sleek inline-flex h-8 touch-manipulation items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium whitespace-nowrap",
                         Active ? "bg-ink-2 text-foreground" : "text-ink-muted hover:text-foreground"
                     )}
                     aria-current={Active ? "page" : undefined}
@@ -83,7 +83,7 @@
                     <button
                         type="button"
                         onclick={() => (mobileOpen = !mobileOpen)}
-                        class="sleek border-hair bg-card text-ink-muted hover:border-signal hover:text-foreground flex h-9 w-9 items-center justify-center rounded-full border"
+                        class="sleek border-hair bg-card text-ink-muted hover:border-signal hover:text-foreground flex h-9 w-9 touch-manipulation items-center justify-center rounded-full border"
                         aria-label="Open navigation"
                         aria-expanded={mobileOpen}
                     >
@@ -106,7 +106,7 @@
                                     href={item.href}
                                     onclick={() => (mobileOpen = false)}
                                     class={cn(
-                                        "flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm",
+                                        "flex w-full touch-manipulation items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm",
                                         Active
                                             ? "bg-ink-2 text-foreground"
                                             : "text-ink-muted hover:bg-ink-2 hover:text-foreground"
@@ -126,7 +126,7 @@
             {:else}
                 <a
                     href="/login"
-                    class="sleek border-hair bg-card text-foreground hover:border-signal flex h-9 items-center gap-2 rounded-full border px-3.5 text-xs font-medium backdrop-blur-sm"
+                    class="sleek border-hair bg-card text-foreground hover:border-signal flex h-9 touch-manipulation items-center gap-2 rounded-full border px-3.5 text-xs font-medium whitespace-nowrap backdrop-blur-sm"
                 >
                     <LogIn size={14} class="text-ink-muted" aria-hidden="true" />
                     <span>Sign in</span>

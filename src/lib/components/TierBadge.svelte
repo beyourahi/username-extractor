@@ -53,7 +53,7 @@
 {#if v}
     <span
         class={cn(
-            "status-transition inline-flex shrink-0 items-center gap-1.5 rounded-full border font-mono font-semibold tracking-[0.10em] uppercase ease-[var(--ease)]",
+            "status-transition inline-flex shrink-0 items-center gap-1.5 rounded-full border font-mono font-semibold tracking-[0.10em] whitespace-nowrap uppercase ease-[var(--ease)]",
             s ? "text-micro px-2 py-0.5" : "text-caption px-2.5 py-0.5"
         )}
         style="background: {v.bg}; color: {v.fg}; border-color: {v.bd};"

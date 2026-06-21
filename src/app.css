@@ -172,6 +172,14 @@
         color-scheme: dark;
         overscroll-behavior: none;
     }
+
+    /* Match the sibling tools (order-processor / invoice-generator / day-zero): repeat-tap
+       interactive chrome shouldn't flash a text selection on double-tap. Presentational only. */
+    button,
+    [role="button"]:not([aria-disabled="true"]),
+    [data-slot="dialog-close"] {
+        @apply select-none;
+    }
 }
 
 html,

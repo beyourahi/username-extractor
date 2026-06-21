@@ -49,7 +49,7 @@
     />
 </svelte:head>
 
-<main class="mx-auto w-full max-w-2xl px-4 py-14 sm:px-6 sm:py-20">
+<div class="mx-auto w-full max-w-2xl px-4 py-14 sm:px-6 sm:py-20">
     <header class="slide-in flex flex-col gap-4 sm:gap-5">
         <Eyebrow>What's new</Eyebrow>
         <Heading as="h1" size="title" weight={560} class="lowercase">changelog</Heading>
@@ -69,7 +69,7 @@
                     </span>
                     {#if groupIndex === 0}
                         <span
-                            class="border-hair text-ink-muted text-micro rounded-full border px-2 py-0.5 font-mono tracking-[0.18em] uppercase"
+                            class="border-hair text-ink-muted text-micro rounded-full border px-2 py-0.5 font-mono tracking-[0.18em] whitespace-nowrap uppercase"
                         >
                             Latest
                         </span>
@@ -94,4 +94,4 @@
             </section>
         {/each}
     </div>
-</main>
+</div>

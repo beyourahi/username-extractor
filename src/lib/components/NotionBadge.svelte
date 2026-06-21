@@ -60,7 +60,7 @@
 
 <span
     class={cn(
-        "inline-flex items-center rounded-full border font-mono tracking-[0.04em] uppercase transition-colors ease-[var(--ease)]",
+        "inline-flex items-center rounded-full border font-mono tracking-[0.04em] whitespace-nowrap uppercase transition-colors ease-[var(--ease)]",
         s ? "text-micro gap-1 px-1.5 py-0.5" : "text-caption gap-1.5 px-2 py-0.5"
     )}
     style="background: {v.bg}; color: {v.fg}; border-color: {v.bd};"

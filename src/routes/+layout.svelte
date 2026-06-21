@@ -30,11 +30,17 @@
 <Toaster richColors theme="dark" position="bottom-right" toastOptions={{ class: "font-sans text-xs" }} />
 
 <div class="bg-background flex min-h-dvh flex-col">
+    <a
+        href="#main"
+        class="focus:bg-card focus:text-foreground focus:outline-signal sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:inline-flex focus:items-center focus:rounded-xl focus:px-4 focus:py-2.5 focus:text-sm focus:font-medium focus:shadow-lg focus:outline-2 focus:outline-offset-2"
+    >
+        Skip to content
+    </a>
     {#if !isLogin}
         <AppBar currentPath={path} userEmail={data?.userEmail ?? null} />
     {/if}
 
-    <main class="flex grow flex-col">
+    <main id="main" tabindex="-1" class="flex grow flex-col outline-none">
         {@render children()}
     </main>
 

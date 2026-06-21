@@ -115,7 +115,7 @@
     }
 </script>
 
-<main class="mx-auto flex w-full max-w-[var(--content-max)] flex-col gap-6 px-[var(--content-x)] pt-8 pb-8 sm:pt-10">
+<div class="mx-auto flex w-full max-w-[var(--content-max)] flex-col gap-6 px-[var(--content-x)] pt-8 pb-8 sm:pt-10">
     <PageHeader
         title="Leads"
         subtitle={`${data.total} verified usernames, all-time. Duplicate removal uses this list as the source of truth.`}
@@ -152,7 +152,7 @@
                     <button
                         type="button"
                         onclick={() => chipNav("tier", c.v)}
-                        class="sleek text-caption inline-flex h-7 shrink-0 items-center rounded-full border px-3 font-mono whitespace-nowrap uppercase"
+                        class="sleek text-caption inline-flex h-7 shrink-0 touch-manipulation items-center rounded-full border px-3 font-mono whitespace-nowrap uppercase"
                         style={chipStyle((data.tier ?? "") === c.v, c.tone as "default" | "brand" | "med" | "failed")}
                     >
                         {c.l}
@@ -165,7 +165,7 @@
                     <button
                         type="button"
                         onclick={() => chipNav("notion", c.v)}
-                        class="sleek text-caption inline-flex h-7 shrink-0 items-center rounded-full border px-3 font-mono whitespace-nowrap uppercase"
+                        class="sleek text-caption inline-flex h-7 shrink-0 touch-manipulation items-center rounded-full border px-3 font-mono whitespace-nowrap uppercase"
                         style={chipStyle((data.notion ?? "") === c.v, c.tone)}
                     >
                         {c.l}
@@ -217,13 +217,13 @@
                     class="status-transition hover:bg-ink-2/50 flex flex-col gap-2 px-4 py-3 sm:grid sm:grid-cols-[minmax(180px,1fr)_80px_70px_150px_120px_80px] sm:items-center sm:gap-3"
                     style={i ? "border-top: 1px solid var(--hair);" : undefined}
                 >
-                    <div class="flex items-center gap-2">
+                    <div class="flex min-w-0 items-center gap-2">
                         <ExternalLink size={13} class="text-ink-muted shrink-0" />
                         <a
                             href={l.igUrl}
                             target="_blank"
                             rel="noreferrer"
-                            class="text-foreground truncate font-mono text-sm font-semibold hover:underline"
+                            class="text-foreground min-w-0 truncate font-mono text-sm font-semibold hover:underline"
                         >
                             @{l.username}
                         </a>
@@ -276,7 +276,7 @@
                         </Button>
                     </div>
                     {#if l.createdAt}
-                        <p class="text-ink-muted text-micro col-span-full -mt-1 font-mono sm:hidden">
+                        <p class="text-ink-muted text-micro col-span-full -mt-1 font-mono tabular-nums sm:hidden">
                             {fmtDate(l.createdAt)}
                         </p>
                     {/if}
@@ -284,8 +284,8 @@
             {/each}
             <Pagination page={data.page} pageSize={data.pageSize} total={data.total} baseHref={baseQuery} />
         </div>
-        <p class="text-ink-muted text-caption text-center font-mono">
+        <p class="text-ink-muted text-caption text-center font-mono tabular-nums">
             Showing {data.leads.length} of {data.total} leads.
         </p>
     {/if}
-</main>
+</div>

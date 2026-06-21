@@ -29,7 +29,7 @@
                 {@render icon()}
             </div>
         {/if}
-        <h2 class="text-foreground text-sm font-semibold tracking-tight">
+        <h2 class="text-foreground text-sm font-semibold tracking-tight text-balance">
             {title}
         </h2>
         <p class="text-ink-muted text-xs leading-relaxed text-pretty">

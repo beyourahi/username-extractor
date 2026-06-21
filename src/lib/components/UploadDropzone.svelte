@@ -199,7 +199,7 @@
                 <button
                     type="button"
                     onclick={openFolderPicker}
-                    class="sleek text-ink-muted hover:text-foreground inline-flex items-center gap-1.5 text-xs"
+                    class="sleek text-ink-muted hover:text-foreground inline-flex touch-manipulation items-center gap-1.5 text-xs"
                 >
                     <FolderOpen size={12} /> Add a folder
                 </button>
@@ -214,7 +214,7 @@
                 <button
                     type="button"
                     onclick={openFolderPicker}
-                    class="sleek border-hair text-ink-muted hover:border-signal hover:text-foreground inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs"
+                    class="sleek border-hair text-ink-muted hover:border-signal hover:text-foreground inline-flex touch-manipulation items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs whitespace-nowrap"
                 >
                     <FolderOpen size={13} /> Select a folder
                 </button>
@@ -230,7 +230,7 @@
                     <button
                         type="button"
                         onclick={clearFiles}
-                        class="sleek text-ink-muted hover:text-foreground text-caption"
+                        class="sleek text-ink-muted hover:text-foreground text-caption touch-manipulation"
                     >
                         Clear
                     </button>

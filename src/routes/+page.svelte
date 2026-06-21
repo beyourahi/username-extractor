@@ -204,7 +204,7 @@
             <Button
                 variant="brand"
                 size="lg"
-                class="w-full"
+                class="w-full touch-manipulation"
                 disabled={files.length === 0 || submitting || !cloudflareConnected}
                 onclick={submit}
             >

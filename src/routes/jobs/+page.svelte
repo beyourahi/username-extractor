@@ -30,7 +30,7 @@
     const past = $derived(data.jobs.filter((j) => j.status !== "pending" && j.status !== "running"));
 </script>
 
-<main class="mx-auto flex w-full max-w-[var(--content-max)] flex-col gap-6 px-[var(--content-x)] pt-8 pb-8 sm:pt-10">
+<div class="mx-auto flex w-full max-w-[var(--content-max)] flex-col gap-6 px-[var(--content-x)] pt-8 pb-8 sm:pt-10">
     <PageHeader title="Jobs" subtitle="Every extraction batch you've run, newest first.">
         {#snippet actions()}
             <Button variant="brand" size="default" href="/">
@@ -67,7 +67,7 @@
                                 LIVE
                             </span>
                         </div>
-                        <p class="text-ink-muted mt-0.5 font-mono text-xs">
+                        <p class="text-ink-muted mt-0.5 font-mono text-xs tabular-nums">
                             {j.id} · {j.counts.verified}/{j.imageCount} processed
                         </p>
                     </div>
@@ -158,4 +158,4 @@
             <Pagination page={data.page} pageSize={data.pageSize} total={data.total} baseHref="/jobs" />
         </div>
     {/if}
-</main>
+</div>

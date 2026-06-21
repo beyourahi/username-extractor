@@ -27,7 +27,7 @@
         >
             {title}
         </Heading>
-        <p class={cn("text-ink-muted", s ? "text-caption" : "text-body sm:text-lead")}>
+        <p class={cn("text-ink-muted text-pretty", s ? "text-caption" : "text-body sm:text-lead")}>
             {tagline}
         </p>
     </div>

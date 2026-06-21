@@ -129,7 +129,7 @@
     });
 </script>
 
-<main
+<div
     class="mx-auto flex w-full max-w-[var(--content-max)] flex-col gap-6 px-[var(--content-x)] pt-8 pb-8 sm:pt-10 lg:gap-8"
 >
     <div class="flex items-center gap-1.5 text-xs">
@@ -171,7 +171,7 @@
                     </span>
                 {/if}
             </div>
-            <p class="text-ink-muted mt-1 text-xs">
+            <p class="text-ink-muted mt-1 text-xs tabular-nums">
                 <span class="font-mono">{job.id}</span> · {job.imageCount} images ·
                 <span class="font-mono">{job.vlmModel}</span>{#if job.diagnostics}
                     · diagnostics{/if}{#if elapsed}
@@ -220,7 +220,7 @@
                     onclick={() => (filter = chip.id)}
                     class={cn(
                         pillBase,
-                        "sleek inline-flex h-7 shrink-0 items-center px-3 py-0 leading-none whitespace-nowrap"
+                        "sleek inline-flex h-7 shrink-0 touch-manipulation items-center px-3 py-0 leading-none whitespace-nowrap"
                     )}
                     style={active
                         ? chip.tone === "brand"
@@ -304,6 +304,6 @@
     {#if stream?.state.error}
         <p class="text-tier-failed-fg text-xs text-pretty">Live updates stopped: {stream.state.error}</p>
     {/if}
-</main>
+</div>
 
 <RawResponseDialog open={rawOpen} jobId={job.id} stem={rawStem} onclose={() => (rawOpen = false)} />

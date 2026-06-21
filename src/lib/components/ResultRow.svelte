@@ -100,13 +100,13 @@
 
             {#if item.isDuplicate}
                 <span
-                    class="border-hair text-ink-muted text-micro rounded-full border px-1.5 py-px font-mono uppercase"
+                    class="border-hair text-ink-muted text-micro rounded-full border px-1.5 py-px font-mono whitespace-nowrap uppercase"
                 >
                     duplicate
                 </span>
             {:else if item.isNearDuplicate}
                 <span
-                    class="border-tier-med-border text-tier-med-fg text-micro rounded-full border px-1.5 py-px font-mono uppercase"
+                    class="border-tier-med-border text-tier-med-fg text-micro rounded-full border px-1.5 py-px font-mono whitespace-nowrap uppercase"
                 >
                     near · ed{item.editDistance ?? "?"}
                 </span>

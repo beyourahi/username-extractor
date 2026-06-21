@@ -18,7 +18,7 @@
         {#if IconC}
             <IconC size={13} class="text-ink-muted" />
         {/if}
-        <p class={cn("text-micro text-ink-muted font-mono tracking-[0.28em] uppercase")}>
+        <p class={cn("text-micro text-ink-muted font-mono tracking-[0.28em] whitespace-nowrap uppercase")}>
             {@render children()}
         </p>
     </div>
