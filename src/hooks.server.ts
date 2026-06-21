@@ -86,11 +86,12 @@ function applySecurityHeaders(response: Response): Response {
 }
 
 function isPublicPath(pathname: string): boolean {
-    // Auth is optional, not a wall: the homepage is browsable signed-out (sign-in is an
-    // invitation, surfaced in the AppBar + on the upload form). /jobs, /leads, /settings and
-    // every /api/* route stay gated — extraction needs a session. Better Auth mounts its own
-    // routes under /auth/* (basePath in auth.ts), which must stay reachable signed-out.
-    return pathname === "/" || pathname === "/login" || pathname.startsWith("/auth/");
+    // Auth is optional, not a wall: the homepage + changelog are browsable signed-out
+    // (sign-in is an invitation, surfaced in the AppBar + on the upload form). /jobs, /leads,
+    // /settings and every /api/* route stay gated — extraction needs a session. Better Auth
+    // mounts its own routes under /auth/* (basePath in auth.ts), which must stay reachable
+    // signed-out.
+    return pathname === "/" || pathname === "/login" || pathname === "/changelog" || pathname.startsWith("/auth/");
 }
 
 function nullAuthLocals(event: Parameters<Handle>[0]["event"]): void {

@@ -31,10 +31,12 @@ bunx vitest run -t "cleans handles"                       # single test by name 
 bun run benchmark            # Kimi K2.6 accuracy run against checked-in fixtures → docs/benchmark.md (HITS PAID AI, run on demand only)
 bun run cf-typegen           # regenerate worker-configuration.d.ts from wrangler.jsonc bindings
 bun run db:generate          # Drizzle: emit SQL migration from schema.ts changes
-bun run db:push              # Drizzle: push schema directly to D1 (dev shortcut, bypasses migrations)
+bun run db:check             # Drizzle: validate migration consistency (offline)
+bun run db:push              # Drizzle: push schema straight to D1 (bypasses migrations; needs the 3 CLOUDFLARE_* env vars → d1-http driver)
 bun run db:migrate:local     # apply migrations to local D1
 bun run db:migrate           # apply migrations to remote D1
-bun run db:studio            # Drizzle Studio (requires CLOUDFLARE_* env vars, see drizzle.config.ts)
+bun run db:migrate:list      # list applied/pending migrations against local D1
+bun run db:studio            # Drizzle Studio (requires the 3 CLOUDFLARE_* env vars, see drizzle.config.ts)
 ```
 
 `bun run dev` does **not** run a real Workers runtime — Queues, the Durable Object, and `scheduled` only fire under `bun run preview` (which invokes `wrangler dev` against the built worker). For pipeline work, use preview.
@@ -86,7 +88,7 @@ The discriminated `Message` union in `src/lib/types/messages.ts` is the canonica
 
 - The Better Auth instance is built **per request** in `createAuth` (`src/lib/server/auth.ts`) — Workers has no long-lived module state and the D1 binding arrives per request. **Sign-in = Google OAuth + Google One Tap (`oneTap()`) + passkey/WebAuthn** (`@better-auth/passkey` — Face ID / Touch ID / fingerprint + roaming security keys); `emailAndPassword` stays disabled. The browser client is `src/lib/auth-client.ts`. Auth routes are mounted at **`/auth`** (`basePath: "/auth"`, NOT the Better Auth default `/api/auth`), so the derived OAuth callback is `https://username-extractor.dropoutstudio.co/auth/callback/google` — this MUST match the redirect URI registered in Google Console. The server `basePath` and the client `basePath` (in `auth-client.ts`) must stay in sync.
 - **Passkeys (`@better-auth/passkey`) = device biometrics + security keys.** `rpID`/origin are derived from `BETTER_AUTH_URL` (so dev/preview/prod each resolve correctly); `userVerification: "required"` forces the biometric/PIN gesture; credentials persist in the `passkeys` D1 table; registration happens in `/settings`. **Google One Tap** (`oneTap()` server + `oneTapClient` browser) needs the browser-exposed `PUBLIC_GOOGLE_CLIENT_ID` — empty → One Tap stays off and the standard Google button still works.
-- `handle` resolves the session → `event.locals.user/session` plus the preserved `event.locals.userId/userEmail` contract (so the protected routes are unchanged). **Auth is optional, not a wall** (like the sibling tools): central gate sends unauthenticated browser requests to *gated* routes → `303 /login`; `/api/*` → `401`. Public surface = `/` (browsable guest homepage) + `/login` + `/auth/*` (Better Auth's own routes). The homepage shows the upload UI to guests with a "Sign in to run" prompt; `/jobs`, `/leads`, `/settings`, and every other `/api/*` route stay gated — actually running an extraction still requires sign-in + a connected Cloudflare account (`isPublicPath` in `hooks.server.ts` is the allowlist).
+- `handle` resolves the session → `event.locals.user/session` plus the preserved `event.locals.userId/userEmail` contract (so the protected routes are unchanged). **Auth is optional, not a wall** (like the sibling tools): central gate sends unauthenticated browser requests to _gated_ routes → `303 /login`; `/api/*` → `401`. Public surface = `/` (browsable guest homepage) + `/login` + `/auth/*` (Better Auth's own routes). The homepage shows the upload UI to guests with a "Sign in to run" prompt; `/jobs`, `/leads`, `/settings`, and every other `/api/*` route stay gated — actually running an extraction still requires sign-in + a connected Cloudflare account (`isPublicPath` in `hooks.server.ts` is the allowlist).
 - Rate limiting is two-tier: Better Auth's **D1-backed** limiter (`rate_limits` table, 20/60s) on `/auth/*`, plus an app-level in-memory 5/min on `/api/notion/dedup` + `/api/import/legacy`. A defensive CSP + security-header set is stamped on **every** response (including 401/redirect short-circuits).
 - Dev/preview bypass: `E2E_BYPASS_AUTH=1` (or `true`) in `.dev.vars` **only** (never `wrangler.jsonc`) synthesizes an `e2e-test-user` so local runs skip the Google round-trip.
 - Production: self-serve Google login, served only at `username-extractor.dropoutstudio.co`; the public `*.workers.dev` URL is disabled (`workers_dev: false`, `preview_urls: false`).
@@ -122,28 +124,28 @@ The legacy `env.AI` + AI-Gateway path (`src/lib/server/ai/gateway.ts#runVisionWi
 
 ### Route map
 
-| Path                                     | Purpose                                                                                       |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `/`                                      | Upload + start new job (public — guests can browse; running requires sign-in)                  |
-| `/login`                                 | Google sign-in + One Tap + passkey/biometric (Better Auth); "Back to homepage" link to `/`    |
-| `/jobs`                                  | Job history                                                                                   |
-| `/jobs/[id]`                             | Live job progress (WebSocket via `/api/jobs/[id]/ws`)                                         |
-| `/leads`                                 | Lifetime verified leads                                                                       |
-| `/settings`                              | Notion config + Cloudflare account/model picker + passkey registration + diagnostics defaults |
-| `/api/jobs` (`POST` create / `GET` list) | Job CRUD; `POST` `multi` mode creates an empty job for chunked folder upload                  |
-| `/api/jobs/[id]/items` (`POST` / `GET`)  | `POST` append an upload chunk (`appendItemsToJob`); `GET` list items                          |
-| `/api/jobs/[id]/items/[item_id]/retry`   | Per-item retry                                                                                |
-| `/api/jobs/[id]/finalize`                | Mark chunked upload done (`upload_complete=1`) → unblocks finalization                        |
-| `/api/jobs/[id]/cancel`                  | Cancel a running job (broadcasts `job.cancelled`)                                             |
-| `/api/jobs/[id]/ws`                      | WebSocket upgrade → JobCoordinator DO                                                         |
-| `/api/leads` (`GET`)                     | CSV export of the filtered leads view (text/csv attachment)                                   |
-| `/api/leads/[id]/{archive,notion-sync}`  | Manual lead actions                                                                           |
-| `/api/notion/dedup`                      | Smart dedup vs Notion DB; honors `keep_strategy` + `dry_run` from JSON body                   |
-| `/api/import/legacy`                     | One-shot import from CLI `verified_usernames.md` or existing Notion DB                        |
-| `/api/r2/[...key]`                       | Authenticated R2 byte access (debug/preview)                                                  |
-| `/api/debug/[job_id]/[stem]`             | Diagnostic raw model response, gated by `diagnostics` flag on the job                         |
+| Path                                     | Purpose                                                                                                          |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `/`                                      | Upload + start new job (public — guests can browse; running requires sign-in)                                    |
+| `/login`                                 | Google sign-in + One Tap + passkey/biometric (Better Auth); "Back to homepage" link to `/`                       |
+| `/jobs`                                  | Job history                                                                                                      |
+| `/jobs/[id]`                             | Live job progress (WebSocket via `/api/jobs/[id]/ws`)                                                            |
+| `/leads`                                 | Lifetime verified leads                                                                                          |
+| `/settings`                              | Notion config + Cloudflare account/model picker + passkey registration + diagnostics defaults                    |
+| `/api/jobs` (`POST` create / `GET` list) | Job CRUD; `POST` `multi` mode creates an empty job for chunked folder upload                                     |
+| `/api/jobs/[id]/items` (`POST` / `GET`)  | `POST` append an upload chunk (`appendItemsToJob`); `GET` list items                                             |
+| `/api/jobs/[id]/items/[item_id]/retry`   | Per-item retry                                                                                                   |
+| `/api/jobs/[id]/finalize`                | Mark chunked upload done (`upload_complete=1`) → unblocks finalization                                           |
+| `/api/jobs/[id]/cancel`                  | Cancel a running job (broadcasts `job.cancelled`)                                                                |
+| `/api/jobs/[id]/ws`                      | WebSocket upgrade → JobCoordinator DO                                                                            |
+| `/api/leads` (`GET`)                     | CSV export of the filtered leads view (text/csv attachment)                                                      |
+| `/api/leads/[id]/{archive,notion-sync}`  | Manual lead actions                                                                                              |
+| `/api/notion/dedup`                      | Smart dedup vs Notion DB; honors `keep_strategy` + `dry_run` from JSON body                                      |
+| `/api/import/legacy`                     | One-shot import from CLI `verified_usernames.md` or existing Notion DB                                           |
+| `/api/r2/[...key]`                       | Authenticated R2 byte access (debug/preview)                                                                     |
+| `/api/debug/[job_id]/[stem]`             | Diagnostic raw model response, gated by `diagnostics` flag on the job                                            |
 | `/auth/*`                                | Better Auth handler — Google sign-in/out + OAuth callback (`basePath: "/auth"`; dispatched in `hooks.server.ts`) |
-| `/api/cf/models` (`GET`)                 | Vision models on the user's connected CF account; KV-cached 24h, `?refresh=1` forces re-fetch |
+| `/api/cf/models` (`GET`)                 | Vision models on the user's connected CF account; KV-cached 24h, `?refresh=1` forces re-fetch                    |
 
 ## Code style
 
@@ -161,15 +163,15 @@ The legacy `env.AI` + AI-Gateway path (`src/lib/server/ai/gateway.ts#runVisionWi
 
 Local (create `.dev.vars` — there is no `.example` template in the repo):
 
-| Key                           | Notes                                                                                       |
-| ----------------------------- | ------------------------------------------------------------------------------------------- |
-| `BETTER_AUTH_SECRET`          | Session signing secret — `openssl rand -base64 32`                                          |
-| `BETTER_AUTH_URL`             | Base URL — `http://localhost:5173` locally (prod value is a public var in `wrangler.jsonc`) |
-| `GOOGLE_CLIENT_ID`            | Google OAuth client id                                                                      |
-| `GOOGLE_CLIENT_SECRET`        | Google OAuth client secret                                                                  |
-| `E2E_BYPASS_AUTH`             | `1`/`true` → synthesize an `e2e-test-user` and skip Google (local/preview only)             |
-| `NOTION_TOKEN_ENCRYPTION_KEY` | `openssl rand -base64 32` — encrypts BOTH the Notion token and the BYO Cloudflare token     |
-| `PUBLIC_GOOGLE_CLIENT_ID`     | *Optional, public* — browser Google client id that enables One Tap; empty → One Tap off, Google button still works |
+| Key                           | Notes                                                                                                              |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `BETTER_AUTH_SECRET`          | Session signing secret — `openssl rand -base64 32`                                                                 |
+| `BETTER_AUTH_URL`             | Base URL — `http://localhost:5173` locally (prod value is a public var in `wrangler.jsonc`)                        |
+| `GOOGLE_CLIENT_ID`            | Google OAuth client id                                                                                             |
+| `GOOGLE_CLIENT_SECRET`        | Google OAuth client secret                                                                                         |
+| `E2E_BYPASS_AUTH`             | `1`/`true` → synthesize an `e2e-test-user` and skip Google (local/preview only)                                    |
+| `NOTION_TOKEN_ENCRYPTION_KEY` | `openssl rand -base64 32` — encrypts BOTH the Notion token and the BYO Cloudflare token                            |
+| `PUBLIC_GOOGLE_CLIENT_ID`     | _Optional, public_ — browser Google client id that enables One Tap; empty → One Tap off, Google button still works |
 
 Production secrets (`wrangler secret put`):
 
