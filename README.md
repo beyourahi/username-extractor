@@ -1,6 +1,6 @@
 # Username Extractor
 
-> Screenshots in, usernames out.
+> Pulls valid Instagram usernames off screenshots into one list.
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![SvelteKit 5](https://img.shields.io/badge/SvelteKit-5-ff3e00.svg)
