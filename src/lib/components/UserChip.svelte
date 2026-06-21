@@ -40,7 +40,7 @@
             aria-label={email}
             role="button"
         >
-            <span class="font-mono text-[11px] font-semibold">{initials}</span>
+            <span class="text-caption font-mono font-semibold">{initials}</span>
         </div>
         <div
             class="border-hair bg-card absolute right-0 flex h-9 items-center overflow-hidden rounded-full border whitespace-nowrap backdrop-blur-sm transition-all duration-300 {expanded
@@ -48,8 +48,8 @@
                 : 'w-0 pr-0 pl-0 opacity-0'}"
         >
             <div class="flex flex-col justify-center">
-                <span class="text-foreground text-xs leading-tight font-medium">{name}</span>
-                <span class="text-ink-muted text-[10px] leading-tight">{email}</span>
+                <span class="text-foreground text-caption leading-tight font-medium">{name}</span>
+                <span class="text-ink-muted text-micro leading-tight">{email}</span>
             </div>
         </div>
     </div>

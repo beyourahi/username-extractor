@@ -47,7 +47,7 @@
 </script>
 
 <header class="border-hair bg-background/80 sticky top-0 z-40 w-full border-b backdrop-blur-md">
-    <div class="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:px-6">
+    <div class="mx-auto flex h-14 w-full max-w-[var(--content-max)] items-center gap-3 px-[var(--content-x)]">
         <a
             href="/"
             class="sleek flex shrink-0 items-center gap-2 rounded-lg px-1.5 py-1 hover:opacity-80"
@@ -97,7 +97,7 @@
                             onclick={() => (mobileOpen = false)}
                         ></button>
                         <div
-                            class="fade-in border-hair bg-card absolute top-11 right-0 z-40 w-44 rounded-[var(--radius)] border p-1 shadow-lg"
+                            class="fade-in border-hair bg-card absolute top-11 right-0 z-40 w-44 max-w-[calc(100vw-2rem)] rounded-lg border p-1 shadow-lg"
                         >
                             {#each items as item (item.id)}
                                 {@const Active = isActive(item.href)}

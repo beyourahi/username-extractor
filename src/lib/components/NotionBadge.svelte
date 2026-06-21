@@ -61,7 +61,7 @@
 <span
     class={cn(
         "inline-flex items-center rounded-full border font-mono tracking-[0.04em] uppercase transition-colors ease-[var(--ease)]",
-        s ? "gap-1 px-1.5 py-[2px] text-[10px]" : "gap-1.5 px-2 py-0.5 text-[11px]"
+        s ? "text-micro gap-1 px-1.5 py-0.5" : "text-caption gap-1.5 px-2 py-0.5"
     )}
     style="background: {v.bg}; color: {v.fg}; border-color: {v.bd};"
 >

@@ -42,12 +42,9 @@
 
 <Dialog.Root {open} onOpenChange={handleOpenChange}>
     <Dialog.Portal>
-        <Dialog.Overlay
-            class="fade-in fixed inset-0 z-50"
-            style="background: hsl(0 0% 0% / 0.6); backdrop-filter: blur(6px);"
-        />
+        <Dialog.Overlay class="fade-in bg-background/60 fixed inset-0 z-50" style="backdrop-filter: blur(6px);" />
         <Dialog.Content
-            class="border-hair bg-card slide-in fixed top-1/2 left-1/2 z-50 flex w-[min(90vw,520px)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-[var(--radius)] border shadow-xl"
+            class="border-hair bg-card slide-in fixed top-1/2 left-1/2 z-50 flex w-[min(90vw,520px)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-lg border shadow-xl"
         >
             <div class="border-hair flex items-start justify-between gap-3 border-b p-5">
                 <div>
@@ -70,9 +67,7 @@
                         <p class="text-ink-muted text-xs text-pretty">
                             Extraction defaults — change anytime in Settings.
                         </p>
-                        <div
-                            class="border-hair bg-card flex items-start justify-between gap-3 rounded-[var(--radius)] border p-3"
-                        >
+                        <div class="border-hair bg-card flex items-start justify-between gap-3 rounded-lg border p-3">
                             <div>
                                 <p class="text-foreground text-sm font-medium">Diagnostics by default</p>
                                 <p class="text-ink-muted mt-1 text-xs text-pretty">
@@ -85,9 +80,7 @@
                                 ariaLabel="Diagnostics"
                             />
                         </div>
-                        <div
-                            class="border-hair bg-card flex items-start justify-between gap-3 rounded-[var(--radius)] border p-3"
-                        >
+                        <div class="border-hair bg-card flex items-start justify-between gap-3 rounded-lg border p-3">
                             <div>
                                 <p class="text-foreground text-sm font-medium">Bring your own Cloudflare</p>
                                 <p class="text-ink-muted mt-1 text-xs text-pretty">
@@ -116,7 +109,7 @@
                         <Field label="Database ID" optional>
                             <TextInput name="notionDatabaseId" bind:value={notionDatabaseId} placeholder="1a3b4c5d-…" />
                         </Field>
-                        <p class="text-ink-muted text-[11px] text-pretty">
+                        <p class="text-ink-muted text-caption text-pretty">
                             Without Notion, verified handles still save to your Leads table. You'll see
                             <NotionBadge status="unconfigured" size="sm" /> badges until you connect.
                         </p>

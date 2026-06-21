@@ -30,7 +30,7 @@
     const past = $derived(data.jobs.filter((j) => j.status !== "pending" && j.status !== "running"));
 </script>
 
-<main class="mx-auto flex w-full max-w-7xl flex-col gap-6 px-[var(--shell-x)] pt-8 pb-8 sm:pt-10">
+<main class="mx-auto flex w-full max-w-[var(--content-max)] flex-col gap-6 px-[var(--content-x)] pt-8 pb-8 sm:pt-10">
     <PageHeader title="Jobs" subtitle="Every extraction batch you've run, newest first.">
         {#snippet actions()}
             <Button variant="brand" size="default" href="/">
@@ -52,7 +52,7 @@
         </EmptyState>
     {:else}
         {#each live as j (j.id)}
-            <div class="border-brand-border bg-brand-soft fade-in rounded-[var(--radius)] border">
+            <div class="border-brand-border bg-brand-soft fade-in rounded-lg border">
                 <a href={`/jobs/${j.id}`} class="flex w-full items-center gap-3 p-4 text-left">
                     <div class="bg-brand-soft flex h-10 w-10 items-center justify-center rounded-full">
                         <Spinner size="sm" color="brand" />
@@ -61,7 +61,7 @@
                         <div class="flex items-center gap-2">
                             <p class="text-body text-foreground font-semibold">Currently running</p>
                             <span
-                                class="border-brand-border text-brand inline-flex items-center gap-1.5 rounded-full border px-2 py-[1px] font-mono text-[10px] uppercase"
+                                class="border-brand-border text-brand text-micro inline-flex items-center gap-1.5 rounded-full border px-2 py-px font-mono uppercase"
                             >
                                 <span class="status-dot-pulse bg-status-active h-1.5 w-1.5 rounded-full"></span>
                                 LIVE
@@ -76,7 +76,7 @@
             </div>
         {/each}
 
-        <div class="border-hair bg-card overflow-hidden rounded-[var(--radius)] border">
+        <div class="border-hair bg-card overflow-hidden rounded-lg border">
             <div
                 class="border-hair text-ink-muted text-micro hidden gap-3 border-b px-4 py-2.5 font-mono tracking-[0.14em] uppercase sm:grid sm:grid-cols-[minmax(220px,1fr)_80px_110px_120px_90px_24px]"
             >
@@ -101,25 +101,25 @@
                                 >
                                 {#if job.status === "completed"}
                                     <span
-                                        class="border-status-active-border bg-status-active-bg text-status-active-fg inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-[1px] font-mono text-[10px] uppercase"
+                                        class="border-status-active-border bg-status-active-bg text-status-active-fg text-micro inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-px font-mono uppercase"
                                     >
                                         <Check size={9} /> done
                                     </span>
                                 {:else if job.status === "cancelled"}
                                     <span
-                                        class="border-status-inactive-border bg-status-inactive-bg text-status-inactive-fg inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-[1px] font-mono text-[10px] uppercase"
+                                        class="border-status-inactive-border bg-status-inactive-bg text-status-inactive-fg text-micro inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-px font-mono uppercase"
                                     >
                                         <X size={9} /> cancelled
                                     </span>
                                 {:else if job.status === "failed"}
                                     <span
-                                        class="border-tier-failed-border bg-tier-failed-bg text-tier-failed-fg inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-[1px] font-mono text-[10px] uppercase"
+                                        class="border-tier-failed-border bg-tier-failed-bg text-tier-failed-fg text-micro inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-px font-mono uppercase"
                                     >
                                         <X size={9} /> failed
                                     </span>
                                 {/if}
                             </div>
-                            <p class="text-ink-muted mt-0.5 truncate text-[11px]">
+                            <p class="text-ink-muted text-caption mt-0.5 truncate">
                                 {relTime(job.createdAt)} · <span class="font-mono">{job.vlmModel}</span>
                             </p>
                         </div>
@@ -130,18 +130,18 @@
                         </div>
                         <div class="flex flex-wrap items-center gap-1.5 sm:justify-end">
                             {#if (job.counts.review ?? 0) > 0}
-                                <span class="text-tier-med-fg font-mono text-[11px] tabular-nums" title="Review">
+                                <span class="text-tier-med-fg text-caption font-mono tabular-nums" title="Review">
                                     ↻{job.counts.review}
                                 </span>
                             {/if}
                             {#if (job.counts.failed ?? 0) > 0}
-                                <span class="text-tier-failed-fg font-mono text-[11px] tabular-nums" title="Failed">
+                                <span class="text-tier-failed-fg text-caption font-mono tabular-nums" title="Failed">
                                     ✗{job.counts.failed}
                                 </span>
                             {/if}
                             {#if (job.counts.verified ?? 0) === job.imageCount && job.imageCount > 0}
                                 <span
-                                    class="text-status-active-fg font-mono text-[11px] tabular-nums"
+                                    class="text-status-active-fg text-caption font-mono tabular-nums"
                                     title="All verified"
                                 >
                                     ✓all

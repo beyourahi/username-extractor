@@ -44,6 +44,13 @@
    moved from HSL to OKLCH. App is dark-only, so single values suffice.
    ============================================================================= */
 :root {
+    /* App content shell — the cap matches the max-w-7xl (1280px) this tool was built
+       around; the pad + centering formula + ultra-wide growth come from the DS
+       (--content-pad / --content-x). Side gutters auto-grow past the cap on wide
+       viewports; the bumps below widen the cap on 2560px+/4K so the app uses more of
+       the canvas without sprawling edge-to-edge. */
+    --content-max: 1280px;
+
     /* shadcn popover surface → DS card; a touch stronger hairline → ink-600 */
     --popover: var(--card);
     --popover-foreground: var(--card-foreground);
@@ -82,9 +89,19 @@
     --tier-failed-foreground: oklch(0.79 0.14 22);
     --tier-failed-bg: oklch(0.645 0.196 25 / 0.1);
     --tier-failed-border: oklch(0.645 0.196 25 / 0.3);
+}
 
-    /* themed scrollbar thumb (neutral ink, low alpha) */
-    --scrollbar-thumb: oklch(0.556 0 0 / 0.4);
+/* Ultra-wide cap bumps — let the shell use more of very large canvases without
+   going edge-to-edge (side gutters still auto-center via the DS --content-x). */
+@media (min-width: 2560px) {
+    :root {
+        --content-max: 1600px;
+    }
+}
+@media (min-width: 3840px) {
+    :root {
+        --content-max: 2200px;
+    }
 }
 
 @theme inline {
@@ -163,20 +180,6 @@ body {
     max-width: 100%;
 }
 
-/* Themed scrollbars (re-expressed in OKLCH off the ink ramp). */
-*::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-    background: transparent;
-}
-*::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb);
-    border-radius: 8px;
-}
-*::-webkit-scrollbar-track {
-    background: transparent;
-}
-
 .scrollbar-hide,
 .no-scrollbar {
     -ms-overflow-style: none;
@@ -188,60 +191,11 @@ body {
 }
 
 /* =============================================================================
-   MOTION UTILITIES — bespoke classes the components reference. Color literals are
-   expressed in OKLCH off the brand/ink ramp. `.sleek` matches the sibling tools.
+   MOTION UTILITIES — bespoke keyframe utilities unique to this tool (scan / spin /
+   shimmer). The shared .sleek / .status-transition / .status-dot-pulse / .slide-in /
+   .fade-in (and their keyframes) now come from the DS animations.css — removed here
+   to avoid duplicate definitions. Color literals are off the brand/ink ramp.
    ============================================================================= */
-.sleek {
-    @apply transform-gpu transition-all duration-200 ease-in-out;
-}
-
-.status-transition {
-    transition:
-        color 200ms ease,
-        background-color 200ms ease,
-        border-color 200ms ease,
-        opacity 200ms ease;
-}
-
-@keyframes status-pulse {
-    0%,
-    100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.5;
-    }
-}
-.status-dot-pulse {
-    animation: status-pulse 2.5s ease-in-out infinite;
-}
-
-@keyframes slide-in {
-    from {
-        opacity: 0;
-        transform: translateY(6px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-.slide-in {
-    animation: slide-in 280ms var(--ease) both;
-}
-
-@keyframes fade-in {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-.fade-in {
-    animation: fade-in 200ms ease-out both;
-}
-
 @keyframes scan {
     0% {
         transform: translateY(-100%);
@@ -287,12 +241,9 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .status-dot-pulse,
     .scan-line::after,
     .shimmer,
-    .spin,
-    .slide-in,
-    .fade-in {
+    .spin {
         animation: none;
     }
 }

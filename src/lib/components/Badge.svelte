@@ -15,7 +15,7 @@
     } = $props();
 
     const badge = tv({
-        base: "inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-1 font-mono text-[11px] font-medium uppercase tracking-[0.10em]",
+        base: "inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-1 font-mono text-caption font-medium uppercase tracking-[0.10em]",
         variants: {
             tone: {
                 default: "border-hair bg-transparent text-ink-muted",

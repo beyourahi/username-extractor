@@ -30,7 +30,7 @@
         {#if page > 1}
             <a
                 href={hrefFor(page - 1)}
-                class="sleek text-foreground border-hair hover:border-signal hover:bg-ink-2 inline-flex h-7 items-center rounded-md border px-2.5 text-[11px] font-medium"
+                class="sleek text-foreground border-hair hover:border-signal hover:bg-ink-2 text-caption inline-flex h-7 items-center rounded-md border px-2.5 font-medium"
             >
                 Prev
             </a>
@@ -38,7 +38,7 @@
         {#if page < totalPages}
             <a
                 href={hrefFor(page + 1)}
-                class="sleek text-foreground border-hair hover:border-signal hover:bg-ink-2 inline-flex h-7 items-center rounded-md border px-2.5 text-[11px] font-medium"
+                class="sleek text-foreground border-hair hover:border-signal hover:bg-ink-2 text-caption inline-flex h-7 items-center rounded-md border px-2.5 font-medium"
             >
                 Next
             </a>

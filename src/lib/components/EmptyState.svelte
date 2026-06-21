@@ -19,7 +19,7 @@
 
 <div
     class={cn(
-        "border-hair bg-card/40 grid w-full place-items-center rounded-[var(--radius)] border border-dashed px-6 py-16 text-center",
+        "border-hair bg-card/40 grid w-full place-items-center rounded-lg border border-dashed px-6 py-16 text-center",
         className
     )}
 >

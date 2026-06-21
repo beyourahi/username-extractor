@@ -129,7 +129,9 @@
     });
 </script>
 
-<main class="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pt-8 pb-8 sm:px-6 sm:pt-10 lg:gap-8">
+<main
+    class="mx-auto flex w-full max-w-[var(--content-max)] flex-col gap-6 px-[var(--content-x)] pt-8 pb-8 sm:pt-10 lg:gap-8"
+>
     <div class="flex items-center gap-1.5 text-xs">
         <a href="/jobs" class="sleek text-ink-muted hover:text-foreground">Jobs</a>
         <ChevronRight size={11} class="text-ink-muted" />
@@ -144,26 +146,26 @@
                 </Heading>
                 {#if isLive}
                     <span
-                        class="border-brand-border bg-brand-soft text-brand inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[11px] tracking-[0.1em] uppercase"
+                        class="border-brand-border bg-brand-soft text-brand text-caption inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono tracking-[0.1em] uppercase"
                     >
                         <span class="status-dot-pulse bg-brand h-1.5 w-1.5 rounded-full"></span>
                         LIVE
                     </span>
                 {:else if job.status === "completed"}
                     <span
-                        class="border-status-active-border bg-status-active-bg text-status-active-fg inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[11px] tracking-[0.1em] uppercase"
+                        class="border-status-active-border bg-status-active-bg text-status-active-fg text-caption inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono tracking-[0.1em] uppercase"
                     >
                         <Check size={9} /> COMPLETED
                     </span>
                 {:else if job.status === "cancelled"}
                     <span
-                        class="border-status-inactive-border bg-status-inactive-bg text-status-inactive-fg inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[11px] tracking-[0.1em] uppercase"
+                        class="border-status-inactive-border bg-status-inactive-bg text-status-inactive-fg text-caption inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono tracking-[0.1em] uppercase"
                     >
                         <X size={9} /> CANCELLED
                     </span>
                 {:else if job.status === "failed"}
                     <span
-                        class="border-tier-failed-border bg-tier-failed-bg text-tier-failed-fg inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[11px] tracking-[0.1em] uppercase"
+                        class="border-tier-failed-border bg-tier-failed-bg text-tier-failed-fg text-caption inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono tracking-[0.1em] uppercase"
                     >
                         <X size={9} /> FAILED
                     </span>
@@ -236,7 +238,7 @@
         </div>
     </div>
 
-    <div class="border-hair bg-card overflow-hidden rounded-[var(--radius)] border">
+    <div class="border-hair bg-card overflow-hidden rounded-lg border">
         <div class="border-hair text-ink-muted text-micro border-b px-4 py-2.5 font-mono tracking-[0.14em] uppercase">
             Items
         </div>
@@ -273,13 +275,13 @@
 
                 {#if isLive}
                     <div
-                        class="border-brand-border bg-brand-soft fade-in flex items-center gap-3 rounded-[var(--radius)] border-2 border-dashed p-3"
+                        class="border-brand-border bg-brand-soft fade-in flex items-center gap-3 rounded-lg border-2 border-dashed p-3"
                     >
                         <div class="scan-line bg-brand/15 relative h-12 w-12 overflow-hidden rounded-md">
                             <div class="bg-brand/20 absolute inset-1.5 rounded-sm"></div>
                         </div>
                         <div class="flex-1">
-                            <p class="text-brand font-mono text-[11px] font-medium tracking-wider uppercase">
+                            <p class="text-brand text-caption font-mono font-medium tracking-wider uppercase">
                                 Now processing
                             </p>
                             <p class="text-foreground font-mono text-sm">

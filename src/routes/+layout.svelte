@@ -17,7 +17,9 @@
     });
 
     const path = $derived(page.url.pathname);
-    // /login renders on a bare canvas — no app chrome (AppBar/Footer/wizard).
+    // /login drops the AppBar + first-run wizard (bare auth canvas) but KEEPS the global
+    // Footer — matching the sibling tools (day-zero / invoice-generator / order-processor),
+    // which render their footer on every route, login included.
     const isLogin = $derived(path === "/login");
 </script>
 
@@ -27,22 +29,18 @@
 
 <Toaster richColors theme="dark" position="bottom-right" toastOptions={{ class: "font-sans text-xs" }} />
 
-{#if isLogin}
-    <div class="bg-background flex min-h-dvh flex-col">
-        <main class="flex grow flex-col">
-            {@render children()}
-        </main>
-    </div>
-{:else}
-    <div class="bg-background flex min-h-dvh flex-col">
+<div class="bg-background flex min-h-dvh flex-col">
+    {#if !isLogin}
         <AppBar currentPath={path} userEmail={data?.userEmail ?? null} />
+    {/if}
 
-        <main class="flex grow flex-col">
-            {@render children()}
-        </main>
+    <main class="flex grow flex-col">
+        {@render children()}
+    </main>
 
-        <Footer />
-    </div>
+    <Footer />
+</div>
 
+{#if !isLogin}
     <FirstRunWizard open={showWizard} onclose={() => (showWizard = false)} />
 {/if}

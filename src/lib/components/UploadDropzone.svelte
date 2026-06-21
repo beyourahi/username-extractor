@@ -138,7 +138,7 @@
         ondragleave={onDragLeave}
         ondrop={onDrop}
         class={cn(
-            "flex w-full flex-col items-center justify-center rounded-[var(--radius)] border-2 border-dashed transition-all duration-200 ease-[var(--ease)]",
+            "flex w-full flex-col items-center justify-center rounded-lg border-2 border-dashed transition-all duration-200 ease-[var(--ease)]",
             "h-56 sm:h-72 lg:h-80",
             error
                 ? "border-destructive/55 bg-card/30"
@@ -223,14 +223,14 @@
     </div>
 
     {#if files.length > 0 && !processing}
-        <div class="border-hair bg-card fade-in rounded-[var(--radius)] border p-4 sm:p-5">
+        <div class="border-hair bg-card fade-in rounded-lg border p-4 sm:p-5">
             <Eyebrow icon={ImageIcon}>
                 {files.length} queued · {totalMb} MB
                 {#snippet right()}
                     <button
                         type="button"
                         onclick={clearFiles}
-                        class="sleek text-ink-muted hover:text-foreground text-[11px]"
+                        class="sleek text-ink-muted hover:text-foreground text-caption"
                     >
                         Clear
                     </button>
@@ -239,7 +239,7 @@
             <div class="mt-2.5 grid max-h-32 grid-cols-2 gap-1.5 overflow-auto sm:grid-cols-3">
                 {#each files.slice(0, 9) as f, idx (f.name + idx)}
                     <div
-                        class="border-hair text-ink-muted flex items-center gap-1.5 truncate rounded-lg border px-2 py-1 font-mono text-[11px]"
+                        class="border-hair text-ink-muted text-caption flex items-center gap-1.5 truncate rounded-lg border px-2 py-1 font-mono"
                     >
                         <ImageIcon size={10} />
                         <span class="truncate">{f.name}</span>
@@ -247,7 +247,7 @@
                 {/each}
                 {#if files.length > 9}
                     <div
-                        class="border-hair text-ink-muted flex items-center justify-center rounded-lg border px-2 py-1 text-[11px]"
+                        class="border-hair text-ink-muted text-caption flex items-center justify-center rounded-lg border px-2 py-1"
                     >
                         +{files.length - 9} more
                     </div>

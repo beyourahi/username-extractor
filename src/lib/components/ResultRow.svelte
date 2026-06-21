@@ -55,7 +55,7 @@
 
 <div
     class={cn(
-        "status-transition sleek group border-hair bg-card hover:bg-ink-2/40 relative flex items-center gap-3 rounded-[var(--radius)] border p-3",
+        "status-transition sleek group border-hair bg-card hover:bg-ink-2/40 relative flex items-center gap-3 rounded-lg border p-3",
         appearAnimated && "slide-in"
     )}
 >
@@ -64,7 +64,7 @@
     {/if}
 
     {#if index !== undefined}
-        <span class="text-ink-muted w-6 shrink-0 font-mono text-[10px] tabular-nums">
+        <span class="text-ink-muted text-micro w-6 shrink-0 font-mono tabular-nums">
             {String(index + 1).padStart(2, "0")}
         </span>
     {/if}
@@ -100,19 +100,19 @@
 
             {#if item.isDuplicate}
                 <span
-                    class="border-hair text-ink-muted rounded-full border px-1.5 py-[1px] font-mono text-[10px] uppercase"
+                    class="border-hair text-ink-muted text-micro rounded-full border px-1.5 py-px font-mono uppercase"
                 >
                     duplicate
                 </span>
             {:else if item.isNearDuplicate}
                 <span
-                    class="border-tier-med-border text-tier-med-fg rounded-full border px-1.5 py-[1px] font-mono text-[10px] uppercase"
+                    class="border-tier-med-border text-tier-med-fg text-micro rounded-full border px-1.5 py-px font-mono uppercase"
                 >
                     near · ed{item.editDistance ?? "?"}
                 </span>
             {/if}
         </div>
-        <p class="text-ink-muted mt-0.5 truncate text-[11px]">
+        <p class="text-ink-muted text-caption mt-0.5 truncate">
             <span class="font-mono">{item.filename}</span>
             {#if item.confidence !== null && item.confidence !== undefined && item.confidence > 0}
                 · <span class="font-mono tabular-nums">{item.confidence.toFixed(0)}%</span> confidence

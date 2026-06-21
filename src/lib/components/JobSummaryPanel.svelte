@@ -74,7 +74,7 @@
     ]);
 
     const toneColor: Record<string, string> = {
-        default: "hsl(0 0% 80%)",
+        default: "var(--color-ink-300)",
         brand: "var(--brand)",
         med: "var(--tier-med-foreground)",
         failed: "var(--tier-failed-foreground)",
@@ -85,7 +85,7 @@
 <div class="flex flex-col gap-3">
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
         {#each tiles as tile (tile.label)}
-            <div class="border-hair bg-card rounded-[var(--radius)] border p-3">
+            <div class="border-hair bg-card rounded-lg border p-3">
                 <p class="text-ink-muted text-micro font-mono tracking-[0.14em] whitespace-nowrap uppercase">
                     {tile.label}
                 </p>
@@ -93,7 +93,7 @@
                     class="mt-1.5 text-xl font-bold tabular-nums"
                     style="font-family: {tile.mono ? 'var(--font-mono)' : 'inherit'}; color: {toneColor[
                         tile.tone ?? 'default'
-                    ]};{tile.mono ? ' font-size: 19px;' : ''}"
+                    ]};"
                 >
                     {tile.value}
                 </p>
@@ -111,7 +111,7 @@
 
     {#if dedup}
         <div
-            class="border-hair bg-card text-ink-muted flex flex-wrap items-center gap-x-4 gap-y-1 rounded-[var(--radius)] border px-3 py-2 font-mono text-xs"
+            class="border-hair bg-card text-ink-muted flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border px-3 py-2 font-mono text-xs"
         >
             <span class="text-foreground">Dedup ▸</span>
             <span>groups <span class="text-foreground tabular-nums">{dedup.duplicate_groups ?? 0}</span></span>
@@ -123,7 +123,7 @@
         </div>
     {/if}
     {#if running}
-        <p class="text-ink-muted text-center text-[11px]">
+        <p class="text-ink-muted text-caption text-center">
             Live updates via WebSocket · results stream in as they're processed.
         </p>
     {/if}

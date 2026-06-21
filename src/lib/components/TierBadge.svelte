@@ -54,16 +54,16 @@
     <span
         class={cn(
             "status-transition inline-flex shrink-0 items-center gap-1.5 rounded-full border font-mono font-semibold tracking-[0.10em] uppercase ease-[var(--ease)]",
-            s ? "px-2 py-[2px] text-[10px]" : "px-2.5 py-0.5 text-[11px]"
+            s ? "text-micro px-2 py-0.5" : "text-caption px-2.5 py-0.5"
         )}
         style="background: {v.bg}; color: {v.fg}; border-color: {v.bd};"
     >
         <span
-            class={cn("shrink-0 rounded-full", s ? "h-[6px] w-[6px]" : "h-2 w-2", v.pulse && "status-dot-pulse")}
+            class={cn("shrink-0 rounded-full", s ? "h-1.5 w-1.5" : "h-2 w-2", v.pulse && "status-dot-pulse")}
             style="background: {v.dot};"
         ></span>
         {v.label}
     </span>
 {:else}
-    <span class="text-ink-muted font-mono text-[10px]">—</span>
+    <span class="text-ink-muted text-micro font-mono">—</span>
 {/if}

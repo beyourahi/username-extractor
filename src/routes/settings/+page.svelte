@@ -172,15 +172,15 @@
 
 {#snippet section(icon: Component<{ size?: number; class?: string }>, title: string, subtitle: string, body: Snippet)}
     {@const Ic = icon}
-    <section class="border-hair bg-card overflow-hidden rounded-[var(--radius)] border">
+    <section class="border-hair bg-card overflow-hidden rounded-lg border">
         <header class="border-hair border-b p-4 sm:p-5">
             <div class="flex items-center gap-3">
-                <span class="bg-ink-2 border-hair flex h-8 w-8 items-center justify-center rounded-[10px] border">
+                <span class="bg-ink-2 border-hair flex h-8 w-8 items-center justify-center rounded-md border">
                     <Ic size={14} class="text-ink-muted" />
                 </span>
                 <div>
                     <Heading as="h2" size="title-sm" weight={560}>{title}</Heading>
-                    <p class="text-ink-muted mt-1 text-[11px]">{subtitle}</p>
+                    <p class="text-ink-muted text-caption mt-1">{subtitle}</p>
                 </div>
             </div>
         </header>
@@ -223,7 +223,7 @@
                         class="text-right"
                     />
                     {#if $errors.dailyImageQuota}
-                        <p class="text-tier-failed-fg mt-1 text-[11px] text-pretty">{$errors.dailyImageQuota}</p>
+                        <p class="text-tier-failed-fg text-caption mt-1 text-pretty">{$errors.dailyImageQuota}</p>
                     {/if}
                 </div>
             </div>
@@ -254,7 +254,7 @@
                         placeholder="0123456789abcdef…"
                     />
                 </Field>
-                <p class="text-ink-muted text-[11px] leading-relaxed text-pretty">
+                <p class="text-ink-muted text-caption leading-relaxed text-pretty">
                     Inference runs on <span class="text-foreground">your</span> Cloudflare account and is billed to you.
                     Create a token at
                     <a
@@ -290,7 +290,7 @@
                         <select
                             name="cloudflareModel"
                             bind:value={$form.cloudflareModel}
-                            class={cn(inputBase, "px-2.5 py-2 text-[11px]")}
+                            class={cn(inputBase, "text-caption px-2.5 py-2")}
                         >
                             {#each modelOptions as opt (opt.id)}
                                 <option value={opt.id}>{opt.label}</option>
@@ -404,7 +404,7 @@
         {@render section(FileText, "Notion", "Credentials used to push verified handles into your CRM.", notionBody)}
 
         <div
-            class="border-hair bg-card/85 sticky bottom-4 z-30 flex items-center justify-between gap-3 rounded-[var(--radius)] border p-3 backdrop-blur-md"
+            class="border-hair bg-card/85 sticky bottom-4 z-30 flex items-center justify-between gap-3 rounded-lg border p-3 backdrop-blur-md"
         >
             <div class="text-ink-muted flex items-center gap-2 text-xs">
                 {#if $submitting}
@@ -445,7 +445,7 @@
                     <ul class="flex flex-col gap-2">
                         {#each passkeys as pk (pk.id)}
                             <li
-                                class="border-hair bg-ink-2/40 flex items-center justify-between gap-3 rounded-[10px] border px-3 py-2.5"
+                                class="border-hair bg-ink-2/40 flex items-center justify-between gap-3 rounded-md border px-3 py-2.5"
                             >
                                 <div class="flex min-w-0 items-center gap-2.5">
                                     <Fingerprint size={15} class="text-brand shrink-0" />
@@ -454,7 +454,7 @@
                                             {pk.name || "Passkey"}
                                         </p>
                                         {#if pk.createdAt && formatDate(pk.createdAt)}
-                                            <p class="text-ink-muted text-[11px]">Added {formatDate(pk.createdAt)}</p>
+                                            <p class="text-ink-muted text-caption">Added {formatDate(pk.createdAt)}</p>
                                         {/if}
                                     </div>
                                 </div>
@@ -511,7 +511,7 @@
                 </p>
             </div>
             <form method="POST" action="?/dedup" use:enhance class="flex items-center gap-2">
-                <label class="text-ink-muted inline-flex cursor-pointer items-center gap-1.5 text-[11px]">
+                <label class="text-ink-muted text-caption inline-flex cursor-pointer items-center gap-1.5">
                     <input type="checkbox" name="dryRun" value="true" checked class="cursor-pointer" />
                     Dry run
                 </label>

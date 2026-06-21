@@ -3,8 +3,9 @@
     (auto-prompted when configured) and "Sign in with a passkey" (WebAuthn — Face ID / Touch
     ID / fingerprint). The $effect force-redirects if a session is already present on mount.
     Auth is optional — "Back to homepage" returns guests to the browsable app at `/`.
-    Rendered on a bare layout (no AppBar/Footer — see +layout.svelte). UI mirrors the
-    sibling tools' login (day-zero / invoice-generator / order-processor).
+    Rendered without the AppBar/first-run wizard, but WITH the global Footer (see
+    +layout.svelte) — mirroring the sibling tools' login (day-zero / invoice-generator /
+    order-processor), which all show the footer on their sign-in screen too.
 -->
 <script lang="ts">
     import { authClient } from "$lib/auth-client";
@@ -95,7 +96,7 @@
             arrow={false}
             onclick={handleGoogleLogin}
             disabled={isLoading}
-            class={cn("min-w-[260px] justify-center py-[15px]", isLoading && "cursor-wait")}
+            class={cn("min-w-[260px] justify-center py-3.5", isLoading && "cursor-wait")}
         >
             <span class="inline-flex items-center gap-2.5">
                 {#if isLoading}
@@ -133,7 +134,7 @@
                 arrow={false}
                 onclick={handlePasskeyLogin}
                 disabled={isLoading}
-                class={cn("min-w-[260px] justify-center py-[15px]", isLoading && "cursor-wait")}
+                class={cn("min-w-[260px] justify-center py-3.5", isLoading && "cursor-wait")}
             >
                 <span class="inline-flex items-center gap-2.5">
                     <Fingerprint class="size-4" aria-hidden="true" />
@@ -142,7 +143,7 @@
             </Cta>
         {/if}
 
-        <Cta variant="secondary" href="/" arrow={false} class="min-w-[260px] justify-center py-[15px]">
+        <Cta variant="secondary" href="/" arrow={false} class="min-w-[260px] justify-center py-3.5">
             <span class="inline-flex items-center gap-2.5">
                 <svg
                     class="size-4 transition-transform duration-300 ease-[var(--ease)] group-hover:-translate-x-0.5"

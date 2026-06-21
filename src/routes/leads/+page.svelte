@@ -115,7 +115,7 @@
     }
 </script>
 
-<main class="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pt-8 pb-8 sm:px-6 sm:pt-10">
+<main class="mx-auto flex w-full max-w-[var(--content-max)] flex-col gap-6 px-[var(--content-x)] pt-8 pb-8 sm:pt-10">
     <PageHeader
         title="Leads"
         subtitle={`${data.total} lifetime verified handles. Dedup uses this list as source of truth.`}
@@ -135,7 +135,7 @@
         {/snippet}
     </PageHeader>
 
-    <form bind:this={formEl} method="GET" class="border-hair bg-card rounded-[var(--radius)] border p-4 sm:p-5">
+    <form bind:this={formEl} method="GET" class="border-hair bg-card rounded-lg border p-4 sm:p-5">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div class="relative flex-1">
                 <Search size={13} class="text-ink-muted absolute top-1/2 left-3 z-10 -translate-y-1/2" />
@@ -152,7 +152,7 @@
                     <button
                         type="button"
                         onclick={() => chipNav("tier", c.v)}
-                        class="sleek inline-flex h-7 shrink-0 items-center rounded-full border px-3 font-mono text-[11px] whitespace-nowrap uppercase"
+                        class="sleek text-caption inline-flex h-7 shrink-0 items-center rounded-full border px-3 font-mono whitespace-nowrap uppercase"
                         style={chipStyle((data.tier ?? "") === c.v, c.tone as "default" | "brand" | "med" | "failed")}
                     >
                         {c.l}
@@ -165,7 +165,7 @@
                     <button
                         type="button"
                         onclick={() => chipNav("notion", c.v)}
-                        class="sleek inline-flex h-7 shrink-0 items-center rounded-full border px-3 font-mono text-[11px] whitespace-nowrap uppercase"
+                        class="sleek text-caption inline-flex h-7 shrink-0 items-center rounded-full border px-3 font-mono whitespace-nowrap uppercase"
                         style={chipStyle((data.notion ?? "") === c.v, c.tone)}
                     >
                         {c.l}
@@ -173,7 +173,7 @@
                 {/each}
 
                 <div class="bg-hair mx-1 h-5 w-px"></div>
-                <label class="text-ink-muted inline-flex items-center gap-2 font-mono text-[11px]">
+                <label class="text-ink-muted text-caption inline-flex items-center gap-2 font-mono">
                     <Switch
                         checked={Boolean(data.archived)}
                         onchange={(v) => setArchived(v)}
@@ -201,9 +201,9 @@
             {/snippet}
         </EmptyState>
     {:else}
-        <div class="border-hair bg-card overflow-hidden rounded-[var(--radius)] border">
+        <div class="border-hair bg-card overflow-hidden rounded-lg border">
             <div
-                class="border-hair text-ink-muted hidden gap-3 border-b px-4 py-2.5 font-mono text-[10px] tracking-[0.14em] uppercase sm:grid sm:grid-cols-[minmax(180px,1fr)_80px_70px_150px_120px_80px]"
+                class="border-hair text-ink-muted text-micro hidden gap-3 border-b px-4 py-2.5 font-mono tracking-[0.14em] uppercase sm:grid sm:grid-cols-[minmax(180px,1fr)_80px_70px_150px_120px_80px]"
             >
                 <span>Username</span>
                 <span>Tier</span>
@@ -235,12 +235,12 @@
                     {#if l.sourceJobId}
                         <a
                             href={`/jobs/${l.sourceJobId}`}
-                            class="sleek text-ink-muted hover:text-foreground truncate text-left font-mono text-[11px] whitespace-nowrap"
+                            class="sleek text-ink-muted hover:text-foreground text-caption truncate text-left font-mono whitespace-nowrap"
                         >
                             {l.sourceJobId.slice(0, 18)}
                         </a>
                     {:else}
-                        <span class="text-ink-muted font-mono text-[11px]">—</span>
+                        <span class="text-ink-muted text-caption font-mono">—</span>
                     {/if}
                     <NotionBadge status={l.notionStatus as NotionStatus} size="sm" />
                     <div class="flex items-center gap-1 sm:justify-end">
@@ -276,7 +276,7 @@
                         </Button>
                     </div>
                     {#if l.createdAt}
-                        <p class="text-ink-muted col-span-full -mt-1 font-mono text-[10px] sm:hidden">
+                        <p class="text-ink-muted text-micro col-span-full -mt-1 font-mono sm:hidden">
                             {fmtDate(l.createdAt)}
                         </p>
                     {/if}
@@ -284,7 +284,7 @@
             {/each}
             <Pagination page={data.page} pageSize={data.pageSize} total={data.total} baseHref={baseQuery} />
         </div>
-        <p class="text-ink-muted text-center font-mono text-[11px]">
+        <p class="text-ink-muted text-caption text-center font-mono">
             Showing {data.leads.length} of {data.total} leads.
         </p>
     {/if}

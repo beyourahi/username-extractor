@@ -55,7 +55,7 @@
     <Dialog.Portal>
         <Dialog.Overlay class="fade-in bg-background/60 fixed inset-0 z-50" style="backdrop-filter: blur(6px);" />
         <Dialog.Content
-            class="border-hair bg-card slide-in fixed top-1/2 left-1/2 z-50 flex max-h-[80vh] w-[min(90vw,800px)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-[var(--radius)] border shadow-xl"
+            class="border-hair bg-card slide-in fixed top-1/2 left-1/2 z-50 flex max-h-[80vh] w-[min(90vw,800px)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-lg border shadow-xl"
         >
             <div class="border-hair flex items-start justify-between gap-3 border-b p-5">
                 <div class="min-w-0">

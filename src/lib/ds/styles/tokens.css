@@ -139,6 +139,33 @@
 	--nav-h: 74px;
 	--nav-safe: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
 
+	/* App content shell — the chrome wrapper the sibling tools share (day-zero,
+	   order-processor, invoice-generator, username-extractor). Each app overrides
+	   --content-max in its own app.css (content density differs per tool); the pad
+	   and the centering formula stay identical so equivalent chrome lines up across
+	   apps, and the side gutter auto-grows on ultra-wide via the centering term.
+	   Markup: px-[var(--content-x)] and max-w-[var(--content-max)]. For wider
+	   containment on 2560px+/4K, an app may add its own @media bumps to --content-max.
+	   (--maxw/--shell-x above is the wider marketing-site shell; --content-* is the
+	   narrower app-tool shell — keep the two distinct.) */
+	--content-max: 1280px;
+	--content-pad: clamp(1rem, 4vw, 2rem);
+	--content-x: max(var(--content-pad), calc((100% - var(--content-max)) / 2));
+
+	/* Motion contract — shared durations + eases the tools animate to (mirrored in
+	   each app's $lib/motion/tokens.ts). Equivalent interactions use equal timing;
+	   keep restrained (150–350ms). Read as var(--motion-base), duration-[var(--motion-base)]. */
+	--motion-fast: 150ms;
+	--motion-base: 250ms;
+	--motion-slow: 350ms;
+	--motion-ease-standard: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+	--motion-ease-emphasized: cubic-bezier(0.65, 0, 0.35, 1);
+	--motion-ease-decelerate: cubic-bezier(0.16, 1, 0.3, 1);
+
+	/* Themed scrollbar thumb — ink-500 at low alpha; track stays transparent.
+	   Drives the shared scrollbar treatment in the base layer below. */
+	--scrollbar-thumb: oklch(0.556 0 0 / 0.4);
+
 	--radius: 1rem;
 
 	--shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
@@ -283,5 +310,25 @@
 		* {
 			cursor: auto !important;
 		}
+	}
+
+	/* Themed scrollbars — transparent track, ink thumb. One shared treatment so the
+	   tools stop hand-rolling divergent ones. A surface needing a bespoke scrollbar
+	   (e.g. .ai-scroll) overrides via its own more-specific selector. */
+	html {
+		scrollbar-width: thin;
+		scrollbar-color: var(--scrollbar-thumb) transparent;
+	}
+	*::-webkit-scrollbar {
+		width: 8px;
+		height: 8px;
+		background: transparent;
+	}
+	*::-webkit-scrollbar-thumb {
+		background: var(--scrollbar-thumb);
+		border-radius: 8px;
+	}
+	*::-webkit-scrollbar-track {
+		background: transparent;
 	}
 }

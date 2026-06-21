@@ -114,7 +114,7 @@
 
     {#if !signedIn}
         <div
-            class="border-brand-border bg-brand-soft fade-in flex w-full max-w-md items-start gap-2.5 rounded-[var(--radius)] border px-3.5 py-2.5 text-xs text-pretty"
+            class="border-brand-border bg-brand-soft fade-in flex w-full max-w-md items-start gap-2.5 rounded-lg border px-3.5 py-2.5 text-xs text-pretty"
         >
             <LogIn size={15} class="text-brand mt-px shrink-0" />
             <span class="text-foreground">
@@ -124,7 +124,7 @@
         </div>
     {:else if !cloudflareConnected}
         <div
-            class="border-brand-border bg-brand-soft fade-in flex w-full max-w-md items-start gap-2.5 rounded-[var(--radius)] border px-3.5 py-2.5 text-xs text-pretty"
+            class="border-brand-border bg-brand-soft fade-in flex w-full max-w-md items-start gap-2.5 rounded-lg border px-3.5 py-2.5 text-xs text-pretty"
         >
             <Cloud size={15} class="text-brand mt-px shrink-0" />
             <span class="text-foreground">
@@ -136,7 +136,7 @@
 
     {#if signedIn && !notionConfigured}
         <div
-            class="border-tier-med-border bg-tier-med-bg text-tier-med-fg fade-in flex w-full max-w-md items-start gap-2 rounded-[var(--radius)] border px-3 py-2 text-xs text-pretty"
+            class="border-tier-med-border bg-tier-med-bg text-tier-med-fg fade-in flex w-full max-w-md items-start gap-2 rounded-lg border px-3 py-2 text-xs text-pretty"
         >
             <AlertTriangle size={14} class="mt-px shrink-0" />
             <span>
@@ -165,7 +165,7 @@
                 <div class="border-hair flex-1 border-t"></div>
             </div>
 
-            <div class="border-hair bg-card rounded-[var(--radius)] border p-4 sm:p-5">
+            <div class="border-hair bg-card rounded-lg border p-4 sm:p-5">
                 <div class="space-y-4">
                     <div class="flex items-start justify-between gap-3">
                         <div>
@@ -185,7 +185,7 @@
                     <dl class="space-y-2 text-xs">
                         <div class="flex items-center justify-between gap-3">
                             <dt class="text-ink-muted shrink-0">Vision model</dt>
-                            <dd class="text-foreground truncate text-right font-mono text-[11px] whitespace-nowrap">
+                            <dd class="text-foreground text-caption truncate text-right font-mono whitespace-nowrap">
                                 {data.cloudflareModel}
                             </dd>
                         </div>
@@ -216,7 +216,7 @@
                 {submitting ? "Uploading…" : `Run extraction${files.length > 0 ? ` · ${files.length}` : ""}`}
             </Button>
 
-            <p class="text-ink-muted text-center text-[11px]">Verified handles auto-sync to your Notion CRM.</p>
+            <p class="text-ink-muted text-caption text-center">Verified handles auto-sync to your Notion CRM.</p>
         </div>
     </div>
 </div>
