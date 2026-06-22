@@ -12,7 +12,7 @@
     import { Dialog } from "bits-ui";
     import { signOut as authSignOut } from "$lib/auth-client";
     import { cn } from "$lib/utils/cn";
-    import { Settings, LogOut } from "@lucide/svelte";
+    import { Power, Settings, User } from "@lucide/svelte";
     import { IconButton } from "$lib/ds";
     import Eyebrow from "./Eyebrow.svelte";
 
@@ -56,19 +56,7 @@
         {#if user.image}
             <img src={user.image} alt={displayName} class="h-full w-full object-cover" referrerpolicy="no-referrer" />
         {:else}
-            <svg
-                class={iconClass}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-            >
-                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-            </svg>
+            <User class={iconClass} aria-hidden="true" />
         {/if}
     </div>
 {/snippet}
@@ -125,7 +113,7 @@
                                     aria-hidden="true"
                                 ></div>
                             {:else}
-                                <LogOut size={16} aria-hidden="true" />
+                                <Power size={16} aria-hidden="true" />
                             {/if}
                             <span class="text-sm font-medium whitespace-nowrap">Sign out</span>
                         </button>
@@ -188,19 +176,7 @@
                     aria-hidden="true"
                 ></div>
             {:else}
-                <svg
-                    class="text-ink-muted pointer-fine:group-hover:text-destructive size-[1.125rem] transition-colors"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                >
-                    <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
-                    <line x1="12" y1="2" x2="12" y2="12" />
-                </svg>
+                <Power class="text-ink-muted pointer-fine:group-hover:text-destructive size-[1.125rem] transition-colors" aria-hidden="true" />
             {/if}
             {#if !isLoggingOut}
                 <span
