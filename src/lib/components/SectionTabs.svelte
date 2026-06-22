@@ -107,7 +107,7 @@
             data-section-tab
             href={tab.href}
             aria-current={active ? "page" : undefined}
-            class="relative z-[1] flex min-h-[40px] items-center justify-center rounded-full px-[16px] py-[10px] font-mono text-caption whitespace-nowrap uppercase transition-colors duration-[350ms] ease-[var(--ease)] max-[720px]:min-h-[44px] max-[360px]:px-[12px] max-sm:flex-1 {active
+            class="relative z-[1] flex min-h-[40px] flex-1 items-center justify-center rounded-full px-[16px] py-[10px] font-mono text-caption whitespace-nowrap uppercase transition-colors duration-[350ms] ease-[var(--ease)] max-[720px]:min-h-[44px] max-[360px]:px-[12px] sm:flex-none sm:px-[30px] {active
                 ? 'text-background font-semibold'
                 : 'text-ink-muted hover:text-foreground'}"
         >
