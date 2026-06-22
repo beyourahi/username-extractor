@@ -6,6 +6,13 @@
  *     import "@dropout/ds/animations.css"; // optional, for <Cta dot> + sheen
  */
 export { cn } from "./utils";
+export {
+	isPlatformAuthenticatorAvailable,
+	detectPlatform,
+	biometricLabel,
+	biometricLabelFor,
+	type Platform
+} from "./biometric";
 
 export { default as Cta } from "./components/Cta.svelte";
 export { default as IconButton } from "./components/IconButton.svelte";

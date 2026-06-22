@@ -176,7 +176,7 @@
 	   cramped max-w-2xl (672px) but narrower than the full app content width. Shared
 	   so every product's Settings page lines up. Used as max-w-[var(--settings-max)]
 	   with the standard px-[var(--content-x)] gutter. */
-	--settings-max: 56rem; /* 896px */
+	--settings-max: 60rem; /* 960px */
 
 	/* Motion contract — shared durations + eases the tools animate to (mirrored in
 	   each app's $lib/motion/tokens.ts). Equivalent interactions use equal timing;

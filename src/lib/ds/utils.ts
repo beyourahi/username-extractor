@@ -15,7 +15,14 @@ import { extendTailwindMerge } from "tailwind-merge";
  * so size and color coexist. Keep this list in sync with the `--text-*` tokens in
  * `tokens.css`.
  */
-const twMerge = extendTailwindMerge({
+/**
+ * The custom-type-scale config for tailwind-merge. Exported so it can ALSO be
+ * handed to `tailwind-variants` (`tv(..., { twMergeConfig })`) — tv runs its own
+ * internal tailwind-merge with the DEFAULT config, which would otherwise collapse
+ * a custom font-size (e.g. `text-caption`) together with a color (e.g.
+ * `text-background`) and drop one of them. Keep both merges on the same config.
+ */
+export const twMergeConfig = {
 	extend: {
 		classGroups: {
 			"font-size": [
@@ -38,7 +45,9 @@ const twMerge = extendTailwindMerge({
 			]
 		}
 	}
-});
+};
+
+const twMerge = extendTailwindMerge(twMergeConfig);
 
 /**
  * Merge class lists with Tailwind conflict resolution.

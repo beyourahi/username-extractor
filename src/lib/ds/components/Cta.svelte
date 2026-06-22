@@ -2,7 +2,7 @@
 	import type { Snippet } from "svelte";
 	import type { HTMLAnchorAttributes, HTMLButtonAttributes } from "svelte/elements";
 	import { tv, type VariantProps } from "tailwind-variants";
-	import { cn } from "../utils";
+	import { cn, twMergeConfig } from "../utils";
 
 	/**
 	 * The one editorial CTA language, site-wide. Filled `signal` pill (primary),
@@ -18,18 +18,28 @@
 				secondary:
 					"border border-hair bg-transparent px-[28px] py-[14px] text-button text-foreground hover:border-signal hover:bg-ink-2",
 				compact: "h-9 bg-signal px-5 text-caption text-background shadow-lg hover:bg-signal/90"
+			},
+			// Orthogonal sizing. `md` = the canonical site-wide pill (inherits the
+			// variant's padding/font). `sm` = the tighter Settings-page size — smaller
+			// padding + caption font; tailwind-merge lets it override the variant.
+			size: {
+				md: "",
+				sm: "px-5 py-2.5 text-caption"
 			}
 		},
 		defaultVariants: {
-			variant: "primary"
+			variant: "primary",
+			size: "md"
 		}
-	});
+	}, { twMergeConfig });
 
 	type Variant = VariantProps<typeof cta>["variant"];
+	type Size = VariantProps<typeof cta>["size"];
 
 	type Props = HTMLButtonAttributes &
 		HTMLAnchorAttributes & {
 			variant?: Variant;
+			size?: Size;
 			href?: string;
 			arrow?: boolean;
 			dot?: boolean;
@@ -39,6 +49,7 @@
 
 	let {
 		variant = "primary",
+		size = "md",
 		href,
 		arrow = true,
 		dot = false,
@@ -80,11 +91,11 @@
 {/snippet}
 
 {#if href}
-	<a {href} class={cn(cta({ variant }), className)} {...rest}>
+	<a {href} class={cn(cta({ variant, size }), className)} {...rest}>
 		{@render inner()}
 	</a>
 {:else}
-	<button {type} class={cn(cta({ variant }), className)} {...rest}>
+	<button {type} class={cn(cta({ variant, size }), className)} {...rest}>
 		{@render inner()}
 	</button>
 {/if}

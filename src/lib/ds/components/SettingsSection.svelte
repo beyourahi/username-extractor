@@ -33,13 +33,13 @@
 	<header class="border-hair flex items-center gap-3 border-b px-5 py-4 sm:px-6">
 		{#if Icon}
 			<span
-				class="bg-ink-2 border-hair text-ink-muted flex size-8 shrink-0 items-center justify-center rounded-lg border"
+				class="bg-ink-2 border-hair text-ink-muted flex size-8 shrink-0 items-center justify-center rounded-lg border lg:size-7"
 			>
-				<Icon class="size-4" />
+				<Icon class="size-4 lg:size-3.5" />
 			</span>
 		{/if}
 		<div class="flex min-w-0 flex-col gap-1">
-			<Heading as="h2" size="title-sm">{title}</Heading>
+			<Heading as="h2" size="title-sm" class="whitespace-nowrap lg:text-subtitle">{title}</Heading>
 			{#if subtitle}
 				<span class={helperBase}>{subtitle}</span>
 			{/if}
