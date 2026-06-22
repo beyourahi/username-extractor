@@ -208,29 +208,26 @@
 <div
     class="mx-auto flex w-full max-w-[var(--settings-max)] grow flex-col gap-10 px-[var(--content-x)] py-10 outline-none sm:py-14"
 >
-    <div class="flex flex-col gap-5">
-        <a
-            href="/"
-            class={cn(
-                helperBase,
-                "hover:text-foreground focus-visible:outline-signal inline-flex w-fit touch-manipulation items-center gap-2 font-mono tracking-[0.18em] whitespace-nowrap uppercase transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
-            )}
-        >
-            <ArrowLeft class="size-3.5" /> Back to extractor
-        </a>
-        <div class="flex flex-col gap-3">
-            <Eyebrow>Settings</Eyebrow>
-            <Heading as="h1" size="title-lg" weight={600}>Settings</Heading>
-            <p class={cn(bodyBase, "text-ink-muted max-w-prose")}>
-                Defaults, Notion connection, and cleanup tools.
-            </p>
-        </div>
+    <Cta href="/" variant="secondary" arrow={false} class="bg-card text-caption w-fit px-5 py-2.5">
+        <span class="inline-flex items-center gap-2">
+            <ArrowLeft class="size-4" aria-hidden="true" />
+            Back to extractor
+        </span>
+    </Cta>
+
+    <div class="flex flex-col gap-3">
+        <Eyebrow>Settings</Eyebrow>
+        <Heading as="h1" size="title-lg" weight={600}>Settings</Heading>
+        <p class={cn(bodyBase, "text-ink-muted max-w-prose")}>Defaults, Notion connection, and cleanup tools.</p>
     </div>
 
     <div class="flex flex-col gap-8">
         <form method="POST" action="?/saveExtraction" use:exEnhance>
             <SettingsSection title="Extraction" subtitle="Defaults applied to every new job." icon={Sparkles}>
-                <SettingsRow label="Diagnostics by default" hint="Save the raw AI response alongside each result so you can review it later.">
+                <SettingsRow
+                    label="Diagnostics by default"
+                    hint="Save the raw AI response alongside each result so you can review it later."
+                >
                     <div class="flex w-full md:justify-start">
                         <Switch
                             checked={$exForm.diagnosticsDefault}
@@ -238,7 +235,11 @@
                             ariaLabel="Diagnostics"
                         />
                     </div>
-                    <input type="hidden" name="diagnosticsDefault" value={$exForm.diagnosticsDefault ? "true" : "false"} />
+                    <input
+                        type="hidden"
+                        name="diagnosticsDefault"
+                        value={$exForm.diagnosticsDefault ? "true" : "false"}
+                    />
                 </SettingsRow>
 
                 <SettingsRow
@@ -318,7 +319,8 @@
                 </SettingsRow>
 
                 <p class={helperBase}>
-                    Extractions run on <span class="text-foreground">your</span> own Cloudflare account. Create a token at
+                    Extractions run on <span class="text-foreground">your</span> own Cloudflare account. Create a token
+                    at
                     <a
                         href="https://dash.cloudflare.com/profile/api-tokens"
                         target="_blank"
@@ -400,7 +402,12 @@
                     />
                 </SettingsRow>
 
-                <SettingsRow label="Database ID" hint="Found in the URL of your Notion database." htmlFor="notionDatabaseId" stacked>
+                <SettingsRow
+                    label="Database ID"
+                    hint="Found in the URL of your Notion database."
+                    htmlFor="notionDatabaseId"
+                    stacked
+                >
                     <TextInput
                         id="notionDatabaseId"
                         name="notionDatabaseId"
@@ -434,7 +441,11 @@
                             ariaLabel="Skip validation"
                         />
                     </div>
-                    <input type="hidden" name="notionSkipValidation" value={$nForm.notionSkipValidation ? "true" : "false"} />
+                    <input
+                        type="hidden"
+                        name="notionSkipValidation"
+                        value={$nForm.notionSkipValidation ? "true" : "false"}
+                    />
                 </SettingsRow>
 
                 <SettingsRow
@@ -539,7 +550,9 @@
             {/if}
             <SettingsActions>
                 <Cta variant="primary" arrow={false} disabled={passkeyBusy} onclick={() => addPasskey()}>
-                    <span class="inline-flex items-center gap-2"><Fingerprint size={13} /> Set up Face ID / Touch ID</span>
+                    <span class="inline-flex items-center gap-2"
+                        ><Fingerprint size={13} /> Set up Face ID / Touch ID</span
+                    >
                 </Cta>
             </SettingsActions>
         {/if}
@@ -651,9 +664,7 @@
         >
             <div class="flex flex-col gap-1">
                 <p class="text-foreground text-sm font-medium">Import from Notion</p>
-                <p class={helperBase}>
-                    Bring an existing Notion database into Leads. Safe to run more than once.
-                </p>
+                <p class={helperBase}>Bring an existing Notion database into Leads. Safe to run more than once.</p>
             </div>
             <div class="grid gap-2 sm:grid-cols-2">
                 <TextInput
@@ -699,14 +710,15 @@
         <form
             method="POST"
             action="?/reset"
-            use:enhance={() => async ({ result }) => {
-                if (result.type === "success") {
-                    toast.success("Settings reset to defaults.");
-                    location.reload();
-                } else if (result.type === "failure") {
-                    toast.error((result.data?.error as string | undefined) ?? "Couldn't reset settings.");
-                }
-            }}
+            use:enhance={() =>
+                async ({ result }) => {
+                    if (result.type === "success") {
+                        toast.success("Settings reset to defaults.");
+                        location.reload();
+                    } else if (result.type === "failure") {
+                        toast.error((result.data?.error as string | undefined) ?? "Couldn't reset settings.");
+                    }
+                }}
             onsubmit={(e) => {
                 if (!confirm("Reset settings? This cannot be undone.")) e.preventDefault();
             }}

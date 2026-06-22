@@ -3,6 +3,7 @@
     import { Toaster } from "svelte-sonner";
     import { CloudUpload } from "@lucide/svelte";
     import { page } from "$app/state";
+    import Navbar from "$lib/components/Navbar.svelte";
     import User from "$lib/components/User.svelte";
     import HeroHeading from "$lib/components/HeroHeading.svelte";
     import SectionTabs from "$lib/components/SectionTabs.svelte";
@@ -44,15 +45,16 @@
         Skip to content
     </a>
 
-    <!-- Account controls float top-right on every route (sibling-parity), except the bare /login canvas. -->
+    <!-- Account controls in an invisible navbar (in-flow, no bg/border) on every route except the
+         bare /login canvas; the main section starts cleanly below it. -->
     {#if !isLogin}
-        {#if data?.user}
-            <User user={data.user} />
-        {:else}
-            <div class="fixed top-4 right-4 z-50 sm:top-6 sm:right-6 lg:right-[var(--content-x)]">
+        <Navbar>
+            {#if data?.user}
+                <User user={data.user} />
+            {:else}
                 <a
                     href="/login"
-                    class="sleek border-hair bg-card text-foreground group flex h-10 touch-manipulation items-center gap-2 rounded-full border px-4 text-sm font-medium whitespace-nowrap backdrop-blur-sm ease-[var(--ease)] transition-colors active:scale-95 motion-reduce:transition-none pointer-fine:hover:border-signal/50 focus-visible:outline-signal focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2"
+                    class="sleek border-hair bg-card text-foreground group pointer-fine:hover:border-signal/50 focus-visible:outline-signal flex h-10 touch-manipulation items-center gap-2 rounded-full border px-4 text-sm font-medium whitespace-nowrap backdrop-blur-sm transition-colors ease-[var(--ease)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-95 motion-reduce:transition-none"
                 >
                     <CloudUpload
                         class="text-ink-muted pointer-fine:group-hover:text-signal h-4 w-4 transition-colors"
@@ -61,8 +63,8 @@
                     <span class="hidden sm:inline">Sign in to sync</span>
                     <span class="sm:hidden">Sign in</span>
                 </a>
-            </div>
-        {/if}
+            {/if}
+        </Navbar>
     {/if}
 
     {#if showTabs}

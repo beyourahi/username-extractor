@@ -1,12 +1,9 @@
 <!--
-    Signed-in account cluster — a fixed floating top-right widget matching the sibling tools'
-    (day-zero / order-processor / invoice-generator) `User.svelte`: an icon-only avatar that
-    reveals the name/email on hover via an expanding pill (desktop, sm+) or opens a Dialog
-    (mobile, <sm), beside Settings and Sign-out icon buttons with hover tooltips. Shows the user's
-    profile picture when available, falling back to the same user-silhouette glyph the siblings use
-    (NOT initials). Self-positions (`fixed top-4 right-4 z-50 … lg:right-[var(--content-x)]`) like
-    the siblings; aligns to the content gutter on large screens. There is no AI copilot rail here,
-    so the copilot-offset logic the siblings carry is omitted.
+    Signed-in account cluster, rendered inline inside the invisible <Navbar>: an icon-only avatar that
+    reveals the name/email on hover via an expanding pill (desktop, sm+) or opens a Dialog (mobile,
+    <sm), beside Settings and Sign-out icon buttons with hover tooltips. Shows the user's profile
+    picture when available, falling back to the same user-silhouette glyph the siblings use (NOT
+    initials). Positioning is owned by the navbar, not here.
 -->
 <script lang="ts">
     import { Dialog } from "bits-ui";
@@ -31,17 +28,18 @@
     const displayName = $derived(user.name?.trim() || (user.email.split("@")[0] ?? user.email));
 
     async function handleLogout() {
-        // Full reload to /login (not goto) so the auth-derived layout data is re-fetched
-        // and no signed-in chrome lingers — matches the AppBar's prior sign-out behavior.
+        // Full navigation to /api/logout (not goto): authClient.signOut() kills the DB session, then the
+        // server endpoint expires EVERY cookie variant — including the cookieCache `session_data` cookie
+        // that signOut alone can leave behind — and 303s to /login, so no signed-in chrome lingers.
         if (typeof window === "undefined") return;
         isLoggingOut = true;
         try {
             await authSignOut();
         } catch {
-            // ignore — redirect regardless so the user lands somewhere sane
+            // ignore — the /api/logout navigation below clears every cookie variant regardless
         }
         mobileOpen = false;
-        window.location.href = "/login";
+        window.location.href = "/api/logout";
     }
 </script>
 
@@ -61,7 +59,7 @@
     </div>
 {/snippet}
 
-<div class="fixed top-4 right-4 z-50 sm:top-6 sm:right-6 lg:right-[var(--content-x)]">
+<div class="relative">
     <!-- Mobile (<sm): tap avatar -> dialog -->
     <div class="sm:hidden">
         <Dialog.Root open={mobileOpen} onOpenChange={(v) => (mobileOpen = v)}>
@@ -176,7 +174,10 @@
                     aria-hidden="true"
                 ></div>
             {:else}
-                <Power class="text-ink-muted pointer-fine:group-hover:text-destructive size-[1.125rem] transition-colors" aria-hidden="true" />
+                <Power
+                    class="text-ink-muted pointer-fine:group-hover:text-destructive size-[1.125rem] transition-colors"
+                    aria-hidden="true"
+                />
             {/if}
             {#if !isLoggingOut}
                 <span
