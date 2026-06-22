@@ -23,7 +23,10 @@ import { extractionSchema, cloudflareSchema, notionSchema } from "$lib/schemas/s
  * INVARIANT: this module is the only place that calls `decryptNotionToken` on
  * a settings load. All other reads use the encrypted blob directly.
  */
-export const load: PageServerLoad = async ({ locals, platform }) => {
+export const load: PageServerLoad = async ({ locals, platform, request }) => {
+    const platformHint =
+        request.headers.get("sec-ch-ua-platform")?.replace(/^"|"$/g, "") || request.headers.get("user-agent") || "";
+
     if (!locals.userId || !platform?.env?.DB) {
         return {
             extractionForm: await superValidate(zod4(extractionSchema)),
@@ -33,7 +36,8 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
             maskedCloudflareToken: "",
             cloudflareAccountId: "",
             cloudflareModel: DEFAULT_VISION_MODEL,
-            models: [] as CfModel[]
+            models: [] as CfModel[],
+            platformHint
         };
     }
 
@@ -132,7 +136,8 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
         maskedCloudflareToken,
         cloudflareAccountId,
         cloudflareModel,
-        models
+        models,
+        platformHint
     };
 };
 
