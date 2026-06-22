@@ -138,7 +138,10 @@
                 arrow={false}
                 onclick={handlePasskeyLogin}
                 disabled={isLoading}
-                class={cn("min-w-[260px] touch-manipulation justify-center py-3.5", isLoading && "cursor-wait")}
+                class={cn(
+                    "min-w-[260px] touch-manipulation justify-center border-transparent py-3.5 hover:border-transparent",
+                    isLoading && "cursor-wait"
+                )}
             >
                 <span class="inline-flex items-center gap-2.5">
                     <Fingerprint class="size-4" aria-hidden="true" />
@@ -152,7 +155,7 @@
         variant="secondary"
         href="/"
         arrow={false}
-        class="mt-4 min-w-[260px] touch-manipulation justify-center py-3.5 sm:mt-6"
+        class="mt-4 min-w-[260px] touch-manipulation justify-center border-transparent py-3.5 hover:border-transparent sm:mt-6"
     >
         <span class="inline-flex items-center gap-2.5">
             <ArrowLeft
