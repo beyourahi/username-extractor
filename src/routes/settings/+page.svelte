@@ -201,7 +201,7 @@
 </script>
 
 <div
-    class="mx-auto flex w-full max-w-[var(--settings-max)] grow flex-col gap-10 px-[var(--content-x)] py-10 outline-none sm:py-14"
+    class="mx-auto flex w-full max-w-[var(--settings-max)] grow flex-col gap-10 px-[var(--content-pad)] py-10 outline-none sm:py-14"
 >
     <div class="flex justify-end">
         <Cta href="/" variant="secondary" size="sm" arrow={false} class="bg-card">
