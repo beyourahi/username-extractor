@@ -8,7 +8,7 @@ import { getDb, schema } from "$lib/server/db";
 import { deriveTokenKey, encryptNotionToken, decryptNotionToken, maskToken } from "$lib/server/crypto";
 import { listVisionModels, DEFAULT_VISION_MODEL, type CfModel } from "$lib/server/ai/run-rest";
 import { describeCloudflareError } from "$lib/server/ai/errors";
-import { settingsSchema } from "$lib/schemas/settings";
+import { extractionSchema, cloudflareSchema, notionSchema } from "$lib/schemas/settings";
 
 /**
  * Settings page server module. Routes:
@@ -24,10 +24,11 @@ import { settingsSchema } from "$lib/schemas/settings";
  * a settings load. All other reads use the encrypted blob directly.
  */
 export const load: PageServerLoad = async ({ locals, platform }) => {
-    const empty = await superValidate(zod4(settingsSchema));
     if (!locals.userId || !platform?.env?.DB) {
         return {
-            form: empty,
+            extractionForm: await superValidate(zod4(extractionSchema)),
+            cloudflareForm: await superValidate(zod4(cloudflareSchema)),
+            notionForm: await superValidate(zod4(notionSchema)),
             maskedToken: "",
             maskedCloudflareToken: "",
             cloudflareAccountId: "",
@@ -93,47 +94,89 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
         }
     }
 
-    const form = await superValidate(
+    // One superForm per section — each saves independently (see the per-section actions below).
+    const extractionForm = await superValidate(
         {
             diagnosticsDefault: Boolean(row?.diagnosticsDefault),
+            dailyImageQuota: row?.dailyImageQuota ?? 0
+        },
+        zod4(extractionSchema)
+    );
+
+    const cloudflareForm = await superValidate(
+        {
+            cloudflareToken: "",
+            cloudflareAccountId,
+            cloudflareModel
+        },
+        zod4(cloudflareSchema)
+    );
+
+    const notionForm = await superValidate(
+        {
             notionToken: "",
             notionDatabaseId: row?.notionDatabaseId ?? "",
             notionAutoSync: Boolean(row?.notionAutoSync),
             notionSkipValidation: Boolean(row?.notionSkipValidation),
             notionValidationDelayMs: row?.notionValidationDelayMs ?? 2000,
-            dailyImageQuota: row?.dailyImageQuota ?? 0,
-            dedupKeepStrategy: (row?.dedupKeepStrategy as "best" | "oldest" | "newest" | undefined) ?? "best",
-            cloudflareToken: "",
-            cloudflareAccountId,
-            cloudflareModel
+            dedupKeepStrategy: (row?.dedupKeepStrategy as "best" | "oldest" | "newest" | undefined) ?? "best"
         },
-        zod4(settingsSchema)
+        zod4(notionSchema)
     );
 
-    return { form, maskedToken, maskedCloudflareToken, cloudflareAccountId, cloudflareModel, models };
+    return {
+        extractionForm,
+        cloudflareForm,
+        notionForm,
+        maskedToken,
+        maskedCloudflareToken,
+        cloudflareAccountId,
+        cloudflareModel,
+        models
+    };
 };
 
+/** Insert-or-update only the provided columns for a user — lets each section save without clobbering the others. */
+async function upsertUserSettings(
+    db: ReturnType<typeof getDb>,
+    userId: string,
+    data: Partial<typeof schema.userSettings.$inferInsert>
+) {
+    const existing = await db
+        .select({ userId: schema.userSettings.userId })
+        .from(schema.userSettings)
+        .where(eq(schema.userSettings.userId, userId))
+        .limit(1);
+    if (existing.length === 0) {
+        await db.insert(schema.userSettings).values({ userId, ...data });
+    } else {
+        await db.update(schema.userSettings).set(data).where(eq(schema.userSettings.userId, userId));
+    }
+}
+
 export const actions: Actions = {
-    save: async ({ request, locals, platform }) => {
-        const form = await superValidate(request, zod4(settingsSchema));
+    // Extraction defaults — diagnostics + daily quota.
+    saveExtraction: async ({ request, locals, platform }) => {
+        const form = await superValidate(request, zod4(extractionSchema));
         if (!form.valid) return fail(400, { form });
         if (!locals.userId || !platform?.env?.DB) return fail(503, { form });
 
-        const db = getDb(platform);
+        await upsertUserSettings(getDb(platform), locals.userId, {
+            diagnosticsDefault: form.data.diagnosticsDefault ? 1 : 0,
+            dailyImageQuota: form.data.dailyImageQuota
+        });
 
-        // Encrypt only when user typed a new token. Empty input ⇒ leave blob untouched.
-        let tokenBlob: Uint8Array | null = null;
-        if (form.data.notionToken && form.data.notionToken.length > 0) {
-            if (!platform.env.NOTION_TOKEN_ENCRYPTION_KEY) {
-                return message(form, "Can't save tokens right now. Please try again later.", { status: 500 });
-            }
-            const key = await deriveTokenKey(platform.env.NOTION_TOKEN_ENCRYPTION_KEY);
-            tokenBlob = await encryptNotionToken(form.data.notionToken, key);
-        }
+        return message(form, "Saved");
+    },
 
-        // Cloudflare connection: when a new token is provided, validate it by listing the
-        // account's models (proves token + account + Workers AI permission), cache that list,
-        // then encrypt the token. Empty token preserves the existing blob.
+    // Cloudflare connection. A new token is validated by listing the account's vision models
+    // (proves token + account + Workers AI permission), cached, then encrypted. Empty token
+    // preserves the existing blob (CONTRACT in $lib/schemas/settings.ts).
+    saveCloudflare: async ({ request, locals, platform }) => {
+        const form = await superValidate(request, zod4(cloudflareSchema));
+        if (!form.valid) return fail(400, { form });
+        if (!locals.userId || !platform?.env?.DB) return fail(503, { form });
+
         let cfTokenBlob: Uint8Array | null = null;
         const cfAccountId = form.data.cloudflareAccountId.trim();
         const cfTokenProvided = Boolean(form.data.cloudflareToken && form.data.cloudflareToken.length > 0);
@@ -158,38 +201,40 @@ export const actions: Actions = {
             cfTokenBlob = await encryptNotionToken(form.data.cloudflareToken, key);
         }
 
-        const existing = await db
-            .select()
-            .from(schema.userSettings)
-            .where(eq(schema.userSettings.userId, locals.userId))
-            .limit(1);
+        const data: Partial<typeof schema.userSettings.$inferInsert> = {
+            cloudflareAccountId: cfAccountId || null,
+            cloudflareModel: form.data.cloudflareModel || DEFAULT_VISION_MODEL
+        };
+        if (cfTokenBlob) data.cloudflareTokenEncrypted = cfTokenBlob;
+        await upsertUserSettings(getDb(platform), locals.userId, data);
 
-        const updateData: Partial<typeof schema.userSettings.$inferInsert> = {
-            diagnosticsDefault: form.data.diagnosticsDefault ? 1 : 0,
+        return message(form, "Saved");
+    },
+
+    // Notion connection + sync prefs. Empty token preserves the existing blob.
+    saveNotion: async ({ request, locals, platform }) => {
+        const form = await superValidate(request, zod4(notionSchema));
+        if (!form.valid) return fail(400, { form });
+        if (!locals.userId || !platform?.env?.DB) return fail(503, { form });
+
+        let tokenBlob: Uint8Array | null = null;
+        if (form.data.notionToken && form.data.notionToken.length > 0) {
+            if (!platform.env.NOTION_TOKEN_ENCRYPTION_KEY) {
+                return message(form, "Can't save tokens right now. Please try again later.", { status: 500 });
+            }
+            const key = await deriveTokenKey(platform.env.NOTION_TOKEN_ENCRYPTION_KEY);
+            tokenBlob = await encryptNotionToken(form.data.notionToken, key);
+        }
+
+        const data: Partial<typeof schema.userSettings.$inferInsert> = {
             notionDatabaseId: form.data.notionDatabaseId || null,
             notionAutoSync: form.data.notionAutoSync ? 1 : 0,
             notionSkipValidation: form.data.notionSkipValidation ? 1 : 0,
             notionValidationDelayMs: form.data.notionValidationDelayMs,
-            dailyImageQuota: form.data.dailyImageQuota,
-            dedupKeepStrategy: form.data.dedupKeepStrategy,
-            cloudflareAccountId: cfAccountId || null,
-            cloudflareModel: form.data.cloudflareModel || DEFAULT_VISION_MODEL
+            dedupKeepStrategy: form.data.dedupKeepStrategy
         };
-        if (tokenBlob) {
-            updateData.notionTokenEncrypted = tokenBlob;
-        }
-        if (cfTokenBlob) {
-            updateData.cloudflareTokenEncrypted = cfTokenBlob;
-        }
-
-        if (existing.length === 0) {
-            await db.insert(schema.userSettings).values({
-                userId: locals.userId,
-                ...updateData
-            });
-        } else {
-            await db.update(schema.userSettings).set(updateData).where(eq(schema.userSettings.userId, locals.userId));
-        }
+        if (tokenBlob) data.notionTokenEncrypted = tokenBlob;
+        await upsertUserSettings(getDb(platform), locals.userId, data);
 
         return message(form, "Saved");
     },
@@ -200,8 +245,7 @@ export const actions: Actions = {
         }
         const db = getDb(platform);
         await db.delete(schema.userSettings).where(eq(schema.userSettings.userId, locals.userId));
-        const form = await superValidate(zod4(settingsSchema));
-        return { form };
+        return { success: true };
     },
 
     dedup: async ({ request }) => {

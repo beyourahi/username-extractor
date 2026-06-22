@@ -24,6 +24,7 @@
         SettingsSection,
         SettingsRow,
         SettingsActions,
+        Cta,
         cn,
         inputBase,
         bodyBase,
@@ -33,7 +34,6 @@
     import Button from "$lib/components/Button.svelte";
     import Switch from "$lib/components/Switch.svelte";
     import Select from "$lib/components/Select.svelte";
-    import Field from "$lib/components/Field.svelte";
     import TextInput from "$lib/components/TextInput.svelte";
     import Spinner from "$lib/components/Spinner.svelte";
 
@@ -44,20 +44,41 @@
     const cloudflareConnected = $derived(Boolean(maskedCloudflareToken && maskedCloudflareToken !== "(decrypt error)"));
     const DEFAULT_MODEL = "@cf/moonshotai/kimi-k2.6";
 
+    // One superForm per section so each card saves itself (matches the sibling tools). Each
+    // posts to its own action, which persists ONLY its columns — saving one can't blank another.
+    const onUpdated = ({ form: f }: { form: { message?: string } }) => {
+        if (f.message) toast.success(f.message);
+    };
+
     const {
-        form,
-        errors,
-        enhance: enhanceForm,
-        message,
-        submitting
+        form: exForm,
+        errors: exErrors,
+        enhance: exEnhance,
+        message: exMessage,
+        submitting: exSubmitting
     } = superForm(
-        untrack(() => data.form),
-        {
-            resetForm: false,
-            onUpdated({ form: f }) {
-                if (f.message) toast.success(f.message);
-            }
-        }
+        untrack(() => data.extractionForm),
+        { resetForm: false, onUpdated }
+    );
+
+    const {
+        form: cfForm,
+        enhance: cfEnhance,
+        message: cfMessage,
+        submitting: cfSubmitting
+    } = superForm(
+        untrack(() => data.cloudflareForm),
+        { resetForm: false, onUpdated }
+    );
+
+    const {
+        form: nForm,
+        enhance: nEnhance,
+        message: nMessage,
+        submitting: nSubmitting
+    } = superForm(
+        untrack(() => data.notionForm),
+        { resetForm: false, onUpdated }
     );
 
     // Picker options from the account's cached vision models. Always surfaces the
@@ -75,7 +96,7 @@
         if (!ids.has(DEFAULT_MODEL)) {
             opts.unshift({ id: DEFAULT_MODEL, label: "moonshotai/kimi-k2.6 · recommended" });
         }
-        const cur = $form.cloudflareModel;
+        const cur = $cfForm.cloudflareModel;
         if (cur && cur !== DEFAULT_MODEL && !ids.has(cur)) {
             opts.push({ id: cur, label: `${cur.replace(/^@cf\//, "")} · experimental` });
         }
@@ -206,231 +227,268 @@
         </div>
     </div>
 
-    <form method="POST" action="?/save" use:enhanceForm class="flex flex-col gap-8">
-        <SettingsSection title="Extraction" subtitle="Defaults applied to every new job." icon={Sparkles}>
-            <SettingsRow label="Diagnostics by default" hint="Save the raw AI response alongside each result so you can review it later.">
-                <div class="flex w-full md:justify-start">
-                    <Switch
-                        checked={$form.diagnosticsDefault}
-                        onchange={(v) => ($form.diagnosticsDefault = v)}
-                        ariaLabel="Diagnostics"
-                    />
-                </div>
-                <input type="hidden" name="diagnosticsDefault" value={$form.diagnosticsDefault ? "true" : "false"} />
-            </SettingsRow>
+    <div class="flex flex-col gap-8">
+        <form method="POST" action="?/saveExtraction" use:exEnhance>
+            <SettingsSection title="Extraction" subtitle="Defaults applied to every new job." icon={Sparkles}>
+                <SettingsRow label="Diagnostics by default" hint="Save the raw AI response alongside each result so you can review it later.">
+                    <div class="flex w-full md:justify-start">
+                        <Switch
+                            checked={$exForm.diagnosticsDefault}
+                            onchange={(v) => ($exForm.diagnosticsDefault = v)}
+                            ariaLabel="Diagnostics"
+                        />
+                    </div>
+                    <input type="hidden" name="diagnosticsDefault" value={$exForm.diagnosticsDefault ? "true" : "false"} />
+                </SettingsRow>
 
-            <SettingsRow
-                label="Daily image quota"
-                hint="0 = unlimited. Billed to your Cloudflare account."
-                htmlFor="dailyImageQuota"
-            >
-                <TextInput
-                    id="dailyImageQuota"
-                    type="number"
-                    name="dailyImageQuota"
-                    bind:value={$form.dailyImageQuota}
-                    min={0}
-                    max={1000000}
-                    class="w-full"
-                />
-                {#if $errors.dailyImageQuota}
-                    <p class={cn(helperBase, "text-tier-failed-fg mt-1")}>{$errors.dailyImageQuota}</p>
-                {/if}
-            </SettingsRow>
-        </SettingsSection>
-
-        <SettingsSection
-            title="Cloudflare account"
-            subtitle="Required — extractions run on your own Cloudflare account."
-            icon={Cloud}
-        >
-            <SettingsRow
-                label="API token"
-                hint={cloudflareConnected
-                    ? `Stored: ${maskedCloudflareToken} — leave blank to keep.`
-                    : "An API token with the Account · Workers AI · Read permission. Stored securely."}
-                htmlFor="cloudflareToken"
-                stacked
-            >
-                <TextInput
-                    id="cloudflareToken"
-                    type="password"
-                    name="cloudflareToken"
-                    bind:value={$form.cloudflareToken}
-                    placeholder={maskedCloudflareToken || "v1.0-…"}
-                    autocomplete="off"
-                    class="w-full"
-                />
-            </SettingsRow>
-
-            <SettingsRow
-                label="Account ID"
-                hint="Right sidebar of any account page in the Cloudflare dashboard."
-                htmlFor="cloudflareAccountId"
-                stacked
-            >
-                <TextInput
-                    id="cloudflareAccountId"
-                    name="cloudflareAccountId"
-                    bind:value={$form.cloudflareAccountId}
-                    placeholder="0123456789abcdef…"
-                    class="w-full"
-                />
-            </SettingsRow>
-
-            <p class={helperBase}>
-                Extractions run on <span class="text-foreground">your</span> own Cloudflare account. Create a token at
-                <a
-                    href="https://dash.cloudflare.com/profile/api-tokens"
-                    target="_blank"
-                    rel="noreferrer"
-                    class="text-brand underline underline-offset-2">dash.cloudflare.com/profile/api-tokens</a
+                <SettingsRow
+                    label="Daily image quota"
+                    hint="0 = unlimited. Billed to your Cloudflare account."
+                    htmlFor="dailyImageQuota"
                 >
-                → Create Custom Token → permission
-                <span class="text-foreground font-mono">Account · Workers AI · Read</span>.
-            </p>
-
-            <SettingsRow
-                label="Image model"
-                hint="Kimi K2.6 is tested and recommended. Others are experimental and may be less reliable."
-                htmlFor="cloudflareModel"
-            >
-                <div class="flex w-full items-center gap-2">
-                    <button
-                        type="button"
-                        onclick={refreshModels}
-                        disabled={refreshingModels || !cloudflareConnected}
-                        title="Refresh model list"
-                        aria-label="Refresh models"
-                        class="text-ink-muted hover:text-foreground shrink-0 touch-manipulation transition-colors disabled:opacity-40"
-                    >
-                        <RefreshCw size={13} class={refreshingModels ? "animate-spin" : ""} />
-                    </button>
-                    <Select
-                        id="cloudflareModel"
-                        name="cloudflareModel"
-                        bind:value={$form.cloudflareModel}
-                        items={modelOptions.map((opt) => ({ value: opt.id, label: opt.label }))}
-                        placeholder="Select a model"
+                    <TextInput
+                        id="dailyImageQuota"
+                        type="number"
+                        name="dailyImageQuota"
+                        bind:value={$exForm.dailyImageQuota}
+                        min={0}
+                        max={1000000}
                         class="w-full"
                     />
-                </div>
-            </SettingsRow>
-        </SettingsSection>
+                    {#if $exErrors.dailyImageQuota}
+                        <p class={cn(helperBase, "text-tier-failed-fg mt-1")}>{$exErrors.dailyImageQuota}</p>
+                    {/if}
+                </SettingsRow>
 
-        <SettingsSection
-            title="Notion"
-            subtitle="Connect Notion to send verified usernames to your database."
-            icon={FileText}
-        >
-            <SettingsRow
-                label="Integration token"
-                hint={maskedToken
-                    ? `Stored: ${maskedToken} — leave blank to keep.`
-                    : "Stored securely. You won't see it again after saving."}
-                htmlFor="notionToken"
-                stacked
+                <SettingsActions>
+                    {#snippet status()}
+                        {#if $exSubmitting}
+                            Saving…
+                        {:else if $exMessage}
+                            <Check size={12} /> Saved
+                        {:else}
+                            <span>Applied to every new job.</span>
+                        {/if}
+                    {/snippet}
+                    <Cta type="submit" variant="primary" arrow={false} disabled={$exSubmitting}>
+                        {$exSubmitting ? "Saving…" : "Save"}
+                    </Cta>
+                </SettingsActions>
+            </SettingsSection>
+        </form>
+
+        <form method="POST" action="?/saveCloudflare" use:cfEnhance>
+            <SettingsSection
+                title="Cloudflare account"
+                subtitle="Required — extractions run on your own Cloudflare account."
+                icon={Cloud}
             >
-                <TextInput
-                    id="notionToken"
-                    type="password"
-                    name="notionToken"
-                    bind:value={$form.notionToken}
-                    placeholder={maskedToken || "secret_…"}
-                    autocomplete="off"
-                    class="w-full"
-                />
-            </SettingsRow>
-
-            <SettingsRow label="Database ID" hint="Found in the URL of your Notion database." htmlFor="notionDatabaseId" stacked>
-                <TextInput
-                    id="notionDatabaseId"
-                    name="notionDatabaseId"
-                    bind:value={$form.notionDatabaseId}
-                    class="w-full"
-                />
-            </SettingsRow>
-
-            <SettingsRow
-                label="Auto-sync verified leads"
-                hint="High- and medium-confidence results are sent to Notion automatically as a job runs."
-            >
-                <div class="flex w-full md:justify-start">
-                    <Switch
-                        checked={$form.notionAutoSync}
-                        onchange={(v) => ($form.notionAutoSync = v)}
-                        ariaLabel="Auto sync"
+                <SettingsRow
+                    label="API token"
+                    hint={cloudflareConnected
+                        ? `Stored: ${maskedCloudflareToken} — leave blank to keep.`
+                        : "An API token with the Account · Workers AI · Read permission. Stored securely."}
+                    htmlFor="cloudflareToken"
+                    stacked
+                >
+                    <TextInput
+                        id="cloudflareToken"
+                        type="password"
+                        name="cloudflareToken"
+                        bind:value={$cfForm.cloudflareToken}
+                        placeholder={maskedCloudflareToken || "v1.0-…"}
+                        autocomplete="off"
+                        class="w-full"
                     />
-                </div>
-                <input type="hidden" name="notionAutoSync" value={$form.notionAutoSync ? "true" : "false"} />
-            </SettingsRow>
+                </SettingsRow>
 
-            <SettingsRow
-                label="Skip Instagram profile check"
-                hint="Trust extracted usernames without checking the profile exists — faster, but lets dead links through."
-            >
-                <div class="flex w-full md:justify-start">
-                    <Switch
-                        checked={$form.notionSkipValidation}
-                        onchange={(v) => ($form.notionSkipValidation = v)}
-                        ariaLabel="Skip validation"
+                <SettingsRow
+                    label="Account ID"
+                    hint="Right sidebar of any account page in the Cloudflare dashboard."
+                    htmlFor="cloudflareAccountId"
+                    stacked
+                >
+                    <TextInput
+                        id="cloudflareAccountId"
+                        name="cloudflareAccountId"
+                        bind:value={$cfForm.cloudflareAccountId}
+                        placeholder="0123456789abcdef…"
+                        class="w-full"
                     />
-                </div>
-                <input type="hidden" name="notionSkipValidation" value={$form.notionSkipValidation ? "true" : "false"} />
-            </SettingsRow>
+                </SettingsRow>
 
-            <SettingsRow
-                label="Wait between profile checks (ms)"
-                hint="Wait time between Instagram profile checks (ms)."
-                htmlFor="notionValidationDelayMs"
+                <p class={helperBase}>
+                    Extractions run on <span class="text-foreground">your</span> own Cloudflare account. Create a token at
+                    <a
+                        href="https://dash.cloudflare.com/profile/api-tokens"
+                        target="_blank"
+                        rel="noreferrer"
+                        class="text-brand underline underline-offset-2">dash.cloudflare.com/profile/api-tokens</a
+                    >
+                    → Create Custom Token → permission
+                    <span class="text-foreground font-mono">Account · Workers AI · Read</span>.
+                </p>
+
+                <SettingsRow
+                    label="Image model"
+                    hint="Kimi K2.6 is tested and recommended. Others are experimental and may be less reliable."
+                    htmlFor="cloudflareModel"
+                >
+                    <div class="flex w-full items-center gap-2">
+                        <button
+                            type="button"
+                            onclick={refreshModels}
+                            disabled={refreshingModels || !cloudflareConnected}
+                            title="Refresh model list"
+                            aria-label="Refresh models"
+                            class="text-ink-muted hover:text-foreground shrink-0 touch-manipulation transition-colors disabled:opacity-40"
+                        >
+                            <RefreshCw size={13} class={refreshingModels ? "animate-spin" : ""} />
+                        </button>
+                        <Select
+                            id="cloudflareModel"
+                            name="cloudflareModel"
+                            bind:value={$cfForm.cloudflareModel}
+                            items={modelOptions.map((opt) => ({ value: opt.id, label: opt.label }))}
+                            placeholder="Select a model"
+                            class="w-full"
+                        />
+                    </div>
+                </SettingsRow>
+
+                <SettingsActions>
+                    {#snippet status()}
+                        {#if $cfSubmitting}
+                            Saving…
+                        {:else if $cfMessage}
+                            <Check size={12} /> Saved
+                        {:else if cloudflareConnected}
+                            <span>Connected.</span>
+                        {:else}
+                            <span>Not connected yet.</span>
+                        {/if}
+                    {/snippet}
+                    <Cta type="submit" variant="primary" arrow={false} disabled={$cfSubmitting}>
+                        {$cfSubmitting ? "Saving…" : "Save"}
+                    </Cta>
+                </SettingsActions>
+            </SettingsSection>
+        </form>
+
+        <form method="POST" action="?/saveNotion" use:nEnhance>
+            <SettingsSection
+                title="Notion"
+                subtitle="Connect Notion to send verified usernames to your database."
+                icon={FileText}
             >
-                <TextInput
-                    id="notionValidationDelayMs"
-                    type="number"
-                    name="notionValidationDelayMs"
-                    bind:value={$form.notionValidationDelayMs}
-                    min={0}
-                    max={60000}
-                    class="w-full"
-                />
-            </SettingsRow>
+                <SettingsRow
+                    label="Integration token"
+                    hint={maskedToken
+                        ? `Stored: ${maskedToken} — leave blank to keep.`
+                        : "Stored securely. You won't see it again after saving."}
+                    htmlFor="notionToken"
+                    stacked
+                >
+                    <TextInput
+                        id="notionToken"
+                        type="password"
+                        name="notionToken"
+                        bind:value={$nForm.notionToken}
+                        placeholder={maskedToken || "secret_…"}
+                        autocomplete="off"
+                        class="w-full"
+                    />
+                </SettingsRow>
 
-            <SettingsRow
-                label="When merging duplicates, keep"
-                hint="Which entry to keep when merging duplicate usernames in Notion."
-                htmlFor="dedupKeepStrategy"
-            >
-                <Select
-                    id="dedupKeepStrategy"
-                    name="dedupKeepStrategy"
-                    bind:value={$form.dedupKeepStrategy}
-                    items={[
-                        { value: "best", label: "Best score" },
-                        { value: "oldest", label: "Oldest" },
-                        { value: "newest", label: "Newest" }
-                    ]}
-                    placeholder="Keep strategy"
-                    class="w-full"
-                />
-            </SettingsRow>
-        </SettingsSection>
+                <SettingsRow label="Database ID" hint="Found in the URL of your Notion database." htmlFor="notionDatabaseId" stacked>
+                    <TextInput
+                        id="notionDatabaseId"
+                        name="notionDatabaseId"
+                        bind:value={$nForm.notionDatabaseId}
+                        class="w-full"
+                    />
+                </SettingsRow>
 
-        <SettingsActions>
-            {#snippet status()}
-                {#if $submitting}
-                    <Spinner size="sm" color="brand" /> Saving…
-                {:else if $message}
-                    <Check size={12} class="text-brand" />
-                    <span class="text-brand">Saved</span>
-                {:else}
-                    <span>Changes apply to new jobs.</span>
-                {/if}
-            {/snippet}
-            <Button type="submit" variant="brand" size="sm" disabled={$submitting}>
-                {$submitting ? "Saving…" : "Save changes"}
-            </Button>
-        </SettingsActions>
-    </form>
+                <SettingsRow
+                    label="Auto-sync verified leads"
+                    hint="High- and medium-confidence results are sent to Notion automatically as a job runs."
+                >
+                    <div class="flex w-full md:justify-start">
+                        <Switch
+                            checked={$nForm.notionAutoSync}
+                            onchange={(v) => ($nForm.notionAutoSync = v)}
+                            ariaLabel="Auto sync"
+                        />
+                    </div>
+                    <input type="hidden" name="notionAutoSync" value={$nForm.notionAutoSync ? "true" : "false"} />
+                </SettingsRow>
+
+                <SettingsRow
+                    label="Skip Instagram profile check"
+                    hint="Trust extracted usernames without checking the profile exists — faster, but lets dead links through."
+                >
+                    <div class="flex w-full md:justify-start">
+                        <Switch
+                            checked={$nForm.notionSkipValidation}
+                            onchange={(v) => ($nForm.notionSkipValidation = v)}
+                            ariaLabel="Skip validation"
+                        />
+                    </div>
+                    <input type="hidden" name="notionSkipValidation" value={$nForm.notionSkipValidation ? "true" : "false"} />
+                </SettingsRow>
+
+                <SettingsRow
+                    label="Wait between profile checks (ms)"
+                    hint="Wait time between Instagram profile checks (ms)."
+                    htmlFor="notionValidationDelayMs"
+                >
+                    <TextInput
+                        id="notionValidationDelayMs"
+                        type="number"
+                        name="notionValidationDelayMs"
+                        bind:value={$nForm.notionValidationDelayMs}
+                        min={0}
+                        max={60000}
+                        class="w-full"
+                    />
+                </SettingsRow>
+
+                <SettingsRow
+                    label="When merging duplicates, keep"
+                    hint="Which entry to keep when merging duplicate usernames in Notion."
+                    htmlFor="dedupKeepStrategy"
+                >
+                    <Select
+                        id="dedupKeepStrategy"
+                        name="dedupKeepStrategy"
+                        bind:value={$nForm.dedupKeepStrategy}
+                        items={[
+                            { value: "best", label: "Best score" },
+                            { value: "oldest", label: "Oldest" },
+                            { value: "newest", label: "Newest" }
+                        ]}
+                        placeholder="Keep strategy"
+                        class="w-full"
+                    />
+                </SettingsRow>
+
+                <SettingsActions>
+                    {#snippet status()}
+                        {#if $nSubmitting}
+                            Saving…
+                        {:else if $nMessage}
+                            <Check size={12} /> Saved
+                        {:else}
+                            <span>Applied when syncing to Notion.</span>
+                        {/if}
+                    {/snippet}
+                    <Cta type="submit" variant="primary" arrow={false} disabled={$nSubmitting}>
+                        {$nSubmitting ? "Saving…" : "Save"}
+                    </Cta>
+                </SettingsActions>
+            </SettingsSection>
+        </form>
+    </div>
 
     <SettingsSection
         title="Face ID / Touch ID"
@@ -480,9 +538,9 @@
                 </ul>
             {/if}
             <SettingsActions>
-                <Button type="button" variant="brand" size="sm" disabled={passkeyBusy} onclick={() => addPasskey()}>
-                    <Fingerprint size={13} /> Set up Face ID / Touch ID
-                </Button>
+                <Cta variant="primary" arrow={false} disabled={passkeyBusy} onclick={() => addPasskey()}>
+                    <span class="inline-flex items-center gap-2"><Fingerprint size={13} /> Set up Face ID / Touch ID</span>
+                </Cta>
             </SettingsActions>
         {/if}
     </SettingsSection>
@@ -509,7 +567,7 @@
                             <label for="dryRun" class="cursor-pointer">Dry run</label>
                         </span>
                     {/snippet}
-                    <Button type="submit" variant="brand" size="sm">Remove duplicates</Button>
+                    <Cta type="submit" variant="primary" arrow={false}>Remove duplicates</Cta>
                 </SettingsActions>
             </form>
         </div>
@@ -552,15 +610,17 @@
                 class={inputBase}
             ></textarea>
             <SettingsActions>
-                <Button
+                <Cta
                     type="submit"
-                    variant="outline"
-                    size="sm"
+                    variant="secondary"
+                    arrow={false}
                     disabled={legacyMarkdownSubmitting || legacyMarkdown.trim().length === 0}
                 >
-                    <Upload size={13} />
-                    {legacyMarkdownSubmitting ? "Importing…" : "Import markdown"}
-                </Button>
+                    <span class="inline-flex items-center gap-2">
+                        <Upload size={13} />
+                        {legacyMarkdownSubmitting ? "Importing…" : "Import markdown"}
+                    </span>
+                </Cta>
             </SettingsActions>
         </form>
 
@@ -612,17 +672,19 @@
                 />
             </div>
             <SettingsActions>
-                <Button
+                <Cta
                     type="submit"
-                    variant="outline"
-                    size="sm"
+                    variant="secondary"
+                    arrow={false}
                     disabled={legacyNotionSubmitting ||
                         legacyNotionToken.trim().length === 0 ||
                         legacyNotionDatabaseId.trim().length === 0}
                 >
-                    <Upload size={13} />
-                    {legacyNotionSubmitting ? "Importing…" : "Import Notion"}
-                </Button>
+                    <span class="inline-flex items-center gap-2">
+                        <Upload size={13} />
+                        {legacyNotionSubmitting ? "Importing…" : "Import Notion"}
+                    </span>
+                </Cta>
             </SettingsActions>
         </form>
     </SettingsSection>
@@ -637,7 +699,14 @@
         <form
             method="POST"
             action="?/reset"
-            use:enhance
+            use:enhance={() => async ({ result }) => {
+                if (result.type === "success") {
+                    toast.success("Settings reset to defaults.");
+                    location.reload();
+                } else if (result.type === "failure") {
+                    toast.error((result.data?.error as string | undefined) ?? "Couldn't reset settings.");
+                }
+            }}
             onsubmit={(e) => {
                 if (!confirm("Reset settings? This cannot be undone.")) e.preventDefault();
             }}

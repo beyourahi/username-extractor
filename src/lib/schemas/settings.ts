@@ -27,6 +27,36 @@ export const settingsSchema = z.object({
 
 export type SettingsForm = z.infer<typeof settingsSchema>;
 
+/**
+ * Per-section schemas — the Settings page saves each section independently (one form +
+ * action per card), so each section validates and persists ONLY its own fields. Derived
+ * from `settingsSchema` via `.pick()` so defaults + validation stay in one place. The
+ * empty-token-preserves-ciphertext CONTRACT above applies to the cloudflare/notion picks.
+ */
+export const extractionSchema = settingsSchema.pick({
+    diagnosticsDefault: true,
+    dailyImageQuota: true
+});
+
+export const cloudflareSchema = settingsSchema.pick({
+    cloudflareToken: true,
+    cloudflareAccountId: true,
+    cloudflareModel: true
+});
+
+export const notionSchema = settingsSchema.pick({
+    notionToken: true,
+    notionDatabaseId: true,
+    notionAutoSync: true,
+    notionSkipValidation: true,
+    notionValidationDelayMs: true,
+    dedupKeepStrategy: true
+});
+
+export type ExtractionForm = z.infer<typeof extractionSchema>;
+export type CloudflareForm = z.infer<typeof cloudflareSchema>;
+export type NotionForm = z.infer<typeof notionSchema>;
+
 export const dedupActionSchema = z.object({
     dryRun: z.boolean().default(true)
 });
