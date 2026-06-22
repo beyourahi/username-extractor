@@ -90,8 +90,16 @@ function isPublicPath(pathname: string): boolean {
     // (sign-in is an invitation, surfaced in the AppBar + on the upload form). /jobs, /leads,
     // /settings and every /api/* route stay gated — extraction needs a session. Better Auth
     // mounts its own routes under /auth/* (basePath in auth.ts), which must stay reachable
-    // signed-out.
-    return pathname === "/" || pathname === "/login" || pathname === "/changelog" || pathname.startsWith("/auth/");
+    // signed-out. /api/logout is the one /api route that must stay public: logout fires after
+    // signOut() has already cleared the session token, so the gate would otherwise 401 it and
+    // strand the user on a JSON error with the cookieCache `session_data` cookie un-cleared.
+    return (
+        pathname === "/" ||
+        pathname === "/login" ||
+        pathname === "/changelog" ||
+        pathname === "/api/logout" ||
+        pathname.startsWith("/auth/")
+    );
 }
 
 function nullAuthLocals(event: Parameters<Handle>[0]["event"]): void {
