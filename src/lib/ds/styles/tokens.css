@@ -131,6 +131,20 @@
 	--hair: oklch(0 0 0 / 0.1);
 	--hair-soft: oklch(0 0 0 / 0.06);
 
+	/* Overlay & glass — the canonical modal / sheet / drawer treatment, captured
+	   from the shipped dropout-studio overlays so every product's overlays match
+	   instead of each hand-rolling bg-white/10 + bg-black/50. scrim dims the page
+	   behind an overlay; scrim-soft is the lighter drawer/sheet dim; glass is the
+	   frosted surface (dialog) with glass-border its hairline; blur values feed
+	   backdrop-blur-[var(--glass-blur)]. .dark holds the EXACT live (white-on-black)
+	   values; :root is the light value-swap. */
+	--scrim: oklch(0 0 0 / 0.5);
+	--scrim-soft: oklch(0 0 0 / 0.1);
+	--glass: oklch(1 0 0 / 0.72);
+	--glass-border: oklch(0 0 0 / 0.08);
+	--glass-blur: 40px;
+	--glass-blur-soft: 4px;
+
 	/* Structural shell — page gutter, max width, nav band. Use as
 	   px-[var(--shell-x)], max-w-[var(--maxw)], etc. Grows at ultra-wide. */
 	--pad: clamp(18px, 6vw, 120px);
@@ -203,6 +217,11 @@
 	--ink-2: var(--color-ink-900);
 	--hair: oklch(1 0 0 / 0.1);
 	--hair-soft: oklch(1 0 0 / 0.055);
+
+	/* Canonical glass — EXACTLY the live dropout-studio dialog surface
+	   (bg-white/10 + border-white/20). scrim + blur are theme-agnostic. */
+	--glass: oklch(1 0 0 / 0.1);
+	--glass-border: oklch(1 0 0 / 0.2);
 }
 
 /* Ultra-wide shell growth — structural only, theme-agnostic. */
@@ -259,6 +278,11 @@
 	--color-hair: var(--hair);
 	--color-hair-soft: var(--hair-soft);
 
+	--color-scrim: var(--scrim);
+	--color-scrim-soft: var(--scrim-soft);
+	--color-glass: var(--glass);
+	--color-glass-border: var(--glass-border);
+
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);
 	--radius-lg: var(--radius);
@@ -285,13 +309,14 @@
 		font-optical-sizing: auto;
 	}
 
-	* {
-		outline: none;
-	}
-
-	:focus-visible {
-		outline: 2px solid var(--ring);
-		outline-offset: 2px;
+	/* Focus outline is intentionally removed system-wide — a deliberate Dropout
+	   decision: the browser's default focus ring lingers after a click / after
+	   navigating back to a tab, which reads as a bug. Off for ALL Dropout products;
+	   this is the canonical default — do not reintroduce per-product. */
+	:focus,
+	:focus-visible,
+	:focus-within {
+		outline: none !important;
 	}
 
 	button:not(:disabled),
