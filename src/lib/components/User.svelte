@@ -13,6 +13,7 @@
     import { signOut as authSignOut } from "$lib/auth-client";
     import { cn } from "$lib/utils/cn";
     import { Settings, LogOut } from "@lucide/svelte";
+    import { IconButton } from "$lib/ds";
     import Eyebrow from "./Eyebrow.svelte";
 
     let {
@@ -162,16 +163,9 @@
             </div>
         </div>
 
-        <a
-            href="/settings"
-            aria-label="Settings"
-            class={cn(
-                "sleek group border-hair bg-card hover:border-signal relative flex h-10 w-10 touch-manipulation items-center justify-center rounded-full border backdrop-blur-sm active:scale-95",
-                "focus-visible:outline-signal focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2"
-            )}
-        >
+        <IconButton href="/settings" aria-label="Settings">
             <Settings
-                class="text-ink-muted group-hover:text-foreground h-[1.125rem] w-[1.125rem] transition-colors"
+                class="text-ink-muted pointer-fine:group-hover:text-foreground size-[1.125rem] transition-colors"
                 aria-hidden="true"
             />
             <span
@@ -179,20 +173,14 @@
             >
                 Settings
             </span>
-        </a>
+        </IconButton>
 
-        <button
-            type="button"
+        <IconButton
+            tone="destructive"
             onclick={handleLogout}
             disabled={isLoggingOut}
             aria-label="Sign out"
-            class={cn(
-                "sleek group relative flex h-10 w-10 cursor-pointer touch-manipulation items-center justify-center rounded-full border backdrop-blur-sm",
-                "focus-visible:outline-signal focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2",
-                isLoggingOut
-                    ? "border-hair bg-card cursor-wait"
-                    : "border-hair bg-card hover:border-destructive/50 hover:bg-destructive/10 active:scale-95"
-            )}
+            class={cn(isLoggingOut && "cursor-wait")}
         >
             {#if isLoggingOut}
                 <div
@@ -201,7 +189,7 @@
                 ></div>
             {:else}
                 <svg
-                    class="text-ink-muted group-hover:text-destructive h-[1.125rem] w-[1.125rem] transition-colors"
+                    class="text-ink-muted pointer-fine:group-hover:text-destructive size-[1.125rem] transition-colors"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -221,6 +209,6 @@
                     Sign out
                 </span>
             {/if}
-        </button>
+        </IconButton>
     </div>
 </div>

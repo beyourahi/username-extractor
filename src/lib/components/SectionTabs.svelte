@@ -89,7 +89,7 @@
 
 <nav
     bind:this={navEl}
-    class="bg-ink-2 relative flex w-full max-w-full [scrollbar-width:none] flex-nowrap gap-[4px] overflow-x-auto rounded-full border border-white/14 p-[4px] [-ms-overflow-style:none] sm:w-fit [&::-webkit-scrollbar]:hidden"
+    class="bg-ink-2 relative flex w-full max-w-full [scrollbar-width:none] flex-nowrap gap-[4px] overflow-x-auto rounded-full border border-hair p-[4px] [-ms-overflow-style:none] sm:w-fit [&::-webkit-scrollbar]:hidden"
     aria-label="Sections"
 >
     <span

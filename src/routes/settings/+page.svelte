@@ -23,7 +23,7 @@
         Eyebrow,
         SettingsSection,
         SettingsRow,
-        SettingsSaveBar,
+        SettingsActions,
         cn,
         inputBase,
         bodyBase,
@@ -415,7 +415,7 @@
             </SettingsRow>
         </SettingsSection>
 
-        <SettingsSaveBar>
+        <SettingsActions>
             {#snippet status()}
                 {#if $submitting}
                     <Spinner size="sm" color="brand" /> Saving…
@@ -426,12 +426,10 @@
                     <span>Changes apply to new jobs.</span>
                 {/if}
             {/snippet}
-            {#snippet action()}
-                <Button type="submit" variant="brand" size="sm" disabled={$submitting}>
-                    {$submitting ? "Saving…" : "Save changes"}
-                </Button>
-            {/snippet}
-        </SettingsSaveBar>
+            <Button type="submit" variant="brand" size="sm" disabled={$submitting}>
+                {$submitting ? "Saving…" : "Save changes"}
+            </Button>
+        </SettingsActions>
     </form>
 
     <SettingsSection
@@ -481,11 +479,11 @@
                     {/each}
                 </ul>
             {/if}
-            <div class="border-hair flex items-center justify-end gap-3 border-t pt-5">
+            <SettingsActions>
                 <Button type="button" variant="brand" size="sm" disabled={passkeyBusy} onclick={() => addPasskey()}>
                     <Fingerprint size={13} /> Set up Face ID / Touch ID
                 </Button>
-            </div>
+            </SettingsActions>
         {/if}
     </SettingsSection>
 
@@ -497,17 +495,22 @@
                     Scans your whole database, keeps one of each username, and archives the rest based on your rule.
                 </p>
             </div>
-            <form
-                method="POST"
-                action="?/dedup"
-                use:enhance
-                class="border-hair flex flex-wrap items-center justify-end gap-4 border-t pt-5"
-            >
-                <span class={cn(metaBase, "inline-flex items-center gap-2 whitespace-nowrap")}>
-                    <Switch id="dryRun" name="dryRun" checked={dryRun} onchange={(v) => (dryRun = v)} ariaLabel="Dry run" />
-                    <label for="dryRun" class="cursor-pointer">Dry run</label>
-                </span>
-                <Button type="submit" variant="brand" size="sm">Remove duplicates</Button>
+            <form method="POST" action="?/dedup" use:enhance>
+                <SettingsActions>
+                    {#snippet status()}
+                        <span class={cn(metaBase, "inline-flex items-center gap-2 whitespace-nowrap")}>
+                            <Switch
+                                id="dryRun"
+                                name="dryRun"
+                                checked={dryRun}
+                                onchange={(v) => (dryRun = v)}
+                                ariaLabel="Dry run"
+                            />
+                            <label for="dryRun" class="cursor-pointer">Dry run</label>
+                        </span>
+                    {/snippet}
+                    <Button type="submit" variant="brand" size="sm">Remove duplicates</Button>
+                </SettingsActions>
             </form>
         </div>
 
@@ -548,7 +551,7 @@
                 placeholder="Paste markdown…"
                 class={inputBase}
             ></textarea>
-            <div class="border-hair flex items-center justify-end gap-3 border-t pt-5">
+            <SettingsActions>
                 <Button
                     type="submit"
                     variant="outline"
@@ -558,7 +561,7 @@
                     <Upload size={13} />
                     {legacyMarkdownSubmitting ? "Importing…" : "Import markdown"}
                 </Button>
-            </div>
+            </SettingsActions>
         </form>
 
         <form
@@ -608,7 +611,7 @@
                     class="w-full"
                 />
             </div>
-            <div class="border-hair flex items-center justify-end gap-3 border-t pt-5">
+            <SettingsActions>
                 <Button
                     type="submit"
                     variant="outline"
@@ -620,7 +623,7 @@
                     <Upload size={13} />
                     {legacyNotionSubmitting ? "Importing…" : "Import Notion"}
                 </Button>
-            </div>
+            </SettingsActions>
         </form>
     </SettingsSection>
 
@@ -635,14 +638,15 @@
             method="POST"
             action="?/reset"
             use:enhance
-            class="border-hair flex items-center justify-end gap-3 border-t pt-5"
             onsubmit={(e) => {
                 if (!confirm("Reset settings? This cannot be undone.")) e.preventDefault();
             }}
         >
-            <Button type="submit" variant="destructive" size="sm">
-                <Trash2 size={13} /> Reset settings
-            </Button>
+            <SettingsActions>
+                <Button type="submit" variant="destructive" size="sm">
+                    <Trash2 size={13} /> Reset settings
+                </Button>
+            </SettingsActions>
         </form>
     </SettingsSection>
 </div>

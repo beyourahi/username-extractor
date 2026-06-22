@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { cn, Heading, bodyBase, helperBase } from "$lib/ds";
+    import { cn, Heading, helperBase } from "$lib/ds";
 
     let {
         emoji = "🔎",
@@ -18,11 +18,11 @@
 
 <div class={cn("flex w-full flex-col text-center", s ? "gap-2" : "gap-4 sm:gap-6")}>
     <p class={s ? "text-3xl" : "text-4xl sm:text-5xl"}>{emoji}</p>
-    <div class="flex flex-col gap-1.5">
+    <div class="flex flex-col gap-1.5 sm:gap-2">
         <Heading as="h1" size={s ? "title-sm" : "title-lg"} weight={600} class="tracking-tight text-balance">
             {title}
         </Heading>
-        <p class={s ? helperBase : cn(bodyBase, "text-ink-muted")}>
+        <p class={s ? helperBase : cn(helperBase, "text-pretty")}>
             {tagline}
         </p>
     </div>

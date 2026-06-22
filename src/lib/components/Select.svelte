@@ -59,7 +59,7 @@
                         value={item.value}
                         label={item.label}
                         disabled={item.disabled ?? false}
-                        class="text-foreground hover:bg-ink-2 data-[highlighted]:bg-ink-2 flex cursor-pointer items-start gap-2 rounded-[8px] px-2.5 py-2 text-xs transition-colors duration-150 ease-[var(--ease)] outline-none select-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-40"
+                        class="text-foreground hover:bg-ink-2 data-[highlighted]:bg-ink-2 flex cursor-pointer items-start gap-2 rounded-[11px] px-2.5 py-2 text-xs transition-colors duration-150 ease-[var(--ease)] outline-none select-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-40"
                     >
                         {#snippet children({ selected })}
                             <span class="flex w-4 shrink-0 items-center justify-center pt-0.5">

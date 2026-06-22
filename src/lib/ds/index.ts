@@ -8,12 +8,14 @@
 export { cn } from "./utils";
 
 export { default as Cta } from "./components/Cta.svelte";
+export { default as IconButton } from "./components/IconButton.svelte";
 export { default as Heading } from "./components/Heading.svelte";
 export { default as Eyebrow } from "./components/Eyebrow.svelte";
 export { default as Input } from "./components/Input.svelte";
 export { default as Tile } from "./components/Tile.svelte";
 export { default as SettingsSection } from "./components/SettingsSection.svelte";
 export { default as SettingsRow } from "./components/SettingsRow.svelte";
+export { default as SettingsActions } from "./components/SettingsActions.svelte";
 export { default as SettingsSaveBar } from "./components/SettingsSaveBar.svelte";
 
 export {

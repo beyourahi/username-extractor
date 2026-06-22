@@ -43,7 +43,7 @@
     };
 
     const sizes: Record<Size, string> = {
-        sm: "h-8 px-3 text-xs",
+        sm: "h-8 px-3 text-caption",
         default: "h-9 px-4",
         lg: "h-10 px-6",
         icon: "h-9 w-9",

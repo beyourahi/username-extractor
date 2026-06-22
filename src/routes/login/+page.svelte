@@ -78,7 +78,11 @@
     <title>Sign In · Username Extractor</title>
 </svelte:head>
 
-<div class="flex grow flex-col items-center justify-center gap-8 overflow-hidden px-4 sm:gap-10 sm:px-6 lg:gap-12">
+<main
+    id="main"
+    tabindex="-1"
+    class="flex grow flex-col items-center justify-center gap-8 overflow-hidden px-4 outline-none sm:gap-10 sm:px-6 lg:gap-12"
+>
     <HeroHeading />
 
     {#if error}
@@ -167,4 +171,4 @@
             ? "Sign in with Google — or use Face ID / Touch ID once you've set it up in Settings."
             : "Sign in with your Google account to get started."}
     </p>
-</div>
+</main>
