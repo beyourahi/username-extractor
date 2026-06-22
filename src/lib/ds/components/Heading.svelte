@@ -8,6 +8,12 @@
 	 * Variable-weight heading. Drives the `opsz` + `wght` axes inline so weight
 	 * can animate. The weight law is encoded: capped at 600 for text; the 700
 	 * tier is reserved for display numerals (opt in with `numeral`).
+	 *
+	 * Sizes resolve to the `--text-*` tokens, which are FLUID for `subtitle`→
+	 * `display` — so every heading is responsive with no breakpoint classes.
+	 *
+	 * Canonical weights (keep products consistent): page-title H1 → 600; every
+	 * other heading → the 540 default. Don't pass 560/580 one-offs.
 	 */
 	let {
 		children,

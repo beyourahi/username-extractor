@@ -67,18 +67,24 @@
 	--color-danger: oklch(0.577 0.245 27.325);
 	--color-danger-dark: oklch(0.704 0.191 22.216);
 
-	/* Type scale — fixed rem steps, exposed as text-* utilities. */
+	/* Type scale — text-* utilities. Reading/UI tiers (≤ lead) are FIXED rem for
+	   legibility and to keep form inputs ≥16px (no iOS zoom). Display/heading tiers
+	   (subtitle → display) are FLUID: one clamp() per token makes every heading in
+	   every product scale identically by construction — min ≈375px viewport, capped
+	   at today's value by ~1024px (no ballooning on ultra-wide; the cap holds).
+	   Solve: min + (max−min)·(100vw−375)/(1024−375), as rem + vw. */
 	--text-micro: 0.625rem;
 	--text-caption: 0.75rem;
 	--text-label: 0.875rem;
 	--text-body: 1rem;
 	--text-body-lg: 1.0625rem;
+	--text-button: 0.8125rem; /* 13px — the deliberate CTA size, between caption + label. */
 	--text-lead: 1.125rem;
-	--text-subtitle: 1.5rem;
-	--text-title-sm: 1.875rem;
-	--text-title: 2.25rem;
-	--text-title-lg: 3rem;
-	--text-display: 3.75rem;
+	--text-subtitle: clamp(1.25rem, 1.106rem + 0.616vw, 1.5rem); /* 20 → 24px */
+	--text-title-sm: clamp(1.375rem, 1.086rem + 1.233vw, 1.875rem); /* 22 → 30px */
+	--text-title: clamp(1.75rem, 1.461rem + 1.233vw, 2.25rem); /* 28 → 36px */
+	--text-title-lg: clamp(2rem, 1.422rem + 2.465vw, 3rem); /* 32 → 48px */
+	--text-display: clamp(2.5rem, 1.778rem + 3.082vw, 3.75rem); /* 40 → 60px */
 
 	--leading-tight-custom: 1.2;
 	--leading-heading: 1.25;
@@ -165,6 +171,12 @@
 	--content-max: 1280px;
 	--content-pad: clamp(1rem, 4vw, 2rem);
 	--content-x: max(var(--content-pad), calc((100% - var(--content-max)) / 2));
+
+	/* Settings / forms column — comfortable two-column field rows; wider than a
+	   cramped max-w-2xl (672px) but narrower than the full app content width. Shared
+	   so every product's Settings page lines up. Used as max-w-[var(--settings-max)]
+	   with the standard px-[var(--content-x)] gutter. */
+	--settings-max: 56rem; /* 896px */
 
 	/* Motion contract — shared durations + eases the tools animate to (mirrored in
 	   each app's $lib/motion/tokens.ts). Equivalent interactions use equal timing;

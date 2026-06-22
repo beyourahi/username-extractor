@@ -53,7 +53,7 @@
 <div class="mx-auto w-full max-w-2xl px-4 py-14 sm:px-6 sm:py-20">
     <header class="slide-in flex flex-col gap-4 sm:gap-5">
         <Eyebrow>What's new</Eyebrow>
-        <Heading as="h1" size="title" weight={560} class="lowercase">changelog</Heading>
+        <Heading as="h1" size="title" weight={600} class="lowercase">changelog</Heading>
         <p class="text-ink-muted text-label sm:text-body max-w-md text-pretty">
             Every meaningful update to Username Extractor, written in plain language.
         </p>
@@ -61,9 +61,9 @@
 
     <div class="border-hair my-12 border-t sm:my-16"></div>
 
-    <div class="space-y-14 sm:space-y-20">
+    <div class="flex flex-col gap-14 sm:gap-20">
         {#each groups as group, groupIndex (group.date)}
-            <section class="space-y-6">
+            <section class="flex flex-col gap-6">
                 <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
                     <span class="text-ink-muted text-micro font-mono tracking-[0.28em] uppercase tabular-nums">
                         {group.label}
@@ -77,13 +77,13 @@
                     {/if}
                 </div>
 
-                <div class="border-hair space-y-8 border-l pl-5 sm:pl-6">
+                <div class="border-hair flex flex-col gap-8 border-l pl-5 sm:pl-6">
                     {#each group.entries as entry (entry.title)}
-                        <article class="space-y-2.5">
+                        <article class="flex flex-col gap-2.5">
                             <span class="text-ink-muted text-micro block font-mono tracking-[0.22em] uppercase">
                                 {entry.category}
                             </span>
-                            <Heading as="h2" size="lead" weight={560} class="text-balance">
+                            <Heading as="h2" size="lead" class="text-balance">
                                 {entry.title}
                             </Heading>
                             <p class="text-ink-muted text-label leading-relaxed text-pretty">

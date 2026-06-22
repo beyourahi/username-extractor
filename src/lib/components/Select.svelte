@@ -70,7 +70,7 @@
                             <span class="min-w-0 flex-1">
                                 <span class="block truncate font-mono">{item.label}</span>
                                 {#if item.description}
-                                    <span class="text-ink-muted mt-0.5 block text-[11px] text-pretty"
+                                    <span class="text-ink-muted mt-0.5 block text-micro text-pretty"
                                         >{item.description}</span
                                     >
                                 {/if}

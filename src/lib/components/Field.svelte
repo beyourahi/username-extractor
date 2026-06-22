@@ -1,6 +1,6 @@
 <script lang="ts">
     import type { Snippet } from "svelte";
-    import { labelBase } from "$lib/ds";
+    import { labelBase, helperBase, cn } from "$lib/ds";
 
     let {
         label,
@@ -19,18 +19,18 @@
     } = $props();
 </script>
 
-<div class="space-y-1.5">
+<div class="flex flex-col gap-1.5">
     {#if label}
-        <label for={htmlFor} class={labelBase}>
+        <label for={htmlFor} class={cn(labelBase, "mb-0")}>
             {label}{#if optional}<span class="text-ink-muted/70 ml-1 normal-case">(optional)</span>{/if}
             {#if !optional && error}<span class="text-destructive ml-1">*</span>{/if}
         </label>
     {/if}
     {@render children()}
     {#if hint && !error}
-        <p class="text-ink-muted text-xs text-pretty">{hint}</p>
+        <p class={helperBase}>{hint}</p>
     {/if}
     {#if error}
-        <p class="text-destructive text-xs text-pretty">{error}</p>
+        <p class={cn(helperBase, "text-destructive")}>{error}</p>
     {/if}
 </div>

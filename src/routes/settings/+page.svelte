@@ -18,15 +18,24 @@
         Cloud,
         Fingerprint
     } from "@lucide/svelte";
-    import { Heading, cn, inputBase } from "$lib/ds";
-    import PageHeader from "$lib/components/PageHeader.svelte";
+    import {
+        Heading,
+        Eyebrow,
+        SettingsSection,
+        SettingsRow,
+        SettingsSaveBar,
+        cn,
+        inputBase,
+        bodyBase,
+        helperBase,
+        metaBase
+    } from "$lib/ds";
     import Button from "$lib/components/Button.svelte";
     import Switch from "$lib/components/Switch.svelte";
     import Select from "$lib/components/Select.svelte";
     import Field from "$lib/components/Field.svelte";
     import TextInput from "$lib/components/TextInput.svelte";
     import Spinner from "$lib/components/Spinner.svelte";
-    import type { Component, Snippet } from "svelte";
 
     let { data } = $props();
 
@@ -175,252 +184,239 @@
     }
 </script>
 
-{#snippet section(icon: Component<{ size?: number; class?: string }>, title: string, subtitle: string, body: Snippet)}
-    {@const Ic = icon}
-    <section class="border-hair bg-card overflow-hidden rounded-lg border">
-        <header class="border-hair border-b p-4 sm:p-5">
-            <div class="flex items-center gap-3">
-                <span class="bg-ink-2 border-hair flex h-8 w-8 items-center justify-center rounded-md border">
-                    <Ic size={14} class="text-ink-muted" />
-                </span>
-                <div>
-                    <Heading as="h2" size="title-sm" weight={560}>{title}</Heading>
-                    <p class="text-ink-muted text-caption mt-1">{subtitle}</p>
-                </div>
-            </div>
-        </header>
-        <div class="px-4 sm:px-5">{@render body()}</div>
-    </section>
-{/snippet}
-
-<div class="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 pt-8 pb-8 sm:px-6 sm:pt-10">
+<div
+    class="mx-auto flex w-full max-w-[var(--settings-max)] grow flex-col gap-10 px-[var(--content-x)] py-10 outline-none sm:py-14"
+>
     <div class="flex flex-col gap-5">
         <a
             href="/"
-            class="text-ink-muted hover:text-foreground focus-visible:outline-signal text-caption inline-flex w-fit touch-manipulation items-center gap-2 font-mono tracking-[0.18em] whitespace-nowrap uppercase transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+            class={cn(
+                helperBase,
+                "hover:text-foreground focus-visible:outline-signal inline-flex w-fit touch-manipulation items-center gap-2 font-mono tracking-[0.18em] whitespace-nowrap uppercase transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+            )}
         >
             <ArrowLeft class="size-3.5" /> Back to extractor
         </a>
-        <PageHeader title="Settings" subtitle="Defaults, Notion connection, and cleanup tools." />
+        <div class="flex flex-col gap-3">
+            <Eyebrow>Settings</Eyebrow>
+            <Heading as="h1" size="title-lg" weight={600}>Settings</Heading>
+            <p class={cn(bodyBase, "text-ink-muted max-w-prose")}>
+                Defaults, Notion connection, and cleanup tools.
+            </p>
+        </div>
     </div>
 
     <form method="POST" action="?/save" use:enhanceForm class="flex flex-col gap-8">
-        {#snippet extractionBody()}
-            <div class="flex items-start justify-between gap-3 py-3">
-                <div>
-                    <p class="text-foreground text-sm font-medium">Diagnostics by default</p>
-                    <p class="text-ink-muted mt-1 text-xs text-pretty">
-                        Save the raw AI response alongside each result so you can review it later.
-                    </p>
+        <SettingsSection title="Extraction" subtitle="Defaults applied to every new job." icon={Sparkles}>
+            <SettingsRow label="Diagnostics by default" hint="Save the raw AI response alongside each result so you can review it later.">
+                <div class="flex w-full md:justify-start">
+                    <Switch
+                        checked={$form.diagnosticsDefault}
+                        onchange={(v) => ($form.diagnosticsDefault = v)}
+                        ariaLabel="Diagnostics"
+                    />
                 </div>
-                <Switch
-                    checked={$form.diagnosticsDefault}
-                    onchange={(v) => ($form.diagnosticsDefault = v)}
-                    ariaLabel="Diagnostics"
-                />
                 <input type="hidden" name="diagnosticsDefault" value={$form.diagnosticsDefault ? "true" : "false"} />
-            </div>
-            <div class="border-hair border-t"></div>
-            <div class="flex items-center justify-between gap-3 py-3">
-                <div>
-                    <p class="text-foreground text-sm font-medium">Daily image quota</p>
-                    <p class="text-ink-muted mt-0.5 text-xs">0 = unlimited. Billed to your Cloudflare account.</p>
-                </div>
-                <div class="w-28">
-                    <TextInput
-                        type="number"
-                        name="dailyImageQuota"
-                        bind:value={$form.dailyImageQuota}
-                        min={0}
-                        max={1000000}
-                        class="text-right"
-                    />
-                    {#if $errors.dailyImageQuota}
-                        <p class="text-tier-failed-fg text-caption mt-1 text-pretty">{$errors.dailyImageQuota}</p>
-                    {/if}
-                </div>
-            </div>
-        {/snippet}
+            </SettingsRow>
 
-        {@render section(Sparkles, "Extraction", "Defaults applied to every new job.", extractionBody)}
+            <SettingsRow
+                label="Daily image quota"
+                hint="0 = unlimited. Billed to your Cloudflare account."
+                htmlFor="dailyImageQuota"
+            >
+                <TextInput
+                    id="dailyImageQuota"
+                    type="number"
+                    name="dailyImageQuota"
+                    bind:value={$form.dailyImageQuota}
+                    min={0}
+                    max={1000000}
+                    class="w-full"
+                />
+                {#if $errors.dailyImageQuota}
+                    <p class={cn(helperBase, "text-tier-failed-fg mt-1")}>{$errors.dailyImageQuota}</p>
+                {/if}
+            </SettingsRow>
+        </SettingsSection>
 
-        {#snippet cloudflareBody()}
-            <div class="space-y-4 py-3">
-                <Field
-                    label="API token"
-                    hint={cloudflareConnected
-                        ? `Stored: ${maskedCloudflareToken} — leave blank to keep.`
-                        : "An API token with the Account · Workers AI · Read permission. Stored securely."}
+        <SettingsSection
+            title="Cloudflare account"
+            subtitle="Required — extractions run on your own Cloudflare account."
+            icon={Cloud}
+        >
+            <SettingsRow
+                label="API token"
+                hint={cloudflareConnected
+                    ? `Stored: ${maskedCloudflareToken} — leave blank to keep.`
+                    : "An API token with the Account · Workers AI · Read permission. Stored securely."}
+                htmlFor="cloudflareToken"
+                stacked
+            >
+                <TextInput
+                    id="cloudflareToken"
+                    type="password"
+                    name="cloudflareToken"
+                    bind:value={$form.cloudflareToken}
+                    placeholder={maskedCloudflareToken || "v1.0-…"}
+                    autocomplete="off"
+                    class="w-full"
+                />
+            </SettingsRow>
+
+            <SettingsRow
+                label="Account ID"
+                hint="Right sidebar of any account page in the Cloudflare dashboard."
+                htmlFor="cloudflareAccountId"
+                stacked
+            >
+                <TextInput
+                    id="cloudflareAccountId"
+                    name="cloudflareAccountId"
+                    bind:value={$form.cloudflareAccountId}
+                    placeholder="0123456789abcdef…"
+                    class="w-full"
+                />
+            </SettingsRow>
+
+            <p class={helperBase}>
+                Extractions run on <span class="text-foreground">your</span> own Cloudflare account. Create a token at
+                <a
+                    href="https://dash.cloudflare.com/profile/api-tokens"
+                    target="_blank"
+                    rel="noreferrer"
+                    class="text-brand underline underline-offset-2">dash.cloudflare.com/profile/api-tokens</a
                 >
-                    <TextInput
-                        type="password"
-                        name="cloudflareToken"
-                        bind:value={$form.cloudflareToken}
-                        placeholder={maskedCloudflareToken || "v1.0-…"}
-                        autocomplete="off"
-                    />
-                </Field>
-                <Field label="Account ID" hint="Right sidebar of any account page in the Cloudflare dashboard.">
-                    <TextInput
-                        name="cloudflareAccountId"
-                        bind:value={$form.cloudflareAccountId}
-                        placeholder="0123456789abcdef…"
-                    />
-                </Field>
-                <p class="text-ink-muted text-caption leading-relaxed text-pretty">
-                    Extractions run on <span class="text-foreground">your</span> own Cloudflare account. Create a token
-                    at
-                    <a
-                        href="https://dash.cloudflare.com/profile/api-tokens"
-                        target="_blank"
-                        rel="noreferrer"
-                        class="text-brand underline underline-offset-2">dash.cloudflare.com/profile/api-tokens</a
-                    >
-                    → Create Custom Token → permission
-                    <span class="text-foreground font-mono">Account · Workers AI · Read</span>.
-                </p>
-            </div>
-            <div class="border-hair border-t"></div>
-            <div class="flex items-center justify-between gap-3 py-3">
-                <div class="min-w-0">
-                    <p class="text-foreground text-sm font-medium">Image model</p>
-                    <p class="text-ink-muted mt-0.5 text-xs text-pretty">
-                        Kimi K2.6 is tested and recommended. Others are experimental and may be less reliable.
-                    </p>
-                </div>
-                <div class="flex shrink-0 items-center gap-2">
+                → Create Custom Token → permission
+                <span class="text-foreground font-mono">Account · Workers AI · Read</span>.
+            </p>
+
+            <SettingsRow
+                label="Image model"
+                hint="Kimi K2.6 is tested and recommended. Others are experimental and may be less reliable."
+                htmlFor="cloudflareModel"
+            >
+                <div class="flex w-full items-center gap-2">
                     <button
                         type="button"
                         onclick={refreshModels}
                         disabled={refreshingModels || !cloudflareConnected}
                         title="Refresh model list"
                         aria-label="Refresh models"
-                        class="text-ink-muted hover:text-foreground touch-manipulation transition-colors disabled:opacity-40"
+                        class="text-ink-muted hover:text-foreground shrink-0 touch-manipulation transition-colors disabled:opacity-40"
                     >
                         <RefreshCw size={13} class={refreshingModels ? "animate-spin" : ""} />
                     </button>
-                    <div class="w-56">
-                        <Select
-                            name="cloudflareModel"
-                            bind:value={$form.cloudflareModel}
-                            items={modelOptions.map((opt) => ({ value: opt.id, label: opt.label }))}
-                            placeholder="Select a model"
-                            class="text-caption px-2.5 py-2"
-                        />
-                    </div>
-                </div>
-            </div>
-        {/snippet}
-
-        {@render section(
-            Cloud,
-            "Cloudflare account",
-            "Required — extractions run on your own Cloudflare account.",
-            cloudflareBody
-        )}
-
-        {#snippet notionBody()}
-            <div class="space-y-4 py-3">
-                <Field
-                    label="Integration token"
-                    hint={maskedToken
-                        ? `Stored: ${maskedToken} — leave blank to keep.`
-                        : "Stored securely. You won't see it again after saving."}
-                >
-                    <TextInput
-                        type="password"
-                        name="notionToken"
-                        bind:value={$form.notionToken}
-                        placeholder={maskedToken || "secret_…"}
-                        autocomplete="off"
-                    />
-                </Field>
-                <Field label="Database ID" hint="Found in the URL of your Notion database.">
-                    <TextInput name="notionDatabaseId" bind:value={$form.notionDatabaseId} />
-                </Field>
-            </div>
-            <div class="border-hair border-t"></div>
-            <div class="flex items-start justify-between gap-3 py-3">
-                <div>
-                    <p class="text-foreground text-sm font-medium">Auto-sync verified leads</p>
-                    <p class="text-ink-muted mt-1 text-xs text-pretty">
-                        High- and medium-confidence results are sent to Notion automatically as a job runs.
-                    </p>
-                </div>
-                <Switch
-                    checked={$form.notionAutoSync}
-                    onchange={(v) => ($form.notionAutoSync = v)}
-                    ariaLabel="Auto sync"
-                />
-                <input type="hidden" name="notionAutoSync" value={$form.notionAutoSync ? "true" : "false"} />
-            </div>
-            <div class="border-hair border-t"></div>
-            <div class="flex items-start justify-between gap-3 py-3">
-                <div>
-                    <p class="text-foreground text-sm font-medium">Skip Instagram profile check</p>
-                    <p class="text-ink-muted mt-1 text-xs text-pretty">
-                        Trust extracted usernames without checking the profile exists — faster, but lets dead links
-                        through.
-                    </p>
-                </div>
-                <Switch
-                    checked={$form.notionSkipValidation}
-                    onchange={(v) => ($form.notionSkipValidation = v)}
-                    ariaLabel="Skip validation"
-                />
-                <input
-                    type="hidden"
-                    name="notionSkipValidation"
-                    value={$form.notionSkipValidation ? "true" : "false"}
-                />
-            </div>
-            <div class="border-hair border-t"></div>
-            <div class="flex items-center justify-between gap-3 py-3">
-                <div>
-                    <p class="text-foreground text-sm font-medium">Wait between profile checks (ms)</p>
-                    <p class="text-ink-muted mt-0.5 text-xs">Wait time between Instagram profile checks (ms).</p>
-                </div>
-                <div class="w-28">
-                    <TextInput
-                        type="number"
-                        name="notionValidationDelayMs"
-                        bind:value={$form.notionValidationDelayMs}
-                        min={0}
-                        max={60000}
-                        class="text-right"
-                    />
-                </div>
-            </div>
-            <div class="border-hair border-t"></div>
-            <div class="flex items-center justify-between gap-3 py-3">
-                <div>
-                    <p class="text-foreground text-sm font-medium">When merging duplicates, keep</p>
-                    <p class="text-ink-muted mt-0.5 text-xs text-pretty">
-                        Which entry to keep when merging duplicate usernames in Notion.
-                    </p>
-                </div>
-                <div class="w-36">
                     <Select
-                        name="dedupKeepStrategy"
-                        bind:value={$form.dedupKeepStrategy}
-                        items={[
-                            { value: "best", label: "Best score" },
-                            { value: "oldest", label: "Oldest" },
-                            { value: "newest", label: "Newest" }
-                        ]}
-                        placeholder="Keep strategy"
-                        class="px-2.5 py-2 text-xs"
+                        id="cloudflareModel"
+                        name="cloudflareModel"
+                        bind:value={$form.cloudflareModel}
+                        items={modelOptions.map((opt) => ({ value: opt.id, label: opt.label }))}
+                        placeholder="Select a model"
+                        class="w-full"
                     />
                 </div>
-            </div>
-        {/snippet}
+            </SettingsRow>
+        </SettingsSection>
 
-        {@render section(FileText, "Notion", "Connect Notion to send verified usernames to your database.", notionBody)}
-
-        <div
-            class="border-hair bg-card/85 sticky bottom-4 z-30 flex items-center justify-between gap-3 rounded-lg border p-3 backdrop-blur-md"
+        <SettingsSection
+            title="Notion"
+            subtitle="Connect Notion to send verified usernames to your database."
+            icon={FileText}
         >
-            <div class="text-ink-muted flex items-center gap-2 text-xs">
+            <SettingsRow
+                label="Integration token"
+                hint={maskedToken
+                    ? `Stored: ${maskedToken} — leave blank to keep.`
+                    : "Stored securely. You won't see it again after saving."}
+                htmlFor="notionToken"
+                stacked
+            >
+                <TextInput
+                    id="notionToken"
+                    type="password"
+                    name="notionToken"
+                    bind:value={$form.notionToken}
+                    placeholder={maskedToken || "secret_…"}
+                    autocomplete="off"
+                    class="w-full"
+                />
+            </SettingsRow>
+
+            <SettingsRow label="Database ID" hint="Found in the URL of your Notion database." htmlFor="notionDatabaseId" stacked>
+                <TextInput
+                    id="notionDatabaseId"
+                    name="notionDatabaseId"
+                    bind:value={$form.notionDatabaseId}
+                    class="w-full"
+                />
+            </SettingsRow>
+
+            <SettingsRow
+                label="Auto-sync verified leads"
+                hint="High- and medium-confidence results are sent to Notion automatically as a job runs."
+            >
+                <div class="flex w-full md:justify-start">
+                    <Switch
+                        checked={$form.notionAutoSync}
+                        onchange={(v) => ($form.notionAutoSync = v)}
+                        ariaLabel="Auto sync"
+                    />
+                </div>
+                <input type="hidden" name="notionAutoSync" value={$form.notionAutoSync ? "true" : "false"} />
+            </SettingsRow>
+
+            <SettingsRow
+                label="Skip Instagram profile check"
+                hint="Trust extracted usernames without checking the profile exists — faster, but lets dead links through."
+            >
+                <div class="flex w-full md:justify-start">
+                    <Switch
+                        checked={$form.notionSkipValidation}
+                        onchange={(v) => ($form.notionSkipValidation = v)}
+                        ariaLabel="Skip validation"
+                    />
+                </div>
+                <input type="hidden" name="notionSkipValidation" value={$form.notionSkipValidation ? "true" : "false"} />
+            </SettingsRow>
+
+            <SettingsRow
+                label="Wait between profile checks (ms)"
+                hint="Wait time between Instagram profile checks (ms)."
+                htmlFor="notionValidationDelayMs"
+            >
+                <TextInput
+                    id="notionValidationDelayMs"
+                    type="number"
+                    name="notionValidationDelayMs"
+                    bind:value={$form.notionValidationDelayMs}
+                    min={0}
+                    max={60000}
+                    class="w-full"
+                />
+            </SettingsRow>
+
+            <SettingsRow
+                label="When merging duplicates, keep"
+                hint="Which entry to keep when merging duplicate usernames in Notion."
+                htmlFor="dedupKeepStrategy"
+            >
+                <Select
+                    id="dedupKeepStrategy"
+                    name="dedupKeepStrategy"
+                    bind:value={$form.dedupKeepStrategy}
+                    items={[
+                        { value: "best", label: "Best score" },
+                        { value: "oldest", label: "Oldest" },
+                        { value: "newest", label: "Newest" }
+                    ]}
+                    placeholder="Keep strategy"
+                    class="w-full"
+                />
+            </SettingsRow>
+        </SettingsSection>
+
+        <SettingsSaveBar>
+            {#snippet status()}
                 {#if $submitting}
                     <Spinner size="sm" color="brand" /> Saving…
                 {:else if $message}
@@ -429,104 +425,96 @@
                 {:else}
                     <span>Changes apply to new jobs.</span>
                 {/if}
-            </div>
-            <div class="flex items-center gap-2">
+            {/snippet}
+            {#snippet action()}
                 <Button type="submit" variant="brand" size="sm" disabled={$submitting}>
                     {$submitting ? "Saving…" : "Save changes"}
                 </Button>
-            </div>
-        </div>
+            {/snippet}
+        </SettingsSaveBar>
     </form>
 
-    {#snippet passkeysBody()}
-        <div class="flex flex-col gap-3 py-3">
-            {#if !webauthnAvailable}
-                <p class="text-ink-muted text-xs text-pretty">
-                    This browser can't use Face ID / Touch ID. Open the app on a device with Face ID, Touch ID, or a
-                    fingerprint sensor.
-                </p>
-            {:else}
-                {#if passkeysLoading}
-                    <div class="text-ink-muted flex items-center gap-2 py-2 text-xs">
-                        <Spinner size="sm" color="brand" /> Loading…
-                    </div>
-                {:else if passkeys.length === 0}
-                    <p class="text-ink-muted text-xs text-pretty">
-                        Not set up yet. Add Face ID / Touch ID to sign in without Google.
-                    </p>
-                {:else}
-                    <ul class="flex flex-col gap-2">
-                        {#each passkeys as pk (pk.id)}
-                            <li
-                                class="border-hair bg-ink-2/40 flex items-center justify-between gap-3 rounded-md border px-3 py-2.5"
-                            >
-                                <div class="flex min-w-0 items-center gap-2.5">
-                                    <Fingerprint size={15} class="text-brand shrink-0" />
-                                    <div class="min-w-0">
-                                        <p class="text-foreground truncate text-sm font-medium">
-                                            {pk.name || "Face ID / Touch ID"}
-                                        </p>
-                                        {#if pk.createdAt && formatDate(pk.createdAt)}
-                                            <p class="text-ink-muted text-caption">Added {formatDate(pk.createdAt)}</p>
-                                        {/if}
-                                    </div>
-                                </div>
-                                <button
-                                    type="button"
-                                    onclick={() => removePasskey(pk.id)}
-                                    disabled={passkeyBusy}
-                                    aria-label="Remove Face ID / Touch ID"
-                                    class="text-ink-muted hover:text-tier-failed-fg shrink-0 touch-manipulation transition-colors disabled:opacity-40"
-                                >
-                                    <Trash2 size={14} />
-                                </button>
-                            </li>
-                        {/each}
-                    </ul>
-                {/if}
-                <div class="flex flex-wrap items-center gap-2 pt-1">
-                    <Button type="button" variant="brand" size="sm" disabled={passkeyBusy} onclick={() => addPasskey()}>
-                        <Fingerprint size={13} /> Set up Face ID / Touch ID
-                    </Button>
+    <SettingsSection
+        title="Face ID / Touch ID"
+        subtitle="Sign in with Face ID, Touch ID, or your fingerprint instead of Google."
+        icon={Fingerprint}
+    >
+        {#if !webauthnAvailable}
+            <p class={helperBase}>
+                This browser can't use Face ID / Touch ID. Open the app on a device with Face ID, Touch ID, or a
+                fingerprint sensor.
+            </p>
+        {:else}
+            {#if passkeysLoading}
+                <div class={cn(helperBase, "flex items-center gap-2")}>
+                    <Spinner size="sm" color="brand" /> Loading…
                 </div>
+            {:else if passkeys.length === 0}
+                <p class={helperBase}>Not set up yet. Add Face ID / Touch ID to sign in without Google.</p>
+            {:else}
+                <ul class="flex flex-col gap-2">
+                    {#each passkeys as pk (pk.id)}
+                        <li
+                            class="border-hair bg-ink-2/40 flex items-center justify-between gap-3 rounded-md border px-3 py-2.5"
+                        >
+                            <div class="flex min-w-0 items-center gap-2.5">
+                                <Fingerprint size={15} class="text-brand shrink-0" />
+                                <div class="min-w-0">
+                                    <p class="text-foreground truncate text-sm font-medium">
+                                        {pk.name || "Face ID / Touch ID"}
+                                    </p>
+                                    {#if pk.createdAt && formatDate(pk.createdAt)}
+                                        <p class={metaBase}>Added {formatDate(pk.createdAt)}</p>
+                                    {/if}
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onclick={() => removePasskey(pk.id)}
+                                disabled={passkeyBusy}
+                                aria-label="Remove Face ID / Touch ID"
+                                class="text-ink-muted hover:text-tier-failed-fg shrink-0 touch-manipulation transition-colors disabled:opacity-40"
+                            >
+                                <Trash2 size={14} />
+                            </button>
+                        </li>
+                    {/each}
+                </ul>
             {/if}
-        </div>
-    {/snippet}
+            <div class="border-hair flex items-center justify-end gap-3 border-t pt-5">
+                <Button type="button" variant="brand" size="sm" disabled={passkeyBusy} onclick={() => addPasskey()}>
+                    <Fingerprint size={13} /> Set up Face ID / Touch ID
+                </Button>
+            </div>
+        {/if}
+    </SettingsSection>
 
-    {@render section(
-        Fingerprint,
-        "Face ID / Touch ID",
-        "Sign in with Face ID, Touch ID, or your fingerprint instead of Google.",
-        passkeysBody
-    )}
-
-    {#snippet maintenanceBody()}
-        <div class="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
+    <SettingsSection title="Maintenance" subtitle="Tools for tidying up and importing old data." icon={RefreshCw}>
+        <div class="flex flex-col gap-3">
+            <div class="flex flex-col gap-1">
                 <p class="text-foreground text-sm font-medium">Remove Notion duplicates</p>
-                <p class="text-ink-muted mt-1 text-xs text-pretty">
+                <p class={helperBase}>
                     Scans your whole database, keeps one of each username, and archives the rest based on your rule.
                 </p>
             </div>
-            <form method="POST" action="?/dedup" use:enhance class="flex flex-nowrap items-center gap-4">
-                <span class="text-ink-muted text-caption inline-flex items-center gap-2 whitespace-nowrap">
-                    <Switch
-                        id="dryRun"
-                        name="dryRun"
-                        checked={dryRun}
-                        onchange={(v) => (dryRun = v)}
-                        ariaLabel="Dry run"
-                    />
+            <form
+                method="POST"
+                action="?/dedup"
+                use:enhance
+                class="border-hair flex flex-wrap items-center justify-end gap-4 border-t pt-5"
+            >
+                <span class={cn(metaBase, "inline-flex items-center gap-2 whitespace-nowrap")}>
+                    <Switch id="dryRun" name="dryRun" checked={dryRun} onchange={(v) => (dryRun = v)} ariaLabel="Dry run" />
                     <label for="dryRun" class="cursor-pointer">Dry run</label>
                 </span>
                 <Button type="submit" variant="brand" size="sm">Remove duplicates</Button>
             </form>
         </div>
-        <div class="border-hair border-t"></div>
+
         <form
             method="POST"
             action="?/importLegacy"
-            class="flex flex-col gap-3 py-3"
+            class="flex flex-col gap-3"
             use:enhance={() => {
                 legacyMarkdownSubmitting = true;
                 return async ({ result, update }) => {
@@ -547,9 +535,9 @@
                 };
             }}
         >
-            <div>
+            <div class="flex flex-col gap-1">
                 <p class="text-foreground text-sm font-medium">Import from markdown</p>
-                <p class="text-ink-muted mt-1 text-xs text-pretty">
+                <p class={helperBase}>
                     Paste the contents of your old <span class="font-mono">verified_usernames.md</span> file.
                 </p>
             </div>
@@ -558,9 +546,9 @@
                 rows="5"
                 bind:value={legacyMarkdown}
                 placeholder="Paste markdown…"
-                class={cn(inputBase, "text-xs")}
+                class={inputBase}
             ></textarea>
-            <div class="flex justify-end">
+            <div class="border-hair flex items-center justify-end gap-3 border-t pt-5">
                 <Button
                     type="submit"
                     variant="outline"
@@ -572,11 +560,11 @@
                 </Button>
             </div>
         </form>
-        <div class="border-hair border-t"></div>
+
         <form
             method="POST"
             action="?/importLegacy"
-            class="flex flex-col gap-3 py-3"
+            class="flex flex-col gap-3"
             use:enhance={() => {
                 legacyNotionSubmitting = true;
                 return async ({ result, update }) => {
@@ -598,9 +586,9 @@
                 };
             }}
         >
-            <div>
+            <div class="flex flex-col gap-1">
                 <p class="text-foreground text-sm font-medium">Import from Notion</p>
-                <p class="text-ink-muted mt-1 text-xs text-pretty">
+                <p class={helperBase}>
                     Bring an existing Notion database into Leads. Safe to run more than once.
                 </p>
             </div>
@@ -611,10 +599,16 @@
                     bind:value={legacyNotionToken}
                     placeholder="secret_…"
                     autocomplete="off"
+                    class="w-full"
                 />
-                <TextInput name="notionDatabaseId" bind:value={legacyNotionDatabaseId} placeholder="database id" />
+                <TextInput
+                    name="notionDatabaseId"
+                    bind:value={legacyNotionDatabaseId}
+                    placeholder="database id"
+                    class="w-full"
+                />
             </div>
-            <div class="flex justify-end">
+            <div class="border-hair flex items-center justify-end gap-3 border-t pt-5">
                 <Button
                     type="submit"
                     variant="outline"
@@ -628,33 +622,27 @@
                 </Button>
             </div>
         </form>
-    {/snippet}
+    </SettingsSection>
 
-    {@render section(RefreshCw, "Maintenance", "Tools for tidying up and importing old data.", maintenanceBody)}
-
-    {#snippet resetBody()}
-        <div class="flex flex-col gap-3 py-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-                <p class="text-tier-failed-fg text-sm font-medium">Reset to defaults</p>
-                <p class="text-ink-muted mt-1 text-xs text-pretty">
-                    Clears your settings, including your saved Notion and Cloudflare tokens. Jobs and leads are
-                    unaffected.
-                </p>
-            </div>
-            <form
-                method="POST"
-                action="?/reset"
-                use:enhance
-                onsubmit={(e) => {
-                    if (!confirm("Reset settings? This cannot be undone.")) e.preventDefault();
-                }}
-            >
-                <Button type="submit" variant="destructive" size="sm">
-                    <Trash2 size={13} /> Reset settings
-                </Button>
-            </form>
+    <SettingsSection title="Danger zone" subtitle="Destructive — confirm before clicking." icon={AlertTriangle}>
+        <div class="flex flex-col gap-1">
+            <p class="text-tier-failed-fg text-sm font-medium">Reset to defaults</p>
+            <p class={helperBase}>
+                Clears your settings, including your saved Notion and Cloudflare tokens. Jobs and leads are unaffected.
+            </p>
         </div>
-    {/snippet}
-
-    {@render section(AlertTriangle, "Danger zone", "Destructive — confirm before clicking.", resetBody)}
+        <form
+            method="POST"
+            action="?/reset"
+            use:enhance
+            class="border-hair flex items-center justify-end gap-3 border-t pt-5"
+            onsubmit={(e) => {
+                if (!confirm("Reset settings? This cannot be undone.")) e.preventDefault();
+            }}
+        >
+            <Button type="submit" variant="destructive" size="sm">
+                <Trash2 size={13} /> Reset settings
+            </Button>
+        </form>
+    </SettingsSection>
 </div>
