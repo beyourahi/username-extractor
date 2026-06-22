@@ -58,7 +58,12 @@
 
     /* THE single tool accent — mint-emerald (was hsl(160 84% 39%)) */
     --brand: oklch(0.696 0.149 162.5);
-    --brand-foreground: var(--color-ink-50);
+    /* Text ON the solid mint fill must be the DARK ink, not ink-50: near-white on
+       mint is only ~2.4:1 (fails WCAG AA). Dark ink on mint is ~6.2:1 and mirrors
+       how the sibling tools put text-background (dark) on their light signal pill.
+       Used only by Button.svelte's `brand` variant — every other bg-brand use is a
+       textless dot/track/scan fill, so this never risks dark-on-dark. */
+    --brand-foreground: var(--color-ink-950);
     --brand-soft: oklch(0.696 0.149 162.5 / 0.12);
     --brand-border: oklch(0.696 0.149 162.5 / 0.35);
 
