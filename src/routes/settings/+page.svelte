@@ -33,7 +33,6 @@
         detectPlatform,
         biometricLabel
     } from "$lib/ds";
-    import Button from "$lib/components/Button.svelte";
     import Switch from "$lib/components/Switch.svelte";
     import Select from "$lib/components/Select.svelte";
     import TextInput from "$lib/components/TextInput.svelte";
@@ -204,7 +203,13 @@
     class="mx-auto flex w-full max-w-[var(--settings-max)] grow flex-col gap-10 px-[var(--content-pad)] py-10 outline-none sm:py-14"
 >
     <div class="flex justify-end">
-        <Cta href="/" variant="secondary" size="sm" arrow={false} class="bg-card">
+        <Cta
+            href="/"
+            variant="secondary"
+            size="sm"
+            arrow={false}
+            class="bg-card w-full justify-center whitespace-nowrap sm:w-auto"
+        >
             <span class="inline-flex items-center gap-2"
                 ><ArrowLeft class="size-4" aria-hidden="true" /> Back to app</span
             >
@@ -267,7 +272,14 @@
                             <span>Applied to every new job.</span>
                         {/if}
                     {/snippet}
-                    <Cta type="submit" variant="primary" arrow={false} disabled={$exSubmitting}>
+                    <Cta
+                        type="submit"
+                        size="sm"
+                        variant="primary"
+                        arrow={false}
+                        disabled={$exSubmitting}
+                        class="w-full justify-center whitespace-nowrap sm:w-auto"
+                    >
                         {$exSubmitting ? "Saving…" : "Save"}
                     </Cta>
                 </SettingsActions>
@@ -372,7 +384,14 @@
                                 <span class="text-foreground font-mono">Account · Workers AI · Read</span>.
                             </p>
                         {/snippet}
-                        <Cta type="submit" size="sm" variant="primary" arrow={false} disabled={$cfSubmitting}>
+                        <Cta
+                            type="submit"
+                            size="sm"
+                            variant="primary"
+                            arrow={false}
+                            disabled={$cfSubmitting}
+                            class="w-full justify-center whitespace-nowrap sm:w-auto"
+                        >
                             {$cfSubmitting ? "Saving…" : "Save"}
                         </Cta>
                     </SettingsActions>
@@ -416,7 +435,7 @@
                             size="sm"
                             variant="secondary"
                             arrow={false}
-                            class="text-destructive hover:border-destructive"
+                            class="text-destructive hover:border-destructive w-full justify-center whitespace-nowrap sm:w-auto"
                         >
                             <span class="inline-flex items-center gap-2"
                                 ><Trash2 class="size-3.5" aria-hidden="true" /> Disconnect</span
@@ -543,7 +562,14 @@
                             <span>Applied when syncing to Notion.</span>
                         {/if}
                     {/snippet}
-                    <Cta type="submit" variant="primary" arrow={false} disabled={$nSubmitting}>
+                    <Cta
+                        type="submit"
+                        size="sm"
+                        variant="primary"
+                        arrow={false}
+                        disabled={$nSubmitting}
+                        class="w-full justify-center whitespace-nowrap sm:w-auto"
+                    >
                         {$nSubmitting ? "Saving…" : "Save"}
                     </Cta>
                 </SettingsActions>
@@ -594,7 +620,14 @@
                 </ul>
             {/if}
             <SettingsActions>
-                <Cta size="sm" variant="primary" arrow={false} disabled={passkeyBusy} onclick={() => addPasskey()}>
+                <Cta
+                    size="sm"
+                    variant="primary"
+                    arrow={false}
+                    disabled={passkeyBusy}
+                    onclick={() => addPasskey()}
+                    class="w-full justify-center whitespace-nowrap sm:w-auto"
+                >
                     <span class="inline-flex items-center gap-2"><Fingerprint size={13} /> Set up {biometricName}</span>
                 </Cta>
             </SettingsActions>
@@ -623,7 +656,13 @@
                             <label for="dryRun" class="cursor-pointer">Dry run</label>
                         </span>
                     {/snippet}
-                    <Cta type="submit" variant="primary" arrow={false}>Remove duplicates</Cta>
+                    <Cta
+                        type="submit"
+                        size="sm"
+                        variant="primary"
+                        arrow={false}
+                        class="w-full justify-center whitespace-nowrap sm:w-auto">Remove duplicates</Cta
+                    >
                 </SettingsActions>
             </form>
         </div>
@@ -668,8 +707,10 @@
             <SettingsActions>
                 <Cta
                     type="submit"
+                    size="sm"
                     variant="secondary"
                     arrow={false}
+                    class="w-full justify-center whitespace-nowrap sm:w-auto"
                     disabled={legacyMarkdownSubmitting || legacyMarkdown.trim().length === 0}
                 >
                     <span class="inline-flex items-center gap-2">
@@ -728,8 +769,10 @@
             <SettingsActions>
                 <Cta
                     type="submit"
+                    size="sm"
                     variant="secondary"
                     arrow={false}
+                    class="w-full justify-center whitespace-nowrap sm:w-auto"
                     disabled={legacyNotionSubmitting ||
                         legacyNotionToken.trim().length === 0 ||
                         legacyNotionDatabaseId.trim().length === 0}
@@ -767,9 +810,17 @@
             }}
         >
             <SettingsActions>
-                <Button type="submit" variant="destructive" size="sm">
-                    <Trash2 size={13} /> Reset settings
-                </Button>
+                <Cta
+                    type="submit"
+                    size="sm"
+                    variant="secondary"
+                    arrow={false}
+                    class="text-destructive hover:border-destructive w-full justify-center whitespace-nowrap sm:w-auto"
+                >
+                    <span class="inline-flex items-center gap-2">
+                        <Trash2 size={13} /> Reset settings
+                    </span>
+                </Cta>
             </SettingsActions>
         </form>
     </SettingsSection>
