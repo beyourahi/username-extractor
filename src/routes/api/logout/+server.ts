@@ -7,15 +7,39 @@ import type { RequestHandler } from "./$types";
 // `${prefix}.session_data`, and `advanced.useSecureCookies: true` gives both a `__Secure-` prefix in
 // prod. getSession trusts the `session_data` snapshot WITHOUT a DB read until its maxAge (5 min), so
 // if that cookie survives logout the user stays "logged in" — the exact "logout doesn't stick" bug.
-// We therefore (1) best-effort delete the DB session so the token can't be replayed, and (2) expire
-// EVERY cookie variant (token + data, secure + bare). Deleting a non-existent cookie is a no-op.
+//
+// CRITICAL: when the `session_data` snapshot exceeds Better Auth's ~4050-byte ceiling it is SPLIT into
+// numbered chunks `${name}.0`, `${name}.1`, … (better-auth/dist/cookies/session-store.mjs), and
+// getSession transparently REASSEMBLES those chunks. Deleting only the un-suffixed name leaves the
+// chunks alive and getSession keeps reviving the session — logout silently fails to stick. So we
+// expire (1) the token + un-suffixed data, secure + bare, AND (2) every chunked `session_data.<n>`
+// variant the browser actually sent — mirroring Better Auth's own request-driven `sessionStore.clean()`.
 // (Auth routes live at basePath `/auth`, but this custom endpoint is a normal SvelteKit route.)
-const clearSessionCookies = (cookies: Parameters<RequestHandler>[0]["cookies"]) => {
+const SESSION_COOKIE_NAMES = [
+    "__Secure-username-extractor.session_token",
+    "username-extractor.session_token",
+    "__Secure-username-extractor.session_data",
+    "username-extractor.session_data"
+] as const;
+
+// Bases whose chunked variants (`<base>.0`, `.1`, …) must also be expired — only the cache snapshot
+// is ever chunked; the session token is small and never split.
+const CHUNKABLE_BASES = SESSION_COOKIE_NAMES.filter((n) => n.endsWith(".session_data"));
+
+const clearSessionCookies = (event: Parameters<RequestHandler>[0]) => {
     // `__Secure-`-prefixed cookies are only accepted/cleared with the Secure attribute set.
-    cookies.delete("__Secure-username-extractor.session_token", { path: "/", secure: true });
-    cookies.delete("username-extractor.session_token", { path: "/" });
-    cookies.delete("__Secure-username-extractor.session_data", { path: "/", secure: true });
-    cookies.delete("username-extractor.session_data", { path: "/" });
+    const expire = (name: string) => event.cookies.delete(name, { path: "/", secure: name.startsWith("__Secure-") });
+
+    // (1) Canonical names (token + un-suffixed data, secure + bare). Deleting a missing cookie is a no-op.
+    for (const name of SESSION_COOKIE_NAMES) expire(name);
+
+    // (2) Chunked `session_data.<n>` variants present in the request — without this a chunked snapshot
+    //     survives the logout and revives the session for up to the 5-minute cookieCache window.
+    const cookieHeader = event.request.headers.get("cookie") ?? "";
+    for (const pair of cookieHeader.split(";")) {
+        const name = pair.trim().split("=")[0];
+        if (name && CHUNKABLE_BASES.some((base) => name.startsWith(base + "."))) expire(name);
+    }
 };
 
 // Kill the server-side session row (best-effort). The cookie clearing below is what guarantees the
@@ -42,12 +66,12 @@ const killDbSession = async (event: Parameters<RequestHandler>[0]) => {
 // POST: fetch-based sign-out (returns JSON). GET: plain-anchor navigation (303 → /login).
 export const POST: RequestHandler = async (event) => {
     await killDbSession(event);
-    clearSessionCookies(event.cookies);
+    clearSessionCookies(event);
     return json({ success: true });
 };
 
 export const GET: RequestHandler = async (event) => {
     await killDbSession(event);
-    clearSessionCookies(event.cookies);
+    clearSessionCookies(event);
     redirect(303, "/login");
 };
