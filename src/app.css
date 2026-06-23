@@ -283,7 +283,7 @@ body {
     }
 }
 
-/* bits-ui dialogs (FirstRunWizard, RawResponseDialog) — overlay scrim + content
+/* bits-ui dialogs (RawResponseDialog) — overlay scrim + content
    easing, matching the sibling dialog treatment. */
 [data-slot="dialog-overlay"],
 [data-dialog-overlay] {

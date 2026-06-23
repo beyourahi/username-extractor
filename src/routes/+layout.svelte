@@ -8,17 +8,8 @@
     import HeroHeading from "$lib/components/HeroHeading.svelte";
     import SectionTabs from "$lib/components/SectionTabs.svelte";
     import Footer from "$lib/components/Footer.svelte";
-    import FirstRunWizard from "$lib/components/FirstRunWizard.svelte";
 
     let { children, data } = $props();
-
-    let showWizard = $state(false);
-
-    $effect(() => {
-        if (data?.userSettings === null && data?.userId) {
-            showWizard = true;
-        }
-    });
 
     const path = $derived(page.url.pathname);
     // /login drops the account chrome + first-run wizard (bare auth canvas) but KEEPS the global
@@ -91,7 +82,3 @@
 
     <Footer />
 </div>
-
-{#if !isLogin}
-    <FirstRunWizard open={showWizard} onclose={() => (showWizard = false)} />
-{/if}
