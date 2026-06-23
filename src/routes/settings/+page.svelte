@@ -702,8 +702,7 @@
                 rows="5"
                 bind:value={legacyMarkdown}
                 placeholder="Paste markdown…"
-                class={inputBase}
-            ></textarea>
+                class={inputBase}></textarea>
             <SettingsActions>
                 <Cta
                     type="submit"
