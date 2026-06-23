@@ -30,8 +30,10 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
 import { cleanUsername } from "../src/lib/extract/clean.ts";
+import { DETECT_PROFILE_PROMPT } from "../src/lib/extract/prompt.ts";
+import { parseProfileResponse } from "../src/lib/extract/parse-response.ts";
 
-type Pair = { id: string; filename: string; expected: string };
+type Pair = { id: string; filename: string; expected: string; platform?: string; kind?: string };
 type Manifest = {
     source: string;
     model_baseline: string;
@@ -44,17 +46,17 @@ type Row = {
     expected: string;
     raw: string | null;
     cleaned: string | null;
+    detectedPlatform: string | null;
     match: boolean;
     notes: string;
 };
 
 const MODEL_ID = "@cf/moonshotai/kimi-k2.6";
 const BASELINE_MODEL = "glm-ocr:bf16";
-const PROMPT =
-    "Extract the Instagram username from this image. " +
-    "The username may contain letters, numbers, dots (.), and underscores (_). " +
-    "Return ONLY the username text with no explanation, quotes, or @ symbol. " +
-    "Preserve all dots and underscores exactly as shown.";
+// Production uses the multi-platform detection prompt. The fixtures are all Instagram
+// handles, so we always normalize via `cleanUsername` and record the detected platform
+// separately (a misclassification shows in the report without breaking the accuracy metric).
+const PROMPT = DETECT_PROFILE_PROMPT;
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "..");
@@ -95,7 +97,7 @@ function callKimi(imagePath: string): { raw: string | null; error?: string } {
     const payload = JSON.stringify({
         image: b64,
         prompt: PROMPT,
-        max_tokens: 64
+        max_tokens: 256
     });
 
     const res = spawnSync("wrangler", ["ai", "run", MODEL_ID, "--remote", "--json"], {
@@ -152,6 +154,7 @@ function runBenchmark(): { rows: Row[]; live: boolean; reason: string } {
                 expected: pair.expected,
                 raw: null,
                 cleaned: null,
+                detectedPlatform: null,
                 match: false,
                 notes: "fixture image missing"
             });
@@ -164,6 +167,7 @@ function runBenchmark(): { rows: Row[]; live: boolean; reason: string } {
                 expected: pair.expected,
                 raw: null,
                 cleaned: null,
+                detectedPlatform: null,
                 match: false,
                 notes: "TBD — populate via `bun run benchmark` once wrangler ai run image input is wired"
             });
@@ -171,12 +175,16 @@ function runBenchmark(): { rows: Row[]; live: boolean; reason: string } {
         }
 
         const { raw, error } = callKimi(imagePath);
-        const cleaned = raw ? cleanUsername(raw) : null;
+        // Parse the structured {platform, username, kind} response, then normalize the username
+        // with the production cleaner. Fixtures are Instagram by construction → always cleanUsername.
+        const parsed = raw ? parseProfileResponse(raw) : null;
+        const cleaned = parsed ? cleanUsername(parsed.username) : null;
         rows.push({
             id: pair.id,
             expected: pair.expected,
             raw,
             cleaned,
+            detectedPlatform: parsed?.platform ?? null,
             match: cleaned !== null && cleaned === pair.expected,
             notes: error ?? ""
         });
@@ -196,8 +204,9 @@ function buildReport(args: { rows: Row[]; live: boolean; reason: string; manifes
         .map((r) => {
             const got = r.cleaned ?? r.raw ?? "—";
             const mark = r.match ? "✅" : "❌";
+            const detected = r.detectedPlatform ?? "—";
             const notes = r.notes.replace(/\|/g, "\\|");
-            return `| ${r.id} | \`${r.expected}\` | \`${got}\` | ${mark} | ${notes} |`;
+            return `| ${r.id} | \`${r.expected}\` | \`${got}\` | ${detected} | ${mark} | ${notes} |`;
         })
         .join("\n");
 
@@ -238,8 +247,8 @@ ${summary}
 
 ## Per-fixture results
 
-| id | expected | got | match? | notes |
-| --- | --- | --- | :---: | --- |
+| id | expected | got | detected | match? | notes |
+| --- | --- | --- | --- | :---: | --- |
 ${tableRows}
 
 ## How to run

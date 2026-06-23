@@ -37,6 +37,7 @@ import { emit } from "$lib/server/analytics";
 import { syncLeadInline } from "$lib/server/notion/sync-one";
 import { deduplicate, type NotionRow } from "$lib/notion/dedup";
 import { decryptNotionToken, deriveTokenKey } from "$lib/server/crypto";
+import type { Platform } from "$lib/social/platform";
 import type {
     ItemCompletedResult,
     JobCompletedSummary,
@@ -102,21 +103,28 @@ async function loadNotionConfig(db: Db, userId: string): Promise<UserNotionConfi
     };
 }
 
-async function fetchRecentUsernames(db: Db, userId: string): Promise<string[]> {
+// Dedup is scoped per-platform: @john on Instagram and @john on TikTok are different people.
+async function fetchRecentUsernames(db: Db, userId: string, platform: Platform): Promise<string[]> {
     const rows = await db
         .select({ username: leads.username })
         .from(leads)
-        .where(and(eq(leads.userId, userId), eq(leads.archived, 0)))
+        .where(and(eq(leads.userId, userId), eq(leads.platform, platform), eq(leads.archived, 0)))
         .orderBy(sql`${leads.createdAt} DESC`)
         .limit(NEAR_DUP_CANDIDATE_LIMIT);
     return rows.map((r) => r.username);
 }
 
-async function existsExact(db: Db, userId: string, username: string): Promise<boolean> {
+async function existsExact(db: Db, userId: string, username: string, platform: Platform): Promise<boolean> {
     const rows = await db
         .select({ id: leads.id })
         .from(leads)
-        .where(and(eq(leads.userId, userId), sql`lower(${leads.username}) = lower(${username})`))
+        .where(
+            and(
+                eq(leads.userId, userId),
+                eq(leads.platform, platform),
+                sql`lower(${leads.username}) = lower(${username})`
+            )
+        )
         .limit(1);
     return rows.length > 0;
 }
@@ -438,7 +446,9 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
 
         const result: ItemCompletedResult = {
             username: null,
-            ig_url: null,
+            platform: extraction.platform,
+            kind: extraction.kind,
+            profile_url: null,
             confidence: 0,
             tier: null,
             status: "failed",
@@ -467,18 +477,20 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
         return;
     }
 
-    // Dedup: exact-match is cheap; near-dup (Levenshtein) only runs on a miss.
+    // Dedup: exact-match is cheap; near-dup (Levenshtein) only runs on a miss. Both scoped per-platform.
     const username = extraction.username;
-    const igUrl = `https://instagram.com/${username}`;
+    const platform = extraction.platform;
+    const kind = extraction.kind;
+    const profileUrl = extraction.profileUrl;
     let isDuplicate = false;
     let isNearDuplicate = false;
     let similarTo: string | null = null;
     let editDistance: number | null = null;
 
-    if (await existsExact(db, userId, username)) {
+    if (await existsExact(db, userId, username, platform)) {
         isDuplicate = true;
     } else {
-        const candidates = await fetchRecentUsernames(db, userId);
+        const candidates = await fetchRecentUsernames(db, userId, platform);
         const sim = findSimilarExisting(username, candidates);
         if (sim) {
             isNearDuplicate = true;
@@ -502,6 +514,8 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
         .set({
             status: finalStatus,
             username,
+            platform,
+            kind,
             confidence: extraction.confidence,
             tier: extraction.tier,
             isDuplicate: isDuplicate ? 1 : 0,
@@ -524,7 +538,9 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
                     id: leadId,
                     userId,
                     username,
-                    igUrl,
+                    platform,
+                    profileUrl,
+                    kind,
                     tier: extraction.tier ?? "MED",
                     confidence: extraction.confidence,
                     sourceJobId: jobId,
@@ -533,17 +549,19 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
                     createdAt: Date.now()
                 })
                 .onConflictDoNothing({
-                    target: [leads.userId, leads.username]
+                    target: [leads.userId, leads.username, leads.platform]
                 });
         } catch {
-            // `uniq_leads_user_username` lost the race against a concurrent insert; treat as duplicate downstream.
+            // `uniq_leads_user_username_platform` lost the race against a concurrent insert; treat as duplicate downstream.
             leadId = null;
         }
     }
 
     const baseResult: ItemCompletedResult = {
         username,
-        ig_url: igUrl,
+        platform,
+        kind,
+        profile_url: profileUrl,
         confidence: extraction.confidence,
         tier: extraction.tier,
         status: finalStatus,
@@ -580,7 +598,9 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
             const result = await syncLeadInline({
                 env,
                 username,
-                instagramUrl: igUrl,
+                platform,
+                kind,
+                profileUrl,
                 notionTokenEncrypted: notionCfg.tokenEncrypted,
                 notionDatabaseId: notionCfg.databaseId,
                 skipValidation: notionCfg.skipValidation

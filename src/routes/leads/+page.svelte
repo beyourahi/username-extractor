@@ -7,9 +7,11 @@
     import Pagination from "$lib/components/Pagination.svelte";
     import NotionBadge from "$lib/components/NotionBadge.svelte";
     import TierBadge from "$lib/components/TierBadge.svelte";
+    import PlatformBadge from "$lib/components/PlatformBadge.svelte";
     import Button from "$lib/components/Button.svelte";
     import TextInput from "$lib/components/TextInput.svelte";
     import Switch from "$lib/components/Switch.svelte";
+    import type { Platform } from "$lib/social/platform";
     import type { NotionStatus, Tier } from "$lib/types/messages";
 
     let { data } = $props();
@@ -202,9 +204,10 @@
     {:else}
         <div class="border-hair bg-card overflow-hidden rounded-lg border">
             <div
-                class="border-hair text-ink-muted text-micro hidden gap-3 border-b px-4 py-2.5 font-mono tracking-[0.14em] uppercase sm:grid sm:grid-cols-[minmax(180px,1fr)_80px_70px_150px_120px_80px]"
+                class="border-hair text-ink-muted text-micro hidden gap-3 border-b px-4 py-2.5 font-mono tracking-[0.14em] uppercase sm:grid sm:grid-cols-[minmax(150px,1fr)_96px_76px_60px_140px_120px_72px]"
             >
                 <span>Username</span>
+                <span>Platform</span>
                 <span>Tier</span>
                 <span class="text-right">Conf</span>
                 <span>Source job</span>
@@ -213,20 +216,30 @@
             </div>
             {#each data.leads as l, i (l.id)}
                 <div
-                    class="status-transition hover:bg-ink-2/50 flex flex-col gap-2 px-4 py-3 sm:grid sm:grid-cols-[minmax(180px,1fr)_80px_70px_150px_120px_80px] sm:items-center sm:gap-3"
+                    class="status-transition hover:bg-ink-2/50 flex flex-col gap-2 px-4 py-3 sm:grid sm:grid-cols-[minmax(150px,1fr)_96px_76px_60px_140px_120px_72px] sm:items-center sm:gap-3"
                     style={i ? "border-top: 1px solid var(--hair);" : undefined}
                 >
                     <div class="flex min-w-0 items-center gap-2">
-                        <ExternalLink size={13} class="text-ink-muted shrink-0" />
-                        <a
-                            href={l.igUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            class="text-foreground min-w-0 truncate font-mono text-sm font-semibold hover:underline"
-                        >
-                            @{l.username}
-                        </a>
+                        {#if l.profileUrl}
+                            <ExternalLink size={13} class="text-ink-muted shrink-0" />
+                            <a
+                                href={l.profileUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                class="text-foreground min-w-0 truncate font-mono text-sm font-semibold hover:underline"
+                            >
+                                {l.kind === "display_name" ? l.username : `@${l.username}`}
+                            </a>
+                        {:else}
+                            <span
+                                class="text-foreground min-w-0 truncate font-mono text-sm font-semibold"
+                                title={l.kind === "display_name" ? "Display name — no profile link" : undefined}
+                            >
+                                {l.kind === "display_name" ? l.username : `@${l.username}`}
+                            </span>
+                        {/if}
                     </div>
+                    <PlatformBadge platform={l.platform as Platform} size="sm" />
                     <TierBadge tier={l.tier as Tier} size="sm" />
                     <span class="text-ink-muted font-mono text-xs tabular-nums sm:text-right"
                         >{l.confidence.toFixed(0)}%</span

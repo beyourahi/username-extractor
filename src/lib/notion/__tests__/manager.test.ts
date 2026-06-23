@@ -57,8 +57,26 @@ describe("NotionDatabaseManager.detectPropertyNames", () => {
         expect(names).toEqual({
             title: "Brand Name",
             url: "Social Media Account",
-            status: "Status"
+            status: "Status",
+            platform: null,
+            platformType: null
         });
+    });
+
+    it("detects a select/multi-select 'platform' column", async () => {
+        const { client, state } = makeClient();
+        state.retrieveMock.mockResolvedValue({
+            properties: {
+                "Brand Name": { type: "title" },
+                "Social Media Account": { type: "url" },
+                Platform: { type: "select" }
+            },
+            data_sources: [{ id: "ds-1" }]
+        });
+        const mgr = NotionDatabaseManager.withClient(client, "abc");
+        const names = await mgr.detectPropertyNames();
+        expect(names.platform).toBe("Platform");
+        expect(names.platformType).toBe("select");
     });
 
     it("falls back to first url-typed property when none match 'social'", async () => {
@@ -180,7 +198,7 @@ describe("NotionDatabaseManager.createPage", () => {
         });
         const result = await mgr.createPage({
             username: "rahi.khan",
-            instagramUrl: "https://instagram.com/rahi.khan"
+            profileUrl: "https://instagram.com/rahi.khan"
         });
 
         expect(result.pageId).toBe("new-page-id");
@@ -203,6 +221,46 @@ describe("NotionDatabaseManager.createPage", () => {
         expect(payload.properties["Status"]).toEqual({ status: { name: "Didn't Approach" } });
     });
 
+    it("writes the Platform select when the database has one, and skips the URL for display-name leads", async () => {
+        const { client, state } = makeClient();
+        state.retrieveMock.mockResolvedValue({
+            properties: {
+                "Brand Name": { type: "title" },
+                "Social Media Account": { type: "url" },
+                Platform: { type: "select" }
+            },
+            data_sources: [{ id: "ds-1" }]
+        });
+        state.createMock.mockResolvedValue({ id: "p1" });
+
+        const mgr = NotionDatabaseManager.withClient(client, "abc", { rateLimitMs: 0 });
+        await mgr.createPage({ username: "MrBeast Gaming", profileUrl: null, platform: "youtube" });
+
+        const payload = state.createMock.mock.calls[0]?.[0] as { properties: Record<string, unknown> };
+        expect(payload.properties["Platform"]).toEqual({ select: { name: "YouTube" } });
+        // Display-name lead has no URL → the URL property must be omitted, not written as null.
+        expect(payload.properties["Social Media Account"]).toBeUndefined();
+    });
+
+    it("skips the Platform write silently when the database has no platform column", async () => {
+        const { client, state } = makeClient();
+        state.retrieveMock.mockResolvedValue({
+            properties: {
+                "Brand Name": { type: "title" },
+                "Social Media Account": { type: "url" }
+            },
+            data_sources: [{ id: "ds-1" }]
+        });
+        state.createMock.mockResolvedValue({ id: "p1" });
+
+        const mgr = NotionDatabaseManager.withClient(client, "abc", { rateLimitMs: 0 });
+        await mgr.createPage({ username: "rahi", profileUrl: "https://instagram.com/rahi", platform: "instagram" });
+
+        const payload = state.createMock.mock.calls[0]?.[0] as { properties: Record<string, unknown> };
+        expect(payload.properties["Platform"]).toBeUndefined();
+        expect(payload.properties["Social Media Account"]).toEqual({ url: "https://instagram.com/rahi" });
+    });
+
     it("omits status property when database has no status field", async () => {
         const { client, state } = makeClient();
         state.retrieveMock.mockResolvedValue({
@@ -215,7 +273,7 @@ describe("NotionDatabaseManager.createPage", () => {
         state.createMock.mockResolvedValue({ id: "p1" });
 
         const mgr = NotionDatabaseManager.withClient(client, "abc", { rateLimitMs: 0 });
-        await mgr.createPage({ username: "u", instagramUrl: "https://x" });
+        await mgr.createPage({ username: "u", profileUrl: "https://x" });
         const payload = state.createMock.mock.calls[0]?.[0] as { properties: Record<string, unknown> };
         expect(Object.keys(payload.properties)).toEqual(["Handle", "Site"]);
     });
@@ -288,9 +346,9 @@ describe("NotionDatabaseManager.batchCreatePages", () => {
 
         const mgr = NotionDatabaseManager.withClient(client, "abc", { rateLimitMs: 0 });
         const result = await mgr.batchCreatePages([
-            { username: "alice", instagramUrl: "https://x/alice" }, // skipped (duplicate)
-            { username: "bob", instagramUrl: "https://x/bob" }, // created
-            { username: "", instagramUrl: "https://x/empty" } // failed
+            { username: "alice", profileUrl: "https://x/alice" }, // skipped (duplicate)
+            { username: "bob", profileUrl: "https://x/bob" }, // created
+            { username: "", profileUrl: "https://x/empty" } // failed
         ]);
 
         expect(result.total).toBe(3);

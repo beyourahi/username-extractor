@@ -16,16 +16,23 @@
 
 import { Client, APIResponseError } from "@notionhq/client";
 import { buildConnectionErrorHelp } from "./errors";
+import { PLATFORM_LABELS, type Platform } from "$lib/social/platform";
 
 export interface PropertyNames {
     title: string;
     url: string;
     status: string | null;
+    /** Optional select/multi-select column holding the source platform (null if the DB has none). */
+    platform: string | null;
+    platformType: "select" | "multi_select" | null;
 }
 
 export interface CreatePageInput {
     username: string;
-    instagramUrl: string;
+    /** Canonical profile URL, or null for display-name leads / the `other` platform. */
+    profileUrl: string | null;
+    /** Source platform — written to the optional Notion "Platform" column when present. */
+    platform?: Platform | null;
     status?: string;
 }
 
@@ -225,6 +232,8 @@ export class NotionDatabaseManager {
         let titleName: string | null = null;
         let urlName: string | null = null;
         let statusName: string | null = null;
+        let platformName: string | null = null;
+        let platformType: "select" | "multi_select" | null = null;
 
         // Pass 1: type-based detection. URL column with "social" in the name wins outright.
         for (const [propName, propData] of Object.entries(properties)) {
@@ -235,6 +244,13 @@ export class NotionDatabaseManager {
                 urlName = propName;
             } else if (type === "status" && !statusName) {
                 statusName = propName;
+            } else if (
+                (type === "select" || type === "multi_select") &&
+                propName.toLowerCase().includes("platform") &&
+                !platformName
+            ) {
+                platformName = propName;
+                platformType = type;
             }
         }
 
@@ -261,7 +277,9 @@ export class NotionDatabaseManager {
         const resolved: PropertyNames = {
             title: titleName ?? "Brand Name",
             url: urlName ?? "Social Media Account",
-            status: statusName
+            status: statusName,
+            platform: platformName,
+            platformType
         };
 
         this.propertyNamesCache = resolved;
@@ -323,16 +341,27 @@ export class NotionDatabaseManager {
                         text: { content: input.username }
                     }
                 ]
-            },
-            [props.url]: {
-                url: input.instagramUrl
             }
         };
+
+        // Display-name leads (and the `other` platform) have no canonical URL — skip the URL property.
+        if (input.profileUrl) {
+            properties[props.url] = { url: input.profileUrl };
+        }
 
         if (props.status) {
             properties[props.status] = {
                 status: { name: status }
             };
+        }
+
+        // Write the source platform only when the user's DB actually has a Platform select column.
+        if (props.platform && input.platform) {
+            const label = PLATFORM_LABELS[input.platform];
+            properties[props.platform] =
+                props.platformType === "multi_select"
+                    ? { multi_select: [{ name: label }] }
+                    : { select: { name: label } };
         }
 
         await this.enforceRateLimit();
@@ -375,11 +404,10 @@ export class NotionDatabaseManager {
 
         for (const account of accounts) {
             const username = account.username ?? "";
-            const url = account.instagramUrl ?? "";
 
-            if (!username || !url) {
+            if (!username) {
                 stats.failed += 1;
-                stats.errors.push({ username, error: "Missing username or URL" });
+                stats.errors.push({ username, error: "Missing username" });
                 continue;
             }
 

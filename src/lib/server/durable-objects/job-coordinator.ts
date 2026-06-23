@@ -22,6 +22,7 @@ import { DurableObject } from "cloudflare:workers";
 import { and, eq, lte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "$lib/server/schema";
+import { buildProfileUrl, type ExtractionKind, type Platform } from "$lib/social/platform";
 import type { ItemCompletedResult, Message, NotionStatus } from "$lib/types/messages";
 
 interface JobCoordinatorEnv {
@@ -80,9 +81,14 @@ export class JobCoordinator extends DurableObject<JobCoordinatorEnv> {
         for (const row of rows) {
             if (row.status === "pending" || row.status === "running") continue;
             const itemStatus = row.status as ItemCompletedResult["status"];
+            // Pre-multi-platform rows have null platform/kind — fall back to Instagram handle.
+            const platform = (row.platform ?? "instagram") as Platform;
+            const kind = (row.kind ?? "handle") as ExtractionKind;
             const result: ItemCompletedResult = {
                 username: row.username,
-                ig_url: row.username ? `https://instagram.com/${row.username}` : null,
+                platform: row.username ? platform : null,
+                kind: row.username ? kind : null,
+                profile_url: buildProfileUrl(platform, row.username, kind),
                 confidence: row.confidence ?? 0,
                 tier: (row.tier as "HIGH" | "MED" | null) ?? null,
                 status: itemStatus,

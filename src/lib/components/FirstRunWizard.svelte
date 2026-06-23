@@ -128,7 +128,8 @@
                         </div>
                         <p class="text-foreground text-sm font-semibold">You're ready</p>
                         <p class="text-ink-muted mx-auto max-w-xs text-xs text-pretty">
-                            Drop a batch of Instagram screenshots on the home screen to start your first extraction.
+                            Drop a batch of profile screenshots — Instagram, TikTok, YouTube, Facebook, and more — on
+                            the home screen to start your first extraction.
                         </p>
                     </div>
                 {/if}

@@ -11,6 +11,8 @@
  * in-progress UI; new producers must emit `Message`.
  */
 
+import type { Platform, ExtractionKind } from "$lib/social/platform";
+
 export type NotionStatus = "added" | "invalid" | "pending" | "unconfigured" | null;
 
 export type ItemStatus = "pending" | "running" | "verified" | "review" | "failed" | "duplicate";
@@ -22,7 +24,12 @@ export type Tier = "HIGH" | "MED" | null;
 /** Per-item completion payload. Matches PRD §WebSocket message contract. */
 export interface ItemCompletedResult {
     username: string | null;
-    ig_url: string | null;
+    /** Detected platform, or null when extraction yielded no username. */
+    platform: Platform | null;
+    /** 'handle' | 'display_name' | null. */
+    kind: ExtractionKind | null;
+    /** Canonical profile URL; null for display-name leads / the `other` platform / no username. */
+    profile_url: string | null;
     confidence: number;
     tier: "HIGH" | "MED" | null;
     status: "verified" | "review" | "failed" | "duplicate";
@@ -88,6 +95,9 @@ export interface JobItemUpdate {
     filename: string;
     status: ItemStatus;
     username: string | null;
+    platform?: Platform | null;
+    kind?: ExtractionKind | null;
+    profileUrl?: string | null;
     confidence: number | null;
     tier: Tier;
     notionStatus?: NotionStatus;

@@ -37,6 +37,13 @@ export type ChangelogEntry = {
 // Newest first — see file header for the ordering invariant.
 export const CHANGELOG_ENTRIES: ChangelogEntry[] = [
     {
+        date: "2026-06-23",
+        category: "New feature",
+        title: "Auto-detect any social platform",
+        summary:
+            "Drop screenshots from Instagram, TikTok, YouTube, Facebook, and more — the extractor now detects the platform automatically, keeps each platform's leads separate, links to the right profile, and tags every lead with its platform (including in Notion)."
+    },
+    {
         date: "2026-06-21",
         category: "Design",
         title: "A consistent look across every Dropout tool",

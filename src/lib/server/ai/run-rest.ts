@@ -27,6 +27,8 @@ export interface CloudflareCreds {
 export interface VisionRestInput {
     image: number[];
     prompt: string;
+    /** Optional output cap. Set high enough that a JSON object response can't truncate. */
+    maxTokens?: number;
 }
 
 /** A model surfaced in the picker. `id` is the run path (e.g. "@cf/moonshotai/kimi-k2.6"). */
@@ -70,6 +72,12 @@ export async function runVisionViaRest(
     model: string,
     input: VisionRestInput
 ): Promise<unknown> {
+    // Map the camelCase `maxTokens` to the Workers AI `max_tokens` body key.
+    const body: Record<string, unknown> = { image: input.image, prompt: input.prompt };
+    if (input.maxTokens !== undefined) {
+        body["max_tokens"] = input.maxTokens;
+    }
+
     let res: Response;
     try {
         res = await fetch(`${CF_API}/accounts/${creds.accountId}/ai/run/${model}`, {
@@ -78,7 +86,7 @@ export async function runVisionViaRest(
                 Authorization: `Bearer ${creds.apiToken}`,
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify(input)
+            body: JSON.stringify(body)
         });
     } catch (e) {
         throw new CfInferenceError(0, "transport", e instanceof Error ? e.message : "network error");

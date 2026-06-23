@@ -15,6 +15,20 @@
       "when": 1781996323516,
       "tag": "0001_tough_maggott",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1782190410389,
+      "tag": "0002_perpetual_surge",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1782190438233,
+      "tag": "0003_big_living_mummy",
+      "breakpoints": true
     }
   ]
 }

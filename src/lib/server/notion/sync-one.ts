@@ -9,9 +9,9 @@
  *
  * Result semantics (`notionStatus`):
  *   - `unconfigured` → user has no token/db set; no-op success
- *   - `invalid`      → IG validation found no such account (when not skipped)
+ *   - `invalid`      → existence check found no such account (when not skipped)
  *   - `added`        → page created, `notionPageId` populated
- *   - `pending`      → recoverable failure (decrypt, network, IG check); `error` describes cause
+ *   - `pending`      → recoverable failure (decrypt, network, existence check); `error` describes cause
  *
  * INVARIANT: never throws on operational failure. Errors surface via the
  * returned `error` field so callers can persist + broadcast in one transaction.
@@ -22,7 +22,8 @@ import type { Db } from "$lib/server/db";
 import { leads, userSettings } from "$lib/server/schema";
 import { decryptNotionToken, deriveTokenKey } from "$lib/server/crypto";
 import { NotionDatabaseManager } from "$lib/notion/manager";
-import { validateUsernameCached } from "$lib/instagram/cache";
+import { validateUsernameCached } from "$lib/social/cache";
+import type { Platform, ExtractionKind } from "$lib/social/platform";
 import type { NotionStatus } from "$lib/types/messages";
 
 export interface SyncOneEnv {
@@ -47,7 +48,9 @@ export interface SyncOneResult {
 export interface SyncInlineInput {
     env: SyncOneEnv;
     username: string;
-    instagramUrl: string;
+    platform: Platform;
+    kind: ExtractionKind;
+    profileUrl: string | null;
     notionTokenEncrypted: Uint8Array | null;
     notionDatabaseId: string | null;
     skipValidation: boolean;
@@ -70,9 +73,11 @@ export async function syncLeadInline(input: SyncInlineInput): Promise<SyncOneRes
         };
     }
 
-    if (!input.skipValidation) {
+    // Existence check only applies to handles. Display names (no @handle) have nothing
+    // to verify; the validator also skips Facebook/other and never blocks on anti-bot.
+    if (!input.skipValidation && input.kind === "handle") {
         try {
-            const cached = await validateUsernameCached(input.env, input.username);
+            const cached = await validateUsernameCached(input.env, input.platform, input.username);
             if (!cached.exists) {
                 return { notionStatus: "invalid", notionPageId: null, error: null };
             }
@@ -80,7 +85,7 @@ export async function syncLeadInline(input: SyncInlineInput): Promise<SyncOneRes
             return {
                 notionStatus: "pending",
                 notionPageId: null,
-                error: `IG validation failed: ${err instanceof Error ? err.message : String(err)}`
+                error: `Profile validation failed: ${err instanceof Error ? err.message : String(err)}`
             };
         }
     }
@@ -89,7 +94,8 @@ export async function syncLeadInline(input: SyncInlineInput): Promise<SyncOneRes
         const mgr = new NotionDatabaseManager(token, input.notionDatabaseId);
         const { pageId } = await mgr.createPage({
             username: input.username,
-            instagramUrl: input.instagramUrl
+            profileUrl: input.profileUrl,
+            platform: input.platform
         });
         return { notionStatus: "added", notionPageId: pageId || null, error: null };
     } catch (err) {
@@ -109,7 +115,9 @@ export async function syncOneLead(input: SyncOneInput): Promise<SyncOneResult> {
         .select({
             id: leads.id,
             username: leads.username,
-            igUrl: leads.igUrl,
+            platform: leads.platform,
+            profileUrl: leads.profileUrl,
+            kind: leads.kind,
             userId: leads.userId
         })
         .from(leads)
@@ -136,7 +144,9 @@ export async function syncOneLead(input: SyncOneInput): Promise<SyncOneResult> {
     const result = await syncLeadInline({
         env,
         username: lead.username,
-        instagramUrl: lead.igUrl,
+        platform: lead.platform as Platform,
+        kind: (lead.kind ?? "handle") as ExtractionKind,
+        profileUrl: lead.profileUrl,
         notionTokenEncrypted: tokenBlob ? new Uint8Array(tokenBlob as ArrayBuffer) : null,
         notionDatabaseId: s?.dbId ?? null,
         skipValidation: (s?.skip ?? 0) === 1

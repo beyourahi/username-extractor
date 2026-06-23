@@ -185,6 +185,10 @@ export const jobItems = sqliteTable(
         r2Key: text("r2_key").notNull(),
         status: text("status").notNull(),
         username: text("username"),
+        /** Detected platform: 'instagram' | 'facebook' | 'tiktok' | 'youtube' | 'other'. Null until the consumer runs extraction. */
+        platform: text("platform"),
+        /** 'handle' | 'display_name' | null. Whether `username` is an @handle or a fallback display/channel name. */
+        kind: text("kind"),
         confidence: real("confidence"),
         /** "HIGH" | "MED" | null. See `src/lib/extract/classify.ts` for tier rules. */
         tier: text("tier"),
@@ -220,7 +224,12 @@ export const leads = sqliteTable(
             .notNull()
             .references(() => users.id),
         username: text("username").notNull(),
-        igUrl: text("ig_url").notNull(),
+        /** Source platform — backfilled to 'instagram' for pre-multi-platform rows. */
+        platform: text("platform").notNull().default("instagram"),
+        /** Canonical profile URL. NULL for display-name leads (no @handle) and the `other` platform. */
+        profileUrl: text("profile_url"),
+        /** 'handle' | 'display_name' | null. */
+        kind: text("kind"),
         tier: text("tier").notNull(),
         confidence: real("confidence").notNull(),
         sourceJobId: text("source_job_id").references(() => jobs.id),
@@ -231,7 +240,8 @@ export const leads = sqliteTable(
         createdAt: integer("created_at").notNull()
     },
     (table) => [
-        uniqueIndex("uniq_leads_user_username").on(table.userId, table.username),
+        // Dedup namespace is per-platform: @john on Instagram and @john on TikTok are distinct leads.
+        uniqueIndex("uniq_leads_user_username_platform").on(table.userId, table.username, table.platform),
         index("idx_leads_user_username").on(table.userId, table.username),
         index("idx_leads_notion_status").on(table.userId, table.notionStatus),
         index("idx_leads_user_created").on(table.userId, table.createdAt)

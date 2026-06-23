@@ -34,7 +34,8 @@ export const GET: RequestHandler = async ({ url, locals, platform }) => {
     const rows = await db
         .select({
             username: schema.leads.username,
-            igUrl: schema.leads.igUrl,
+            platform: schema.leads.platform,
+            profileUrl: schema.leads.profileUrl,
             tier: schema.leads.tier,
             confidence: schema.leads.confidence,
             notionStatus: schema.leads.notionStatus,
@@ -45,10 +46,11 @@ export const GET: RequestHandler = async ({ url, locals, platform }) => {
         .orderBy(desc(schema.leads.createdAt));
 
     const csv = toCsv(
-        ["username", "ig_url", "tier", "confidence", "notion_status", "created_at"],
+        ["username", "platform", "profile_url", "tier", "confidence", "notion_status", "created_at"],
         rows.map((r) => [
             r.username,
-            r.igUrl,
+            r.platform,
+            r.profileUrl ?? "",
             r.tier,
             r.confidence,
             r.notionStatus ?? "",

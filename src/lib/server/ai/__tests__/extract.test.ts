@@ -56,23 +56,59 @@ describe("extractUsernameFromImage (per-user REST)", () => {
         );
     }
 
-    it("returns a verified result for a clean response", async () => {
-        mockRest({ response: "lebron.james" });
+    it("parses structured JSON for an Instagram handle (legacy scoring path intact)", async () => {
+        mockRest({ response: '{"platform":"instagram","username":"lebron.james","kind":"handle"}' });
         const result = await extractUsernameFromImage({
             creds,
             model: "@cf/moonshotai/kimi-k2.6",
             imageBytes: new Uint8Array([1, 2, 3])
         });
         expect(result.username).toBe("lebron.james");
-        // confidence: base 85 + valid IG format bonus (+10) = 95
+        expect(result.platform).toBe("instagram");
+        expect(result.kind).toBe("handle");
+        expect(result.profileUrl).toBe("https://instagram.com/lebron.james");
+        // confidence: base 85 + valid IG format bonus (+10) = 95 — identical to the legacy pipeline.
         expect(result.confidence).toBe(95);
         expect(result.status).toBe("verified");
         expect(result.tier).toBe("HIGH");
     });
 
-    it("returns review when the response is hedged", async () => {
-        mockRest({ response: "The username appears to be foo.bar" });
+    it("falls back to a bare-string handle on `other` when the model ignores the JSON instruction", async () => {
+        mockRest({ response: "lebron.james" });
         const result = await extractUsernameFromImage({ creds, imageBytes: new Uint8Array([1]) });
+        expect(result.username).toBe("lebron.james");
+        expect(result.platform).toBe("other");
+        expect(result.kind).toBe("handle");
+        expect(result.profileUrl).toBeNull();
+        // `other` reuses the IG validator → +10 bonus → 95 (preserves legacy bare-string scoring).
+        expect(result.confidence).toBe(95);
+    });
+
+    it("parses a TikTok handle and builds the TikTok profile URL", async () => {
+        mockRest({ response: '```json\n{"platform":"tiktok","username":"mrbeast","kind":"handle"}\n```' });
+        const result = await extractUsernameFromImage({ creds, imageBytes: new Uint8Array([1]) });
+        expect(result.username).toBe("mrbeast");
+        expect(result.platform).toBe("tiktok");
+        expect(result.profileUrl).toBe("https://www.tiktok.com/@mrbeast");
+        expect(result.confidence).toBe(95);
+    });
+
+    it("handles a display_name result (no handle visible) without a profile URL", async () => {
+        mockRest({ response: '{"platform":"youtube","username":"MrBeast Gaming","kind":"display_name"}' });
+        const result = await extractUsernameFromImage({ creds, imageBytes: new Uint8Array([1]) });
+        expect(result.username).toBe("MrBeast Gaming"); // case + space preserved
+        expect(result.platform).toBe("youtube");
+        expect(result.kind).toBe("display_name");
+        expect(result.profileUrl).toBeNull();
+        // display names skip the handle-format bonus → base 85 → verified / MED.
+        expect(result.confidence).toBe(85);
+        expect(result.tier).toBe("MED");
+    });
+
+    it("returns review when the response is hedged", async () => {
+        mockRest({ response: '{"platform":"instagram","username":"foo.bar","kind":"handle"} (appears blurry)' });
+        const result = await extractUsernameFromImage({ creds, imageBytes: new Uint8Array([1]) });
+        expect(result.username).toBe("foo.bar");
         expect(result.confidence).toBeLessThan(95);
     });
 
@@ -80,6 +116,8 @@ describe("extractUsernameFromImage (per-user REST)", () => {
         mockRest({ response: "" });
         const result = await extractUsernameFromImage({ creds, imageBytes: new Uint8Array([1]) });
         expect(result.username).toBeNull();
+        expect(result.platform).toBe("other");
+        expect(result.profileUrl).toBeNull();
         expect(result.confidence).toBe(0);
         expect(result.tier).toBeNull();
         expect(result.status).toBe("review");

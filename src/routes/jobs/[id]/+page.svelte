@@ -10,6 +10,7 @@
     import Eyebrow from "$lib/components/Eyebrow.svelte";
     import { createJobStream } from "$lib/client/job-stream.svelte";
     import { Heading, cn, pillBase } from "$lib/ds";
+    import { buildProfileUrl, type ExtractionKind, type Platform } from "$lib/social/platform";
     import type { JobItem } from "$lib/server/schema";
     import type { ItemStatus, Tier, NotionStatus } from "$lib/types/messages";
 
@@ -44,6 +45,8 @@
                     r2Key: base?.r2Key ?? "",
                     status: (live.status as ItemStatus) ?? base?.status ?? "pending",
                     username: live.result?.username ?? base?.username ?? null,
+                    platform: live.result?.platform ?? base?.platform ?? null,
+                    kind: live.result?.kind ?? base?.kind ?? null,
                     confidence: live.result?.confidence ?? base?.confidence ?? null,
                     tier: ((live.result?.tier ?? base?.tier) as Tier) ?? null,
                     isDuplicate: (live.result?.is_duplicate ?? base?.isDuplicate ?? 0) ? 1 : 0,
@@ -256,6 +259,15 @@
                         item={{
                             filename: item.filename,
                             username: item.username,
+                            platform: item.platform as Platform | null,
+                            kind: item.kind as ExtractionKind | null,
+                            profileUrl: item.platform
+                                ? buildProfileUrl(
+                                      item.platform as Platform,
+                                      item.username,
+                                      (item.kind ?? "handle") as ExtractionKind
+                                  )
+                                : null,
                             confidence: item.confidence,
                             tier: item.tier as Tier,
                             status: item.status as ItemStatus,

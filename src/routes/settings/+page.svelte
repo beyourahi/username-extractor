@@ -500,8 +500,8 @@
                 </SettingsRow>
 
                 <SettingsRow
-                    label="Skip Instagram profile check"
-                    hint="Trust extracted usernames without checking the profile exists — faster, but lets dead links through."
+                    label="Skip profile existence check"
+                    hint="Trust extracted usernames without checking the profile exists — faster, but lets dead links through. Instagram, TikTok & YouTube are checked; Facebook is always trusted."
                 >
                     <div class="flex w-full md:justify-start">
                         <Switch
@@ -518,8 +518,8 @@
                 </SettingsRow>
 
                 <SettingsRow
-                    label="Wait between profile checks (ms)"
-                    hint="Wait time between Instagram profile checks (ms)."
+                    label="Delay between existence checks (ms)"
+                    hint="Wait time between profile existence checks (ms)."
                     htmlFor="notionValidationDelayMs"
                 >
                     <TextInput

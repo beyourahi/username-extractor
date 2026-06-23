@@ -2,13 +2,18 @@
     import { RefreshCw, FileText, Code2 } from "@lucide/svelte";
     import NotionBadge from "./NotionBadge.svelte";
     import TierBadge from "./TierBadge.svelte";
+    import PlatformBadge from "./PlatformBadge.svelte";
     import Button from "./Button.svelte";
     import { cn } from "$lib/utils/cn";
+    import type { Platform, ExtractionKind } from "$lib/social/platform";
     import type { NotionStatus, ItemStatus, Tier } from "$lib/types/messages";
 
     interface ResultRowItem {
         filename: string;
         username: string | null;
+        platform?: Platform | null;
+        kind?: ExtractionKind | null;
+        profileUrl?: string | null;
         confidence: number | null;
         tier: Tier;
         status: ItemStatus;
@@ -80,16 +85,26 @@
     <div class="min-w-0 flex-1">
         <div class="flex flex-wrap items-center gap-2">
             {#if item.username}
-                <a
-                    href={`https://instagram.com/${item.username}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    class="text-foreground truncate font-mono text-sm font-semibold hover:underline"
-                >
-                    @{item.username}
-                </a>
+                {#if item.profileUrl}
+                    <a
+                        href={item.profileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        class="text-foreground truncate font-mono text-sm font-semibold hover:underline"
+                    >
+                        {item.kind === "display_name" ? item.username : `@${item.username}`}
+                    </a>
+                {:else}
+                    <span class="text-foreground truncate font-mono text-sm font-semibold">
+                        {item.kind === "display_name" ? item.username : `@${item.username}`}
+                    </span>
+                {/if}
             {:else}
                 <p class="text-ink-muted text-sm italic">— no username —</p>
+            {/if}
+
+            {#if item.username}
+                <PlatformBadge platform={item.platform ?? null} size="sm" />
             {/if}
 
             {#if item.tier}

@@ -94,6 +94,28 @@
     --tier-failed-foreground: oklch(0.79 0.14 22);
     --tier-failed-bg: oklch(0.645 0.196 25 / 0.1);
     --tier-failed-border: oklch(0.645 0.196 25 / 0.3);
+
+    /* social platforms — each brand hue muted onto the monochrome base; `other` is neutral ink */
+    --platform-ig: oklch(0.7 0.16 358);
+    --platform-ig-foreground: oklch(0.82 0.12 356);
+    --platform-ig-bg: oklch(0.7 0.16 358 / 0.1);
+    --platform-ig-border: oklch(0.7 0.16 358 / 0.3);
+    --platform-fb: oklch(0.62 0.15 255);
+    --platform-fb-foreground: oklch(0.79 0.11 256);
+    --platform-fb-bg: oklch(0.62 0.15 255 / 0.1);
+    --platform-fb-border: oklch(0.62 0.15 255 / 0.3);
+    --platform-tt: oklch(0.78 0.1 195);
+    --platform-tt-foreground: oklch(0.86 0.08 195);
+    --platform-tt-bg: oklch(0.78 0.1 195 / 0.1);
+    --platform-tt-border: oklch(0.78 0.1 195 / 0.3);
+    --platform-yt: oklch(0.62 0.2 27);
+    --platform-yt-foreground: oklch(0.79 0.14 24);
+    --platform-yt-bg: oklch(0.62 0.2 27 / 0.1);
+    --platform-yt-border: oklch(0.62 0.2 27 / 0.3);
+    --platform-other: var(--tier-review);
+    --platform-other-foreground: var(--tier-review-foreground);
+    --platform-other-bg: var(--tier-review-bg);
+    --platform-other-border: var(--tier-review-border);
 }
 
 /* Ultra-wide cap bumps — let the shell use more of very large canvases without
