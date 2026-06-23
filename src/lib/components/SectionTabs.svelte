@@ -103,12 +103,21 @@
     ></span>
     {#each tabs as tab (tab.href)}
         {@const active = isActive(tab.href)}
+        <!--
+            The active tab's text is `text-background` (dark ink) and is only legible because the
+            white `bg-signal` pill sits behind it. That pill is JS-positioned and ships hidden
+            (width/opacity 0) until the client effect runs — so before hydration the active tab is
+            dark-on-dark (invisible). Imperceptible in dev (instant hydration) but a real flash, or
+            a permanent failure if JS is slow/blocked, in production. So give the active tab its own
+            `bg-signal` fill until the real pill is positioned (`indicator.ready`); the swap is
+            white-on-white, so it's seamless and the loaded appearance is unchanged.
+        -->
         <a
             data-section-tab
             href={tab.href}
             aria-current={active ? "page" : undefined}
             class="text-caption relative z-[1] flex min-h-[40px] flex-1 items-center justify-center rounded-full px-[16px] py-[10px] font-mono whitespace-nowrap uppercase transition-colors duration-[350ms] ease-[var(--ease)] max-[720px]:min-h-[44px] max-[360px]:px-[12px] sm:flex-none sm:px-[30px] {active
-                ? 'text-background font-semibold'
+                ? `text-background font-semibold${indicator.ready ? '' : ' bg-signal'}`
                 : 'text-ink-muted hover:text-foreground'}"
         >
             {tab.label}
