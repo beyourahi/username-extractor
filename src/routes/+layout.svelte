@@ -41,7 +41,10 @@
     {#if !isLogin}
         <Navbar>
             {#if data?.user}
-                <User user={data.user} />
+                <User
+                    user={data.user}
+                    currentUser={{ name: data.user.name?.trim() || (data.user.email.split("@")[0] ?? data.user.email) }}
+                />
             {:else}
                 <a
                     href="/login"
