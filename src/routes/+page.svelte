@@ -1,6 +1,6 @@
 <script lang="ts">
     import { untrack } from "svelte";
-    import { goto } from "$app/navigation";
+    import { goto, beforeNavigate } from "$app/navigation";
     import { toast } from "svelte-sonner";
     import { Sparkles, AlertTriangle, Cloud, LogIn } from "@lucide/svelte";
     import { Eyebrow } from "$lib/ds";
@@ -20,6 +20,9 @@
     let files = $state<File[]>([]);
     let diagnostics = $state<boolean>(untrack(() => Boolean(data.diagnosticsDefault)));
     let submitting = $state(false);
+    // True only during the fragile client-side upload window (create → chunks → finalize).
+    // Guards (beforeunload + beforeNavigate) below arm only while this is true.
+    let uploadActive = $state(false);
     const signedIn = $derived(Boolean(data.signedIn));
     const notionConfigured = $derived(Boolean(data.notionConfigured));
     const cloudflareConnected = $derived(Boolean(data.cloudflareConnected));
@@ -53,6 +56,7 @@
             return;
         }
         submitting = true;
+        uploadActive = true;
         total = files.length;
         try {
             // 1. Normalize AVIF/BMP/TIFF → JPEG so the model can read them (web-safe pass through).
@@ -97,15 +101,44 @@
             }
 
             if (!jobId) throw new Error("Missing jobId in response");
+            // Upload fully complete (all chunks uploaded + finalized) — the fragile window has
+            // closed. Release the guards BEFORE the app's own redirect so it isn't blocked.
+            uploadActive = false;
             toast.success(`Job queued · ${prepd.length} images`);
             await goto(`/jobs/${jobId}`);
         } catch (e) {
             toast.error(e instanceof Error ? e.message : "Upload failed");
         } finally {
             submitting = false;
+            uploadActive = false;
             phase = "idle";
         }
     }
+
+    // Guard hard browser exits (refresh / tab close / window close / new URL) while the upload
+    // loop is mid-flight. Modern browsers show their own generic prompt; custom text is ignored.
+    $effect(() => {
+        if (!uploadActive) return;
+        const handler = (event: BeforeUnloadEvent) => {
+            event.preventDefault();
+            event.returnValue = "";
+        };
+        window.addEventListener("beforeunload", handler);
+        return () => window.removeEventListener("beforeunload", handler);
+    });
+
+    // Guard in-app SvelteKit navigation (tab links, floating User links) during the same window.
+    // uploadActive flips false synchronously before the intentional goto(), so this never blocks it.
+    beforeNavigate((navigation) => {
+        if (
+            uploadActive &&
+            !confirm(
+                "Upload still in progress — leaving now will cancel the images that haven't uploaded yet. Leave anyway?"
+            )
+        ) {
+            navigation.cancel();
+        }
+    });
 </script>
 
 <div class="flex w-full flex-col items-center gap-8 sm:gap-10">
