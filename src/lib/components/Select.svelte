@@ -45,7 +45,7 @@
             className
         )}
     >
-        <span class="truncate">{selectedLabel || placeholder}</span>
+        <span class="min-w-0 truncate">{selectedLabel || placeholder}</span>
         <ChevronsUpDown size={14} class="text-ink-muted shrink-0" aria-hidden="true" />
     </Select.Trigger>
     <Select.Portal>

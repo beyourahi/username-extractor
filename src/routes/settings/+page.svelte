@@ -218,7 +218,7 @@
 
     <div class="flex flex-col gap-2.5">
         <Eyebrow>Settings</Eyebrow>
-        <Heading as="h1" size="title-lg" weight={600} class="lg:text-title whitespace-nowrap">Settings</Heading>
+        <Heading as="h1" size="title-lg" weight={600} class="lg:text-title">Settings</Heading>
         <p class={cn(bodyBase, "text-ink-muted max-w-prose")}>Defaults, Notion connection, and cleanup tools.</p>
     </div>
 
@@ -317,7 +317,7 @@
                         />
                         {#if cloudflareConnected}
                             <p class={cn(helperBase, "mt-1")}>
-                                Stored: <span class="text-foreground font-mono wrap-break-word"
+                                Stored: <span class="text-foreground font-mono break-all"
                                     >{maskedCloudflareToken}</span
                                 >
                                 — leave blank to keep it.
@@ -377,7 +377,7 @@
                                     href="https://dash.cloudflare.com/profile/api-tokens"
                                     target="_blank"
                                     rel="noreferrer"
-                                    class="text-foreground wrap-break-word underline underline-offset-2"
+                                    class="text-foreground break-all underline underline-offset-2"
                                     >dash.cloudflare.com/profile/api-tokens</a
                                 >
                                 -> Create Custom Token -> permission
