@@ -13,7 +13,7 @@ import { users } from "$lib/server/schema";
  *     contract `event.locals.userId/userEmail` (so the ~18 protected routes are unchanged).
  *  2. Central gate: unauthenticated browser requests to gated routes → 303 /login; /api/* → 401.
  *     Auth is optional — public surface = `/` (browsable guest homepage) + `/login` +
- *     `/auth/*` (Better Auth's own routes; basePath set in auth.ts). Extraction still requires
+ *     `/api/auth/*` (Better Auth's own routes; default basePath). Extraction still requires
  *     sign-in (the `/api/*` mutations stay gated). Static assets are served by ASSETS first.
  *  3. In-memory 5/min rate limit on RATE_LIMIT_PATHS (app-level, distinct from Better Auth's
  *     D1 limiter on the auth endpoints).
@@ -88,17 +88,18 @@ function applySecurityHeaders(response: Response): Response {
 function isPublicPath(pathname: string): boolean {
     // Auth is optional, not a wall: the homepage + changelog are browsable signed-out
     // (sign-in is an invitation, surfaced in the AppBar + on the upload form). /jobs, /leads,
-    // /settings and every /api/* route stay gated — extraction needs a session. Better Auth
-    // mounts its own routes under /auth/* (basePath in auth.ts), which must stay reachable
-    // signed-out. /api/logout is the one /api route that must stay public: logout fires after
-    // signOut() has already cleared the session token, so the gate would otherwise 401 it and
-    // strand the user on a JSON error with the cookieCache `session_data` cookie un-cleared.
+    // /settings and every other /api/* route stay gated — extraction needs a session. Better
+    // Auth mounts its own routes under /api/auth/* (the DEFAULT basePath), which must stay
+    // reachable signed-out (sign-in/social, the OAuth callback, get-session, sign-out).
+    // /api/logout is the other /api route that must stay public: logout fires after signOut()
+    // has already cleared the session token, so the gate would otherwise 401 it and strand the
+    // user on a JSON error with the cookieCache `session_data` cookie un-cleared.
     return (
         pathname === "/" ||
         pathname === "/login" ||
         pathname === "/changelog" ||
         pathname === "/api/logout" ||
-        pathname.startsWith("/auth/")
+        pathname.startsWith("/api/auth/")
     );
 }
 
@@ -182,12 +183,12 @@ export const handle: Handle = async ({ event, resolve }) => {
         nullAuthLocals(event);
     }
 
-    // Central gate — runs before Better Auth dispatch so unauth users can still reach /login + /auth/*.
+    // Central gate — runs before Better Auth dispatch so unauth users can still reach /login + /api/auth/*.
     if (!event.locals.userId && !isPublicPath(event.url.pathname)) {
         return applySecurityHeaders(gateResponse(event));
     }
 
-    // App-level rate limit (kept). Better Auth has its own D1 limiter on /auth/*.
+    // App-level rate limit (kept). Better Auth has its own D1 limiter on /api/auth/*.
     if (event.locals.userId && isRateLimitedPath(event.url.pathname)) {
         const bucketPath = RATE_LIMIT_PATHS.find(
             (p) => event.url.pathname === p || event.url.pathname.startsWith(p + "/")
@@ -205,7 +206,7 @@ export const handle: Handle = async ({ event, resolve }) => {
         }
     }
 
-    // Better Auth dispatches /auth/*; everything else falls through to `resolve`.
+    // Better Auth dispatches /api/auth/*; everything else falls through to `resolve`.
     const response = await svelteKitHandler({ event, resolve, auth, building });
     return applySecurityHeaders(response);
 };

@@ -42,11 +42,12 @@ export const createAuth = (d1: D1Database, env: AuthEnv) => {
             schema
         }),
         baseURL: env.BETTER_AUTH_URL,
-        // Mount auth routes under /auth (not the default /api/auth) so the derived OAuth
-        // callback is {baseURL}/auth/callback/google — matching the redirect URI registered
-        // in Google Console (https://username-extractor.dropoutstudio.co/auth/callback/google).
-        // The browser client (auth-client.ts) sets the SAME basePath; they must stay in sync.
-        basePath: "/auth",
+        // Auth routes use Better Auth's DEFAULT basePath (/api/auth) — identical to the sibling
+        // tools (day-zero / invoice-generator / order-processor). The derived OAuth callback is
+        // therefore {baseURL}/api/auth/callback/google, which MUST be registered as an Authorized
+        // redirect URI in Google Console (https://username-extractor.dropoutstudio.co/api/auth/callback/google,
+        // plus the localhost variants). No explicit basePath here ⇒ the browser client
+        // (auth-client.ts) also omits it; server and client stay in sync at the default.
         secret: env.BETTER_AUTH_SECRET,
         emailAndPassword: {
             enabled: false
@@ -82,8 +83,10 @@ export const createAuth = (d1: D1Database, env: AuthEnv) => {
         session: {
             expiresIn: 60 * 60 * 24 * 7, // 7 days
             updateAge: 60 * 60 * 24, // refresh once per day
-            // 5-minute signed cookie cache avoids a D1 read on every request.
-            cookieCache: { enabled: true, maxAge: 60 * 5 }
+            // 5-minute signed cookie cache avoids a D1 read on every request. `version` is a
+            // global session kill-switch (bump to invalidate every cached snapshot at once) —
+            // matches the sibling tools.
+            cookieCache: { enabled: true, maxAge: 60 * 5, version: "1" }
         },
         // D1-backed so the limit holds across edge isolates (in-memory wouldn't).
         rateLimit: { enabled: true, window: 60, max: 20, storage: "database" },

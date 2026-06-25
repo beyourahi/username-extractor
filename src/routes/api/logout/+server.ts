@@ -14,7 +14,7 @@ import type { RequestHandler } from "./$types";
 // chunks alive and getSession keeps reviving the session — logout silently fails to stick. So we
 // expire (1) the token + un-suffixed data, secure + bare, AND (2) every chunked `session_data.<n>`
 // variant the browser actually sent — mirroring Better Auth's own request-driven `sessionStore.clean()`.
-// (Auth routes live at basePath `/auth`, but this custom endpoint is a normal SvelteKit route.)
+// (Better Auth routes live at the default basePath `/api/auth`, but this custom endpoint is a normal SvelteKit route.)
 const SESSION_COOKIE_NAMES = [
     "__Secure-username-extractor.session_token",
     "username-extractor.session_token",
