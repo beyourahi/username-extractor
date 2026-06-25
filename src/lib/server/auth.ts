@@ -90,7 +90,19 @@ export const createAuth = (d1: D1Database, env: AuthEnv) => {
         },
         // D1-backed so the limit holds across edge isolates (in-memory wouldn't).
         rateLimit: { enabled: true, window: 60, max: 20, storage: "database" },
-        advanced: { cookiePrefix: "username-extractor", useSecureCookies: true },
+        advanced: {
+            cookiePrefix: "username-extractor",
+            useSecureCookies: true,
+            // On Cloudflare Workers the client IP is NOT in `request.ip` — Better Auth's rate
+            // limiter then can't identify the caller and lumps EVERY user's /api/auth/* calls into
+            // ONE shared per-path bucket. With a 20/60s limit that bucket exhausts under normal
+            // use, so sign-in (OAuth `state_not_found`/401) and sign-out (400) start failing for
+            // everyone — and a non-2xx sign-out is exactly what used to hang logout. Cloudflare
+            // exposes the real client IP via the `CF-Connecting-IP` header; point the limiter at it
+            // so buckets are per-IP. (Without this the limiter logs the "could not determine a
+            // client IP — single shared per-path bucket" warning on every auth request.)
+            ipAddress: { ipAddressHeaders: ["cf-connecting-ip"] }
+        },
         trustedOrigins: [
             "http://localhost:5173",
             "http://localhost:8787",
