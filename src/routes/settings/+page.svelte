@@ -317,9 +317,7 @@
                         />
                         {#if cloudflareConnected}
                             <p class={cn(helperBase, "mt-1")}>
-                                Stored: <span class="text-foreground font-mono break-all"
-                                    >{maskedCloudflareToken}</span
-                                >
+                                Stored: <span class="text-foreground font-mono break-all">{maskedCloudflareToken}</span>
                                 — leave blank to keep it.
                             </p>
                         {:else}
