@@ -26,13 +26,14 @@
     let isLoggingOut = $state(false);
     let expanded = $state(false);
 
-    const handleLogout = async () => {
+    const handleLogout = () => {
         isLoggingOut = true;
-        try {
-            await authClient.signOut();
-        } catch {
-            // ignore — the /api/logout navigation below clears every cookie variant regardless
-        }
+        // Fire the client sign-out best-effort, but NEVER await it: authClient.signOut() does not
+        // return control on a non-2xx response (rate-limit / CSRF / transient) — it leaves the
+        // promise pending, and `await` would then hang here forever, so the redirect below never
+        // runs and logout silently "does nothing". /api/logout is the authoritative logout (kills
+        // the D1 session + expires every cookie variant server-side), so we redirect regardless.
+        void authClient.signOut().catch(() => {});
         // Full navigation (not goto): re-fetches a clean logged-out state AND lets the server expire
         // the cookieCache `session_data` cookie that signOut alone can leave behind.
         window.location.href = "/api/logout";
