@@ -3,10 +3,10 @@
     sibling tools (day-zero / invoice-generator / order-processor) so the sign-in/out chrome is identical
     across all four: the avatar (hover-expands a name/email pill on fine pointers) sits beside Settings +
     Sign out shadcn Tooltip icon buttons, shown identically at every width — no mobile dialog.
-    Sign out runs authClient.signOut() then a full navigation to /api/logout (clears every cookie variant).
+    Sign out is a plain <a href="/api/logout"> link (data-sveltekit-reload) — a native server logout
+    that needs ZERO client JS, so a layout-subtree hydration failure can't leave it dead (see below).
 -->
 <script lang="ts">
-    import { authClient } from "$lib/auth-client";
     import { cn } from "$lib/utils";
     import * as Tooltip from "$lib/components/ui/tooltip";
     import { IconButton } from "$lib/ds";
@@ -23,21 +23,7 @@
 
     let { user, currentUser }: Props = $props();
 
-    let isLoggingOut = $state(false);
     let expanded = $state(false);
-
-    const handleLogout = () => {
-        isLoggingOut = true;
-        // Fire the client sign-out best-effort, but NEVER await it: authClient.signOut() does not
-        // return control on a non-2xx response (rate-limit / CSRF / transient) — it leaves the
-        // promise pending, and `await` would then hang here forever, so the redirect below never
-        // runs and logout silently "does nothing". /api/logout is the authoritative logout (kills
-        // the D1 session + expires every cookie variant server-side), so we redirect regardless.
-        void authClient.signOut().catch(() => {});
-        // Full navigation (not goto): re-fetches a clean logged-out state AND lets the server expire
-        // the cookieCache `session_data` cookie that signOut alone can leave behind.
-        window.location.href = "/api/logout";
-    };
 </script>
 
 {#snippet avatarVisual(sizeClass: string, iconClass: string)}
@@ -105,32 +91,24 @@
             <Tooltip.Root>
                 <Tooltip.Trigger>
                     {#snippet child({ props })}
-                        <!-- {...props} first so our onclick/disabled win (Bits tooltip injects its own onclick) -->
+                        <!-- Native link (exactly like Settings above), NOT a JS button: a full navigation
+                             to /api/logout works even if this layout subtree never hydrates. data-sveltekit-reload
+                             forces a real browser navigation (no client router) so it reaches the server endpoint. -->
                         <IconButton
+                            href="/api/logout"
+                            data-sveltekit-reload
                             tone="destructive"
                             aria-label="Sign out"
-                            class={isLoggingOut ? "cursor-wait" : ""}
                             {...props}
-                            onclick={handleLogout}
-                            disabled={isLoggingOut}
                         >
-                            {#if isLoggingOut}
-                                <div
-                                    class="border-ink-muted h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"
-                                    aria-hidden="true"
-                                ></div>
-                            {:else}
-                                <Power
-                                    class="text-ink-muted pointer-fine:group-hover:text-destructive size-[1.125rem] transition-colors"
-                                    aria-hidden="true"
-                                />
-                            {/if}
+                            <Power
+                                class="text-ink-muted pointer-fine:group-hover:text-destructive size-[1.125rem] transition-colors"
+                                aria-hidden="true"
+                            />
                         </IconButton>
                     {/snippet}
                 </Tooltip.Trigger>
-                {#if !isLoggingOut}
-                    <Tooltip.Content side="bottom">Sign out</Tooltip.Content>
-                {/if}
+                <Tooltip.Content side="bottom">Sign out</Tooltip.Content>
             </Tooltip.Root>
         </Tooltip.Provider>
     </div>
