@@ -3,7 +3,6 @@
     import { Toaster } from "svelte-sonner";
     import { CloudUpload } from "@lucide/svelte";
     import { page } from "$app/state";
-    import Navbar from "$lib/components/Navbar.svelte";
     import User from "$lib/components/User.svelte";
     import HeroHeading from "$lib/components/HeroHeading.svelte";
     import SectionTabs from "$lib/components/SectionTabs.svelte";
@@ -39,7 +38,7 @@
     <!-- Account controls in an invisible navbar (in-flow, no bg/border) on every route except the
          bare /login canvas; the main section starts cleanly below it. -->
     {#if !isLogin}
-        <Navbar>
+        <header class="flex w-full items-center justify-end px-[var(--content-x)] pt-4 sm:pt-6">
             {#if data?.user}
                 <User
                     user={data.user}
@@ -58,7 +57,7 @@
                     <span class="sm:hidden">Sign in</span>
                 </a>
             {/if}
-        </Navbar>
+        </header>
     {/if}
 
     {#if showTabs}

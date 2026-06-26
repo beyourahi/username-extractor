@@ -1,5 +1,5 @@
 <!--
-    Signed-in account cluster, rendered inline inside the invisible <Navbar>. Ported verbatim from the
+    Signed-in account cluster, rendered inline inside the invisible header in +layout.svelte. Ported verbatim from the
     sibling tools (day-zero / invoice-generator / order-processor) so the sign-in/out chrome is identical
     across all four: the avatar (hover-expands a name/email pill on fine pointers) sits beside Settings +
     Sign out shadcn Tooltip icon buttons, shown identically at every width — no mobile dialog.
