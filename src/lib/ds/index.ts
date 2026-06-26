@@ -24,6 +24,8 @@ export { default as SettingsSection } from "./components/SettingsSection.svelte"
 export { default as SettingsRow } from "./components/SettingsRow.svelte";
 export { default as SettingsActions } from "./components/SettingsActions.svelte";
 export { default as SettingsSaveBar } from "./components/SettingsSaveBar.svelte";
+export { default as Select } from "./components/Select.svelte";
+export { default as StatusBadge } from "./components/StatusBadge.svelte";
 
 export {
 	inputBase,

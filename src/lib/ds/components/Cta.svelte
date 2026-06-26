@@ -16,7 +16,7 @@
 			variant: {
 				primary: "bg-signal px-[28px] py-[14px] text-button text-background hover:bg-signal/90",
 				secondary:
-					"border border-hair bg-transparent px-[28px] py-[14px] text-button text-foreground hover:border-signal hover:bg-ink-2",
+					"bg-secondary px-[28px] py-[14px] text-button text-secondary-foreground hover:bg-secondary/80",
 				compact: "h-9 bg-signal px-5 text-caption text-background shadow-lg hover:bg-signal/90"
 			},
 			// Orthogonal sizing. `md` = the canonical site-wide pill (inherits the

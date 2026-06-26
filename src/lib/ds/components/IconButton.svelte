@@ -16,12 +16,12 @@
 	 * icon (and, for username-extractor, an optional absolute tooltip `<span>` sibling).
 	 */
 	const iconButton = tv({
-		base: "sleek group relative flex size-10 shrink-0 cursor-pointer touch-manipulation items-center justify-center rounded-full border backdrop-blur-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal active:scale-95 disabled:pointer-events-none disabled:opacity-60",
+		base: "sleek group relative flex size-10 shrink-0 cursor-pointer touch-manipulation items-center justify-center rounded-full backdrop-blur-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal active:scale-95 disabled:pointer-events-none disabled:opacity-60",
 		variants: {
 			tone: {
-				default: "border-hair bg-card pointer-fine:hover:border-foreground/30 pointer-fine:hover:bg-ink-2",
+				default: "bg-card pointer-fine:hover:bg-ink-2",
 				destructive:
-					"border-hair bg-card pointer-fine:hover:border-destructive/50 pointer-fine:hover:bg-destructive/10"
+					"bg-card pointer-fine:hover:bg-destructive/10 pointer-fine:hover:text-destructive"
 			}
 		},
 		defaultVariants: {

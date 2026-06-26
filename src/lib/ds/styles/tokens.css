@@ -134,6 +134,10 @@
 	--signal: var(--color-ink-1000);
 	--ink-muted: var(--color-ink-500);
 	--ink-2: var(--color-ink-100);
+	/* Functional status — the sanctioned mint for the live "connected" state, rendered
+	   ONLY via StatusBadge + the inline "Saved" check (the strict marketing site never
+	   uses it). One value across light/dark so all four tools' badges match exactly. */
+	--status-connected: oklch(0.696 0.149 162.5);
 	--hair: oklch(0 0 0 / 0.1);
 	--hair-soft: oklch(0 0 0 / 0.06);
 
@@ -227,6 +231,7 @@
 	--signal: var(--color-ink-0);
 	--ink-muted: var(--color-ink-400);
 	--ink-2: var(--color-ink-900);
+	--status-connected: oklch(0.696 0.149 162.5);
 	--hair: oklch(1 0 0 / 0.1);
 	--hair-soft: oklch(1 0 0 / 0.055);
 
@@ -287,6 +292,7 @@
 	--color-signal: var(--signal);
 	--color-ink-muted: var(--ink-muted);
 	--color-ink-2: var(--ink-2);
+	--color-status-connected: var(--status-connected);
 	--color-hair: var(--hair);
 	--color-hair-soft: var(--hair-soft);
 
