@@ -30,7 +30,7 @@
         {#if page > 1}
             <a
                 href={hrefFor(page - 1)}
-                class="sleek text-foreground border-hair hover:border-signal hover:bg-ink-2 text-caption inline-flex h-7 touch-manipulation items-center rounded-md border px-2.5 font-medium whitespace-nowrap"
+                class="sleek text-foreground border-hair hover:border-signal hover:bg-ink-2 text-caption inline-flex h-7 touch-manipulation items-center rounded-md border px-2.5 font-medium whitespace-nowrap pointer-coarse:min-h-11"
             >
                 Prev
             </a>
@@ -38,7 +38,7 @@
         {#if page < totalPages}
             <a
                 href={hrefFor(page + 1)}
-                class="sleek text-foreground border-hair hover:border-signal hover:bg-ink-2 text-caption inline-flex h-7 touch-manipulation items-center rounded-md border px-2.5 font-medium whitespace-nowrap"
+                class="sleek text-foreground border-hair hover:border-signal hover:bg-ink-2 text-caption inline-flex h-7 touch-manipulation items-center rounded-md border px-2.5 font-medium whitespace-nowrap pointer-coarse:min-h-11"
             >
                 Next
             </a>

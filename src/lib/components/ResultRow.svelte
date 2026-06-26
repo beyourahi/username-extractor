@@ -141,7 +141,7 @@
         </p>
     </div>
 
-    <div class="ml-auto flex shrink-0 items-center gap-2">
+    <div class="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
         {#if item.notionStatus}
             <NotionBadge status={item.notionStatus} size="sm" />
         {/if}

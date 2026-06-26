@@ -204,7 +204,7 @@
     {:else}
         <div class="border-hair bg-card overflow-hidden rounded-lg border">
             <div
-                class="border-hair text-ink-muted text-micro hidden gap-3 border-b px-4 py-2.5 font-mono tracking-[0.14em] uppercase sm:grid sm:grid-cols-[minmax(150px,1fr)_96px_76px_60px_140px_120px_72px]"
+                class="border-hair text-ink-muted text-micro hidden gap-3 border-b px-4 py-2.5 font-mono tracking-[0.14em] uppercase lg:grid lg:grid-cols-[minmax(150px,1fr)_96px_76px_60px_140px_120px_72px]"
             >
                 <span>Username</span>
                 <span>Platform</span>
@@ -216,7 +216,7 @@
             </div>
             {#each data.leads as l, i (l.id)}
                 <div
-                    class="status-transition hover:bg-ink-2/50 flex flex-col gap-2 px-4 py-3 sm:grid sm:grid-cols-[minmax(150px,1fr)_96px_76px_60px_140px_120px_72px] sm:items-center sm:gap-3"
+                    class="status-transition hover:bg-ink-2/50 flex flex-col gap-2 px-4 py-3 lg:grid lg:grid-cols-[minmax(150px,1fr)_96px_76px_60px_140px_120px_72px] lg:items-center lg:gap-3"
                     style={i ? "border-top: 1px solid var(--hair);" : undefined}
                 >
                     <div class="flex min-w-0 items-center gap-2">
@@ -241,7 +241,7 @@
                     </div>
                     <PlatformBadge platform={l.platform as Platform} size="sm" />
                     <TierBadge tier={l.tier as Tier} size="sm" />
-                    <span class="text-ink-muted font-mono text-xs tabular-nums sm:text-right"
+                    <span class="text-ink-muted font-mono text-xs tabular-nums lg:text-right"
                         >{l.confidence.toFixed(0)}%</span
                     >
                     {#if l.sourceJobId}
@@ -255,7 +255,7 @@
                         <span class="text-ink-muted text-caption font-mono">—</span>
                     {/if}
                     <NotionBadge status={l.notionStatus as NotionStatus} size="sm" />
-                    <div class="flex items-center gap-1 sm:justify-end">
+                    <div class="flex items-center gap-1 lg:justify-end">
                         {#if l.notionStatus === "pending" || l.notionStatus === "invalid"}
                             <Button
                                 variant="ghost"
@@ -288,7 +288,7 @@
                         </Button>
                     </div>
                     {#if l.createdAt}
-                        <p class="text-ink-muted text-micro col-span-full -mt-1 font-mono tabular-nums sm:hidden">
+                        <p class="text-ink-muted text-micro col-span-full -mt-1 font-mono tabular-nums lg:hidden">
                             {fmtDate(l.createdAt)}
                         </p>
                     {/if}

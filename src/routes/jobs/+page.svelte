@@ -76,7 +76,7 @@
 
         <div class="border-hair bg-card overflow-hidden rounded-lg border">
             <div
-                class="border-hair text-ink-muted text-micro hidden gap-3 border-b px-4 py-2.5 font-mono tracking-[0.14em] uppercase sm:grid sm:grid-cols-[minmax(220px,1fr)_80px_110px_120px_90px_24px]"
+                class="border-hair text-ink-muted text-micro hidden gap-3 border-b px-4 py-2.5 font-mono tracking-[0.14em] uppercase lg:grid lg:grid-cols-[minmax(220px,1fr)_80px_110px_120px_90px_24px]"
             >
                 <span>Job</span>
                 <span class="text-right">Images</span>
@@ -89,7 +89,7 @@
                 {#each past as job, i (job.id)}
                     <a
                         href={`/jobs/${job.id}`}
-                        class="status-transition hover:bg-ink-2/40 flex w-full flex-col gap-2 px-4 py-3 text-left sm:grid sm:grid-cols-[minmax(220px,1fr)_80px_110px_120px_90px_24px] sm:items-center sm:gap-3"
+                        class="status-transition hover:bg-ink-2/40 flex w-full flex-col gap-2 px-4 py-3 text-left lg:grid lg:grid-cols-[minmax(220px,1fr)_80px_110px_120px_90px_24px] lg:items-center lg:gap-3"
                         style={i ? "border-top: 1px solid var(--hair);" : undefined}
                     >
                         <div class="min-w-0">
@@ -121,12 +121,12 @@
                                 {relTime(job.createdAt)} · <span class="font-mono">{job.vlmModel}</span>
                             </p>
                         </div>
-                        <p class="text-ink-muted font-mono tabular-nums sm:text-right">{job.imageCount}</p>
-                        <div class="font-mono whitespace-nowrap sm:text-right">
+                        <p class="text-ink-muted font-mono tabular-nums lg:text-right">{job.imageCount}</p>
+                        <div class="font-mono whitespace-nowrap lg:text-right">
                             <span class="text-brand tabular-nums">{job.counts.verified ?? 0}</span>
                             <span class="text-ink-muted tabular-nums">/{job.imageCount}</span>
                         </div>
-                        <div class="flex flex-wrap items-center gap-1.5 sm:justify-end">
+                        <div class="flex flex-wrap items-center gap-1.5 lg:justify-end">
                             {#if (job.counts.review ?? 0) > 0}
                                 <span class="text-tier-med-fg text-caption font-mono tabular-nums" title="Review">
                                     ↻{job.counts.review}
@@ -146,10 +146,10 @@
                                 </span>
                             {/if}
                         </div>
-                        <p class="text-ink-muted font-mono text-xs whitespace-nowrap tabular-nums sm:text-right">
+                        <p class="text-ink-muted font-mono text-xs whitespace-nowrap tabular-nums lg:text-right">
                             {elapsedFmt(job.completedAt ? job.completedAt - job.createdAt : null)}
                         </p>
-                        <ChevronRight size={14} class="text-ink-muted hidden sm:inline" />
+                        <ChevronRight size={14} class="text-ink-muted hidden lg:inline" />
                     </a>
                 {/each}
             </div>
