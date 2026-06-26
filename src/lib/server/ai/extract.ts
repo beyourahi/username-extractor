@@ -53,7 +53,6 @@ export interface ExtractInput {
     /** Selected Workers AI vision model id. Defaults to the benchmark-validated model. */
     model?: string;
     imageBytes: ArrayBuffer | Uint8Array;
-    prompt?: string;
 }
 
 export interface ExtractResult {
@@ -112,11 +111,14 @@ function scoreProfileConfidence(opts: {
 }
 
 export async function extractUsernameFromImage(input: ExtractInput): Promise<ExtractResult> {
-    const prompt = input.prompt ?? DETECT_PROFILE_PROMPT;
     const model = input.model ?? DEFAULT_VISION_MODEL;
     const image = toByteArray(input.imageBytes);
 
-    const raw = await runVisionViaRest(input.creds, model, { image, prompt, maxTokens: MAX_OUTPUT_TOKENS });
+    const raw = await runVisionViaRest(input.creds, model, {
+        image,
+        prompt: DETECT_PROFILE_PROMPT,
+        maxTokens: MAX_OUTPUT_TOKENS
+    });
     const rawText = extractResponseText(raw);
 
     const parsed = parseProfileResponse(rawText);
