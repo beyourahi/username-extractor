@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hasUnusualPattern, isValidInstagramFormat } from "../validate";
+import { hasUnusualPattern, isValidInstagramFormat, isPlaceholderName } from "../validate";
 
 describe("isValidInstagramFormat", () => {
     describe("positive cases", () => {
@@ -127,5 +127,30 @@ describe("hasUnusualPattern", () => {
             // 2 specials of 3 chars => 66% > 50%
             expect(hasUnusualPattern("a..")).toBe(true);
         });
+    });
+});
+
+describe("isPlaceholderName", () => {
+    it("flags the placeholders models echo when they can't read a handle", () => {
+        for (const p of [
+            "Some Display Name",
+            "My Channel",
+            "Example Name",
+            "example_name",
+            "Channel Name",
+            "John Doe"
+        ]) {
+            expect(isPlaceholderName(p)).toBe(true);
+        }
+    });
+
+    it("does not flag real brand handles", () => {
+        for (const real of ["luzzentobd", "ranowofficialbd", "coffeetrapdhaka", "handifyy_", "punsandpaws.shop"]) {
+            expect(isPlaceholderName(real)).toBe(false);
+        }
+    });
+
+    it("returns false for empty input", () => {
+        expect(isPlaceholderName("")).toBe(false);
     });
 });

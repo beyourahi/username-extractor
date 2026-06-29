@@ -38,8 +38,17 @@ export function extractResponseText(raw: unknown): string {
         const first = choices[0] as Record<string, unknown> | undefined;
         if (first) {
             const message = first["message"] as Record<string, unknown> | undefined;
-            if (message && typeof message["content"] === "string") {
-                return message["content"];
+            if (message) {
+                const content = message["content"];
+                if (typeof content === "string") {
+                    return content;
+                }
+                // Some chat-vision models return content as an array of blocks ([{type:"text",text}]).
+                if (Array.isArray(content)) {
+                    return content
+                        .map((p) => (typeof p === "string" ? p : ((p as { text?: unknown })?.text ?? "")))
+                        .join("");
+                }
             }
             if (typeof first["text"] === "string") {
                 return first["text"];

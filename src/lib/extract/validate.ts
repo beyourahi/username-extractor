@@ -11,6 +11,69 @@ const REPEATED_SPECIAL_RE = /[._]{4,}/;
 const VOWELS = new Set(["a", "e", "i", "o", "u"]);
 
 /**
+ * Generic placeholder identifiers a VLM emits when it CAN'T actually read a handle —
+ * it echoes the prompt's example concept ("Some Display Name", "My Channel", "Example
+ * Name") instead. Without this guard those become `verified` leads (M-020). Matched on
+ * a normalized form (lowercase, alnum-only) so spacing/punctuation variants collapse.
+ */
+const PLACEHOLDER_NAMES = new Set([
+    "examplename",
+    "exampleuser",
+    "exampleusername",
+    "examplehandle",
+    "examplepage",
+    "examplechannel",
+    "exampleaccount",
+    "exampleorg",
+    "examplebrand",
+    "example",
+    "somedisplayname",
+    "displayname",
+    "mychannel",
+    "channelname",
+    "channel",
+    "yourname",
+    "yourusername",
+    "yourhandle",
+    "username",
+    "usernamehere",
+    "handle",
+    "johndoe",
+    "janedoe",
+    "fullname",
+    "firstlast",
+    "namesurname",
+    "pagename",
+    "profilename",
+    "accountname",
+    "brandname",
+    "companyname",
+    "name",
+    "profile",
+    "user",
+    "account",
+    "notvisible",
+    "nothandle",
+    "nousername",
+    "unknown",
+    "none",
+    "na"
+]);
+
+function normalizeName(s: string): string {
+    return s.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+/**
+ * True when the extracted identifier is a generic placeholder the model echoed instead
+ * of a real handle. Callers MUST drop these (status → review, never stored as a lead).
+ */
+export function isPlaceholderName(s: string): boolean {
+    if (!s) return false;
+    return PLACEHOLDER_NAMES.has(normalizeName(s));
+}
+
+/**
  * Instagram handle format rules (all must pass):
  *   length ∈ [1, 30]; charset `[a-z0-9._]`; first char alphanumeric;
  *   does not end with `.`; no consecutive `..`.

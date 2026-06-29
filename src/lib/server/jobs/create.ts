@@ -21,6 +21,7 @@ import type { Db } from "$lib/server/db";
 import { jobs, jobItems, userSettings } from "$lib/server/schema";
 import { emit } from "$lib/server/analytics";
 import { loadCloudflareConfig, isCloudflareConnected } from "$lib/server/ai/cloudflare-config";
+import { DEFAULT_VISION_MODEL } from "$lib/server/ai/run-rest";
 import type { QueueMessage } from "$lib/types/messages";
 
 export class QuotaExceededError extends Error {
@@ -76,7 +77,9 @@ export interface CreateJobResult {
 /** 0 = unlimited. Inference is billed to the user's own Cloudflare account, so the owner imposes
  *  no cap by default; a user may still set a positive `daily_image_quota` as a self-serve kill-switch. */
 const DEFAULT_DAILY_QUOTA = 0;
-const VLM_MODEL = "@cf/moonshotai/kimi-k2.6";
+// Recorded on the job row for display/audit. The per-item model actually used is resolved
+// per-user (user_settings.cloudflare_model ?? DEFAULT_VISION_MODEL) in the consumer.
+const VLM_MODEL = DEFAULT_VISION_MODEL;
 
 function sanitizeFilename(name: string): string {
     return (

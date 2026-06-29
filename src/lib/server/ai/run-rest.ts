@@ -15,8 +15,13 @@
 
 const CF_API = "https://api.cloudflare.com/client/v4";
 
-/** Default vision model — the benchmark-validated one. New users start here. */
-export const DEFAULT_VISION_MODEL = "@cf/moonshotai/kimi-k2.6";
+/**
+ * Default vision model — benchmark-validated (docs/benchmark.md) at 16/16 on a real
+ * lead-screenshot sample. Reads full screenshots correctly via the chat/image_url
+ * request format below. (The former default `@cf/moonshotai/kimi-k2.6` scored 0/16 —
+ * a text-first model that doesn't actually read the image; see M-020.)
+ */
+export const DEFAULT_VISION_MODEL = "@cf/mistralai/mistral-small-3.1-24b-instruct";
 
 export interface CloudflareCreds {
     accountId: string;
@@ -62,34 +67,84 @@ function kindForStatus(status: number): CfErrorKind {
     return "transport";
 }
 
+/** Sniff an image MIME type from leading magic bytes; default to JPEG. */
+function sniffMime(bytes: number[]): string {
+    if (bytes[0] === 0xff && bytes[1] === 0xd8) return "image/jpeg";
+    if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return "image/png";
+    if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) return "image/gif";
+    if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46) return "image/webp";
+    return "image/jpeg";
+}
+
+/** Base64-encode a byte array in chunks (avoids arg-count limits / stack overflow on large images). */
+function bytesToBase64(bytes: number[]): string {
+    let binary = "";
+    const CHUNK = 8192;
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+        binary += String.fromCharCode(...bytes.slice(i, i + CHUNK));
+    }
+    return btoa(binary);
+}
+
+async function postRun(creds: CloudflareCreds, model: string, body: Record<string, unknown>): Promise<Response> {
+    return fetch(`${CF_API}/accounts/${creds.accountId}/ai/run/${model}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${creds.apiToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+    });
+}
+
+function unwrapResult(json: unknown): unknown {
+    return json && typeof json === "object" && "result" in json ? (json as { result: unknown }).result : json;
+}
+
 /**
  * Runs one image through the user's chosen model on the user's account.
  * Returns the unwrapped model output (hand straight to `extractResponseText`).
  * Throws `CfInferenceError` on any non-2xx so the consumer can map it.
+ *
+ * Modern instruct/chat vision models (mistral-small-3.1, llama-4-scout, gemma, kimi)
+ * REQUIRE the OpenAI-style `messages` + `image_url` (base64 data URL) schema — the
+ * legacy `{ prompt, image: number[] }` shape is silently ignored by them (they never
+ * see the image and emit placeholders; root cause of M-020). We send chat first and
+ * fall back to the legacy shape only if a model rejects it (the older image-to-text
+ * models like llava expect `{ prompt, image }`).
  */
 export async function runVisionViaRest(
     creds: CloudflareCreds,
     model: string,
     input: VisionRestInput
 ): Promise<unknown> {
-    // Map the camelCase `maxTokens` to the Workers AI `max_tokens` body key.
-    const body: Record<string, unknown> = { image: input.image, prompt: input.prompt };
-    if (input.maxTokens !== undefined) {
-        body["max_tokens"] = input.maxTokens;
-    }
+    const maxTokens = input.maxTokens ?? 512;
+    const dataUrl = `data:${sniffMime(input.image)};base64,${bytesToBase64(input.image)}`;
+    const chatBody: Record<string, unknown> = {
+        messages: [
+            {
+                role: "user",
+                content: [
+                    { type: "text", text: input.prompt },
+                    { type: "image_url", image_url: { url: dataUrl } }
+                ]
+            }
+        ],
+        max_tokens: maxTokens
+    };
 
     let res: Response;
     try {
-        res = await fetch(`${CF_API}/accounts/${creds.accountId}/ai/run/${model}`, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${creds.apiToken}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(body)
-        });
+        res = await postRun(creds, model, chatBody);
     } catch (e) {
         throw new CfInferenceError(0, "transport", e instanceof Error ? e.message : "network error");
+    }
+
+    // 400 == this model rejects the chat schema → retry the legacy image-to-text shape (llava/uform).
+    if (res.status === 400) {
+        const legacyBody: Record<string, unknown> = { image: input.image, prompt: input.prompt, max_tokens: maxTokens };
+        try {
+            res = await postRun(creds, model, legacyBody);
+        } catch (e) {
+            throw new CfInferenceError(0, "transport", e instanceof Error ? e.message : "network error");
+        }
     }
 
     if (!res.ok) {
@@ -97,9 +152,7 @@ export async function runVisionViaRest(
     }
 
     // Native Workers AI REST wraps the output: { success, result, errors }.
-    // The binding returns `result` directly, so unwrap to keep `extractResponseText` working.
-    const json = (await res.json()) as { result?: unknown };
-    return json && typeof json === "object" && "result" in json ? json.result : json;
+    return unwrapResult(await res.json());
 }
 
 // ── Model catalog ────────────────────────────────────────────────────────────
@@ -199,9 +252,9 @@ export async function listVisionModels(creds: CloudflareCreds): Promise<CfModel[
     if (!byId.has(DEFAULT_VISION_MODEL)) {
         byId.set(DEFAULT_VISION_MODEL, {
             id: DEFAULT_VISION_MODEL,
-            label: "moonshotai/kimi-k2.6",
-            task: "Text Generation",
-            description: "Default vision model (benchmark-validated).",
+            label: "mistralai/mistral-small-3.1-24b-instruct",
+            task: "Image-Text-to-Text",
+            description: "Default vision model (benchmark-validated, 16/16 on real screenshots).",
             deprecated: false,
             beta: false
         });

@@ -23,7 +23,7 @@
 
 import { containsHedging, scoreConfidence } from "$lib/extract/confidence";
 import { classifyStatus, tierOf, type Tier } from "$lib/extract/classify";
-import { hasUnusualPattern } from "$lib/extract/validate";
+import { hasUnusualPattern, isPlaceholderName } from "$lib/extract/validate";
 import { DETECT_PROFILE_PROMPT } from "$lib/extract/prompt";
 import { parseProfileResponse } from "$lib/extract/parse-response";
 import {
@@ -38,7 +38,7 @@ import { extractResponseText } from "./gateway";
 import { runVisionViaRest, DEFAULT_VISION_MODEL, type CloudflareCreds } from "./run-rest";
 
 /** Output cap for the JSON-returning detection prompt — generous so it can't truncate. */
-const MAX_OUTPUT_TOKENS = 256;
+const MAX_OUTPUT_TOKENS = 512;
 
 const BASE_CONFIDENCE = 85;
 const MIN_CONFIDENCE = 60;
@@ -127,7 +127,9 @@ export async function extractUsernameFromImage(input: ExtractInput): Promise<Ext
 
     const cleaned = kind === "display_name" ? cleanDisplayName(parsed.username) : platform.cleanHandle(parsed.username);
 
-    if (!cleaned) {
+    // Drop generic placeholder identifiers the model echoes when it can't read a handle
+    // ("Some Display Name", "My Channel", "Example Name") — never let them become leads (M-020).
+    if (!cleaned || isPlaceholderName(parsed.username) || isPlaceholderName(cleaned)) {
         return {
             username: null,
             platform: platform.id,

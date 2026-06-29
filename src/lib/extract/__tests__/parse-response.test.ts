@@ -82,4 +82,42 @@ describe("parseProfileResponse", () => {
         const text = '{"platform":"instagram","foo":"bar"}';
         expect(parseProfileResponse(text)).toEqual({ platform: "other", username: text, kind: "handle" });
     });
+
+    // ── M-020 fixes ──────────────────────────────────────────────────────────
+
+    it("keeps the LAST valid object when the model echoes an example before the real answer", () => {
+        // Chatty VLMs emit a placeholder example first, the real answer last.
+        const text =
+            ' or {"platform":"youtube","username":"Example Name","kind":"display_name"})\n\n' +
+            '{"platform":"instagram","username":"ebonyperkins.evolvedfinance","kind":"handle"}';
+        expect(parseProfileResponse(text)).toEqual({
+            platform: "instagram",
+            username: "ebonyperkins.evolvedfinance",
+            kind: "handle"
+        });
+    });
+
+    it("recovers the real answer after a stray </think> tag", () => {
+        const text = '</think>{"platform":"facebook","username":"ecrockville","kind":"handle"}';
+        expect(parseProfileResponse(text)).toEqual({
+            platform: "facebook",
+            username: "ecrockville",
+            kind: "handle"
+        });
+    });
+
+    it('unwraps a nested {"description":"…json…"} envelope (llava)', () => {
+        const text =
+            '{"description":" {\\"platform\\": \\"instagram\\", \\"username\\": \\"luzentto\\", \\"kind\\": \\"handle\\"}"}';
+        expect(parseProfileResponse(text)).toEqual({
+            platform: "instagram",
+            username: "luzentto",
+            kind: "handle"
+        });
+    });
+
+    it("does NOT split a JSON object whose string value contains braces", () => {
+        const text = '{"platform":"instagram","username":"a{b}c","kind":"handle"}';
+        expect(parseProfileResponse(text)).toEqual({ platform: "instagram", username: "a{b}c", kind: "handle" });
+    });
 });
