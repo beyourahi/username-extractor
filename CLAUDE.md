@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Stack:** SvelteKit 5 (Svelte 5 runes) + Bun + Tailwind v4 + Better Auth (Google OAuth + One Tap + passkey/biometric) + Cloudflare Workers (D1, R2, KV, Queues, Durable Objects, Workers AI, Analytics Engine). Per-image inference runs on each **user's own Cloudflare account** (bring-your-own, billed to them) via the Workers AI REST API.
 
-The algorithmic core — Levenshtein near-duplicate detection, tier-based confidence scoring, Notion smart dedup, username cleaning — is a verbatim port of the Python implementation. Files in `src/lib/extract/` and `src/lib/notion/dedup.ts` cite line numbers from the original. **Do not change behavior in these modules casually** — any change invalidates the recorded Kimi K2.6 accuracy benchmark.
+The algorithmic core — Levenshtein near-duplicate detection, tier-based confidence scoring, Notion smart dedup, username cleaning — is a verbatim port of the Python implementation. Files in `src/lib/extract/` and `src/lib/notion/dedup.ts` cite line numbers from the original. **Do not change behavior in these modules casually** — any change invalidates the recorded accuracy benchmark (`docs/benchmark.md`).
 
 ## Common commands
 
@@ -28,7 +28,7 @@ bun run test                 # vitest run (unit suite)
 bun run test:watch
 bunx vitest run src/lib/extract/__tests__/clean.test.ts   # single test file
 bunx vitest run -t "cleans handles"                       # single test by name pattern
-bun run benchmark            # Kimi K2.6 accuracy run against checked-in fixtures → docs/benchmark.md (HITS PAID AI, run on demand only)
+bun run benchmark            # Vision-model accuracy run vs checked-in fixtures → docs/benchmark.md (HITS PAID AI; needs CLOUDFLARE_ACCOUNT_ID + CLOUDFLARE_API_TOKEN env — FAILS LOUD if absent, never writes a template)
 bun run cf-typegen           # regenerate worker-configuration.d.ts from wrangler.jsonc bindings
 bun run db:generate          # Drizzle: emit SQL migration from schema.ts changes
 bun run db:check             # Drizzle: validate migration consistency (offline)
@@ -62,7 +62,7 @@ QUEUE "image-jobs"        max_batch_size 5, max_retries 3, DLQ "image-jobs-dlq"
    │
    ▼
 queueConsumer             (src/lib/server/queue/consumer.ts) — one message = one image
-   ├─ extractUsernameFromImage  →  runVisionViaRest on the USER's own Cloudflare account (billed to them); model per-user, default @cf/moonshotai/kimi-k2.6; returns {platform, username, kind}
+   ├─ extractUsernameFromImage  →  runVisionViaRest on the USER's own Cloudflare account (billed to them); model per-user, default @cf/mistralai/mistral-small-3.1-24b-instruct (sent via the chat/image_url schema); returns {platform, username, kind}
    ├─ per-platform cleanHandle (or cleanDisplayName) / scoreProfileConfidence / classifyStatus / tierOf
    ├─ existsExact + findSimilarExisting  →  exact + Levenshtein near-dup check against leads (scoped to the detected platform)
    ├─ UPDATE job_items + INSERT leads (when verified & non-duplicate)
@@ -107,7 +107,7 @@ User Notion tokens are encrypted at rest using AES-GCM keyed by `NOTION_TOKEN_EN
 Per-image extraction does **not** use the owner's bound `env.AI`. It runs on the **end user's own Cloudflare account** over the Workers AI REST API (billed to them):
 
 - Creds + selected model live encrypted in `user_settings` (`cloudflare_token_encrypted`, `cloudflare_account_id`, `cloudflare_model`) — same AES-GCM layout/key as the Notion token. Resolved per-user via `resolveCloudflareCreds` (`src/lib/server/ai/cloudflare-config.ts`).
-- `runVisionViaRest` (`src/lib/server/ai/run-rest.ts`) POSTs `/accounts/{id}/ai/run/{model}`; `listVisionModels` GETs `/ai/models/search` for the settings picker (KV-cached 24h per account). Default model: `@cf/moonshotai/kimi-k2.6` (`DEFAULT_VISION_MODEL`, benchmark-validated).
+- `runVisionViaRest` (`src/lib/server/ai/run-rest.ts`) POSTs `/accounts/{id}/ai/run/{model}` using the **OpenAI-style chat schema** (`messages` with a base64 `image_url` data URL) — modern instruct/chat vision models ignore the legacy `{prompt,image}` shape and never see the image (root cause of the original 0% extraction; see M-020). Falls back to the legacy shape on a 400 (older image-to-text models like llava). `listVisionModels` GETs `/ai/models/search` for the settings picker (KV-cached 24h per account). Default model: `@cf/mistralai/mistral-small-3.1-24b-instruct` (`DEFAULT_VISION_MODEL`, benchmark-validated 16/16 on real screenshots).
 - A connected account is **mandatory** — `createJob` throws `CloudflareNotConnectedError` up front, and the consumer re-checks per item.
 - Failures throw `CfInferenceError` with `kind`: `auth` / `model_unavailable` → fail the item (no retry — a retry just re-burns the rejection); `rate_limit` → revert item to `pending` and requeue with backoff; `transport` → one inline retry, then fail. User-facing strings in `src/lib/server/ai/errors.ts`.
 - Default daily quota is now **0 = unlimited** (billing sits with the user); a user may still set a positive `daily_image_quota` as a self-serve kill-switch.
@@ -119,7 +119,7 @@ The legacy `env.AI` + AI-Gateway path (`src/lib/server/ai/gateway.ts#runVisionWi
 - **D1 (`username-extractor`)** — Better Auth tables (`users`, `sessions`, `accounts`, `verifications`, `passkeys`, `rate_limits` — snake_case + plural, `usePlural: true`) plus app tables (`user_settings`, `jobs`, `job_items`, `leads`). Schema in `src/lib/server/schema.ts` (Drizzle). All timestamps are Unix epoch ms in `INTEGER` columns (SQLite has no native datetime). Migrations live in `migrations/`: `0000_elite_mandarin` (baseline) + `0001_tough_maggott` (`passkeys` table) + `0002_perpetual_surge` (per-platform: adds `platform`/`profile_url`/`kind` to `leads` with the `uniq_leads_user_username_platform` index, and `platform`/`kind` to `job_items`) + `0003_big_living_mummy` (drops the now-superseded `leads.ig_url`). Non-obvious columns: `jobs.upload_complete` (gates chunked-upload finalization), `leads.platform` (defaults `'instagram'` to backfill pre-multi-platform rows; `profile_url` is NULL for display-name leads and the `other` platform), `user_settings.dedup_keep_strategy` (`best`/`oldest`/`newest`), and `user_settings.cloudflare_token_encrypted`/`cloudflare_account_id`/`cloudflare_model` (the BYO Cloudflare creds).
 - **R2 (`username-extractor-uploads`)** — raw screenshot bytes. Keys are namespaced per job. A nightly cron (`0 3 * * *`) in `src/lib/server/cron/sweep.ts` reaps stale objects.
 - **KV (`username_extractor_kv`)** — caches: platform-aware profile-existence checks keyed `<platform>:exists:<username>` (7-day TTL, read-through via `src/lib/social/cache.ts`; validator errors are never cached) + per-account vision-model lists (24h TTL).
-- **Workers AI** — per-item inference runs on the **user's own** Cloudflare account via REST (see "Per-user Cloudflare inference" above), default model `@cf/moonshotai/kimi-k2.6`. The bound `env.AI` binding remains declared but is no longer used per-item.
+- **Workers AI** — per-item inference runs on the **user's own** Cloudflare account via REST (see "Per-user Cloudflare inference" above), default model `@cf/mistralai/mistral-small-3.1-24b-instruct`. The bound `env.AI` binding remains declared but is no longer used per-item.
 - **Analytics Engine (`username_extractor_job_metrics`)** — per-item / per-job metrics emitted from `src/lib/server/analytics.ts`.
 
 ### Route map
@@ -199,7 +199,7 @@ Bindings (declared in `wrangler.jsonc`): `DB` (D1), `R2`, `KV`, `AI` (declared b
 - **CSRF trustedOrigins** in `svelte.config.js` includes the dev ports and the production hostname `username-extractor.dropoutstudio.co`. Add new hostnames here when binding additional routes.
 - **WebSocket reconnect contract:** the client passes `?last_event_id=<n>` to `/api/jobs/[id]/ws`; the DO replays missed completed items from D1. Don't bypass this for "snapshot" loads — it's the resync path.
 - **CPU limit raised to 300s** (`limits.cpu_ms` in `wrangler.jsonc`) for the queue consumer's worst-case batch. Keep an eye on this if you add expensive per-item work.
-- **Default Workers AI model is `@cf/moonshotai/kimi-k2.6`** (`DEFAULT_VISION_MODEL`) — now user-selectable per account via the settings picker. The PRD spec's `@cf/moonshot/...` (no `ai`) is a typo; don't copy it.
+- **Default Workers AI model is `@cf/mistralai/mistral-small-3.1-24b-instruct`** (`DEFAULT_VISION_MODEL`) — user-selectable per account via the settings picker. **Inference MUST use the chat/`image_url` schema** (`runVisionViaRest`), not the legacy `{prompt,image}` shape: modern chat-vision models (mistral, llama-4-scout, gemma, kimi) silently ignore the image in the legacy shape and hallucinate — the original `@cf/moonshotai/kimi-k2.6` default scored 0/16 for exactly this reason (M-020). mistral-small-3.1 scores 16/16 on real lead screenshots.
 - **Benchmark is paid and manual.** `bun run benchmark` invokes Workers AI per fixture and writes `docs/benchmark.md`. Intentionally not in CI. Any change to `src/lib/extract/` or `src/lib/notion/dedup.ts` should be followed by a manual re-run + commit of the updated report.
 
 For Cloudflare work, prefer the installed Cloudflare skills and Code Mode MCP over your own knowledge.
