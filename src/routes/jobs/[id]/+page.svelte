@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onDestroy } from "svelte";
+    import { invalidateAll } from "$app/navigation";
     import { SvelteMap } from "svelte/reactivity";
     import { toast } from "svelte-sonner";
     import { ChevronRight, Plus, Check, X, Layers } from "@lucide/svelte";
@@ -27,6 +28,13 @@
         if (isLive && typeof window !== "undefined" && !stream) {
             stream = createJobStream(job.id);
         }
+    });
+
+    // The server-loaded job.status is a static snapshot; when the stream reaches a
+    // terminal state, re-fetch so data.job (status/completedAt/summary) reflects the
+    // final state — flips isLive off and renders the right badge/elapsed.
+    $effect(() => {
+        if (stream?.state.completed || stream?.state.cancelled) invalidateAll();
     });
 
     onDestroy(() => stream?.close());

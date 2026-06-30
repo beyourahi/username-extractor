@@ -253,7 +253,7 @@ export const actions: Actions = {
         return { success: true };
     },
 
-    dedup: async ({ request }) => {
+    dedup: async ({ request, fetch }) => {
         const data = await request.formData();
         const dryRun = data.get("dryRun") === "true";
         try {

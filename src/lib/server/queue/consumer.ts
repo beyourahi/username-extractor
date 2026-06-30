@@ -298,15 +298,17 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
     }
 
     if (!(await isJobActive(db, jobId))) {
+        const completedAt = Date.now();
         await db
             .update(jobItems)
-            .set({ status: "failed", error: "Job cancelled", completedAt: Date.now() })
+            .set({ status: "failed", error: "Job cancelled", completedAt })
             .where(eq(jobItems.id, itemId));
         await broadcast(env, jobId, {
             type: "item.failed",
             job_id: jobId,
             item_id: itemId,
-            error: "Job cancelled"
+            error: "Job cancelled",
+            event_id: completedAt
         });
         return;
     }
@@ -330,15 +332,17 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
 
     const obj = await env.R2.get(r2Key);
     if (!obj) {
+        const completedAt = Date.now();
         await db
             .update(jobItems)
-            .set({ status: "failed", error: "R2 object missing", completedAt: Date.now() })
+            .set({ status: "failed", error: "R2 object missing", completedAt })
             .where(eq(jobItems.id, itemId));
         await broadcast(env, jobId, {
             type: "item.failed",
             job_id: jobId,
             item_id: itemId,
-            error: "R2 object missing"
+            error: "R2 object missing",
+            event_id: completedAt
         });
         emit(env, "item_failed", { jobId, userId, itemId, r2Key, status: "r2_missing" });
         return;
@@ -354,11 +358,15 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
     ).catch(() => null);
     if (!cfResolved) {
         const errText = "No Cloudflare account connected — connect one in Settings.";
-        await db
-            .update(jobItems)
-            .set({ status: "failed", error: errText, completedAt: Date.now() })
-            .where(eq(jobItems.id, itemId));
-        await broadcast(env, jobId, { type: "item.failed", job_id: jobId, item_id: itemId, error: errText });
+        const completedAt = Date.now();
+        await db.update(jobItems).set({ status: "failed", error: errText, completedAt }).where(eq(jobItems.id, itemId));
+        await broadcast(env, jobId, {
+            type: "item.failed",
+            job_id: jobId,
+            item_id: itemId,
+            error: errText,
+            event_id: completedAt
+        });
         emit(env, "item_failed", { jobId, userId, itemId, r2Key, status: "cf_not_connected" });
         await maybeFinalizeJob(env, db, jobId, userId, startedAt);
         return;
@@ -376,11 +384,18 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
             (firstErr.kind === "auth" || firstErr.kind === "model_unavailable")
         ) {
             const errText = itemErrorForCfError(firstErr, model);
+            const completedAt = Date.now();
             await db
                 .update(jobItems)
-                .set({ status: "failed", error: errText, completedAt: Date.now() })
+                .set({ status: "failed", error: errText, completedAt })
                 .where(eq(jobItems.id, itemId));
-            await broadcast(env, jobId, { type: "item.failed", job_id: jobId, item_id: itemId, error: errText });
+            await broadcast(env, jobId, {
+                type: "item.failed",
+                job_id: jobId,
+                item_id: itemId,
+                error: errText,
+                event_id: completedAt
+            });
             emit(env, "item_failed", { jobId, userId, itemId, r2Key, status: `cf_${firstErr.kind}` });
             await maybeFinalizeJob(env, db, jobId, userId, startedAt);
             return;
@@ -396,15 +411,17 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
             extraction = await extractUsernameFromImage({ creds, model, imageBytes });
         } catch (secondErr) {
             const msgText = secondErr instanceof Error ? secondErr.message : String(firstErr);
+            const completedAt = Date.now();
             await db
                 .update(jobItems)
-                .set({ status: "failed", error: msgText, completedAt: Date.now() })
+                .set({ status: "failed", error: msgText, completedAt })
                 .where(eq(jobItems.id, itemId));
             await broadcast(env, jobId, {
                 type: "item.failed",
                 job_id: jobId,
                 item_id: itemId,
-                error: msgText
+                error: msgText,
+                event_id: completedAt
             });
             emit(env, "item_failed", {
                 jobId,
@@ -434,13 +451,14 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
     }
 
     if (!extraction.username) {
+        const completedAt = Date.now();
         await db
             .update(jobItems)
             .set({
                 status: "failed",
                 error: "no parseable username",
                 rawModelResponse: diagnostics ? extraction.rawText : null,
-                completedAt: Date.now()
+                completedAt
             })
             .where(eq(jobItems.id, itemId));
 
@@ -463,7 +481,8 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
             type: "item.completed",
             job_id: jobId,
             item_id: itemId,
-            result
+            result,
+            event_id: completedAt
         });
         emit(env, "item_failed", {
             jobId,
@@ -509,6 +528,7 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
         finalStatus = extraction.status;
     }
 
+    const completedAt = Date.now();
     await db
         .update(jobItems)
         .set({
@@ -523,7 +543,7 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
             similarTo,
             editDistance,
             rawModelResponse: diagnostics ? extraction.rawText : null,
-            completedAt: Date.now()
+            completedAt
         })
         .where(eq(jobItems.id, itemId));
 
@@ -576,7 +596,8 @@ async function processMessage(env: ConsumerEnv, db: Db, msg: QueueMessage): Prom
         type: "item.completed",
         job_id: jobId,
         item_id: itemId,
-        result: baseResult
+        result: baseResult,
+        event_id: completedAt
     });
     emit(env, "item_completed", {
         jobId,

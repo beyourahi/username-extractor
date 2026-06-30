@@ -1,3 +1,4 @@
+import { DEFAULT_VISION_MODEL } from "$lib/server/ai/run-rest";
 import type { PageServerLoad } from "./$types";
 
 /** Narrows `userSettings` (from `+layout.server.ts`) to the flags the upload form needs.
@@ -13,6 +14,6 @@ export const load: PageServerLoad = async ({ parent }) => {
         cloudflareConnected: Boolean(
             layout.userSettings?.cloudflareAccountId && layout.userSettings?.cloudflareTokenEncrypted
         ),
-        cloudflareModel: layout.userSettings?.cloudflareModel ?? "@cf/moonshotai/kimi-k2.6"
+        cloudflareModel: layout.userSettings?.cloudflareModel ?? DEFAULT_VISION_MODEL
     };
 };

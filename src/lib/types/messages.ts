@@ -62,6 +62,8 @@ export type Message =
           job_id: string;
           item_id: string;
           result: ItemCompletedResult;
+          /** Item's `completedAt` (epoch ms). Drives reconnect resync (`?last_event_id=`). */
+          event_id?: number;
       }
     | {
           type: "item.notion_updated";
@@ -71,7 +73,14 @@ export type Message =
           notion_page_id: string | null;
           error: string | null;
       }
-    | { type: "item.failed"; job_id: string; item_id: string; error: string }
+    | {
+          type: "item.failed";
+          job_id: string;
+          item_id: string;
+          error: string;
+          /** Item's `completedAt` (epoch ms). Drives reconnect resync (`?last_event_id=`). */
+          event_id?: number;
+      }
     | { type: "job.completed"; job_id: string; summary: JobCompletedSummary }
     | { type: "job.cancelled"; job_id: string };
 

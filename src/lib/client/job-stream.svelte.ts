@@ -76,7 +76,9 @@ export function createJobStream(jobId: string) {
         ws.onmessage = (ev) => {
             try {
                 const msg = JSON.parse(ev.data) as Message & { event_id?: number };
-                if (msg.event_id) state.lastEventId = msg.event_id;
+                if (typeof msg.event_id === "number") {
+                    state.lastEventId = Math.max(state.lastEventId, msg.event_id);
+                }
                 applyMessage(msg);
             } catch (e) {
                 state.error = e instanceof Error ? e.message : "parse-error";

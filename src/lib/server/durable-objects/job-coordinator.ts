@@ -7,7 +7,7 @@
  * durable state.
  *
  * HTTP surface (called via `JOB_COORDINATOR.get(id).fetch(...)`):
- *   GET  /ws?job_id&last_event_id   → 101 upgrade; on reconnect, replays D1 rows with completedAt ≤ last_event_id
+ *   GET  /ws?job_id&last_event_id   → 101 upgrade; on reconnect, replays D1 rows with completedAt > last_event_id
  *   POST /broadcast    { message }  → fanout `message` to all hibernating sockets; on `job.completed`, persists `summary` to `jobs.dedup_summary` as a belt-and-braces write
  *   POST /cancel?job_id             → fanout `{type:"job.cancelled"}` then close all sockets with 1000
  *
@@ -19,7 +19,7 @@
  */
 
 import { DurableObject } from "cloudflare:workers";
-import { and, eq, lte } from "drizzle-orm";
+import { and, eq, gt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "$lib/server/schema";
 import { buildProfileUrl, type ExtractionKind, type Platform } from "$lib/social/platform";
@@ -76,7 +76,7 @@ export class JobCoordinator extends DurableObject<JobCoordinatorEnv> {
         const rows = await db
             .select()
             .from(schema.jobItems)
-            .where(and(eq(schema.jobItems.jobId, jobId), lte(schema.jobItems.completedAt, sinceMs)));
+            .where(and(eq(schema.jobItems.jobId, jobId), gt(schema.jobItems.completedAt, sinceMs)));
 
         for (const row of rows) {
             if (row.status === "pending" || row.status === "running") continue;
