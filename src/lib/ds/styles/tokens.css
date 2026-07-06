@@ -59,6 +59,7 @@
 	--color-ink-700: oklch(0.325 0 0);
 	--color-ink-750: oklch(0.275 0 0);
 	--color-ink-800: oklch(0.269 0 0);
+	--color-ink-850: oklch(0.237 0 0);
 	--color-ink-900: oklch(0.205 0 0);
 	--color-ink-950: oklch(0.145 0 0);
 	--color-ink-1000: oklch(0 0 0);
@@ -205,6 +206,30 @@
 	--shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
 	--shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
 	--shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+
+	/* =========================================================================
+	   SURFACE ELEVATION — borderless depth. Hierarchy is progressively lighter
+	   surface fills (+ an outer shadow for floating/modal layers only) — never a
+	   top-edge sheen or a hairline border/ring. Dark is canonical (page = ink-950,
+	   0.145). Consume via the @utility classes at the foot of this file, or
+	   var(--surface-*) directly.
+	     resting  : cards, tiles, inputs, search bars       → surface-1     (0.205)
+	     hover    : hover state of a resting card/tile/row   → surface-hover (0.237)
+	     raised   : on-card button / chip / badge / nav pill → surface-2     (0.269)
+	     floating : popover / dropdown / tooltip / select    → surface-3     (surface-2 + shadow)
+	     modal    : dialog                                   → surface-modal (surface-2 + shadow)
+	   `hover` and `raised` are DIFFERENT tokens by design, so an on-card button
+	   stays distinct from its card even when the card is hovered. NOTE:
+	   `text-ink-muted` (ink-400) drops below AA on surface-2 — muted text ON any
+	   surface uses `text-muted-foreground` (ink-300, safe on every tier);
+	   `text-ink-muted` is for text on the page. Values are dark-canonical;
+	   light-mode surface values are TBD (no light consumer yet). */
+	--surface-1: var(--color-ink-900); /* 0.205 — resting */
+	--surface-hover: var(--color-ink-850); /* 0.237 — hover of a resting surface */
+	--surface-2: var(--color-ink-800); /* 0.269 — persistent on-card button / chip */
+	--surface-input: var(--color-ink-900); /* 0.205 — shadcn field default */
+	--elev-float: 0 12px 32px -12px oklch(0 0 0 / 0.65), 0 4px 12px -6px oklch(0 0 0 / 0.5);
+	--elev-modal: 0 28px 70px -16px oklch(0 0 0 / 0.75);
 }
 
 /* Canonical Dropout theme. Editorial tokens here EXACTLY match the live site
@@ -374,4 +399,30 @@
 	*::-webkit-scrollbar-track {
 		background: transparent;
 	}
+}
+
+/* =============================================================================
+   SURFACE-ELEVATION UTILITIES — the consumption API for the surface tokens.
+   surface-1/2/hover are pure fills; surface-3/modal add the floating/modal
+   shadow. Compose with variants (hover:surface-hover, lg:surface-1).
+   ============================================================================= */
+@utility surface-1 {
+	background-color: var(--surface-1);
+}
+@utility surface-hover {
+	background-color: var(--surface-hover);
+}
+@utility surface-2 {
+	background-color: var(--surface-2);
+}
+@utility surface-3 {
+	background-color: var(--surface-2);
+	box-shadow: var(--elev-float);
+}
+@utility surface-modal {
+	background-color: var(--surface-2);
+	box-shadow: var(--elev-modal);
+}
+@utility surface-input {
+	background-color: var(--surface-input);
 }
