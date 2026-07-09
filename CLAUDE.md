@@ -187,6 +187,15 @@ Production secrets (`wrangler secret put`):
 
 Bindings (declared in `wrangler.jsonc`): `DB` (D1), `R2`, `KV`, `AI` (declared but unused per-item — inference is BYO over REST), `QUEUE` (producer for `image-jobs`, consumer batch 5, retries 3, DLQ `image-jobs-dlq`), `JOB_COORDINATOR` (DO), `ANALYTICS`, `ASSETS`.
 
+## Test auth & mock data (dev only)
+
+**Reach the signed-in app locally without Google OAuth** — for manual, Playwright, and curl checks. (email/password is disabled, so there's no password to seed; the bypass injects the authed locals directly.)
+
+- **Test user:** `e2e-test-user` / `e2e@test.local` — `hooks.server.ts` sets `event.locals.userId` / `event.locals.userEmail` (plus a synthesized `locals.user`), NOT a real Better Auth session. All gated routes read `locals.userId`, so this unlocks `/leads`, `/jobs`, `/settings`, etc.
+- **Activate:** already on — `.dev.vars` (gitignored) carries `E2E_BYPASS_AUTH=true` (the flag check accepts both `"1"` and `"true"`). The bypass is **DOUBLE-GATED (defense in depth)**: the flag **AND** a `localhost`/`127.0.0.1` request host (`event.url.hostname`), so it stays inert on the prod domain even if the flag ever leaked. Primary safety is still flag-absence — Cloudflare never uploads `.dev.vars`. NOT query-param-gated. Works under `bun run dev` (5173) and `bun run preview` (8787).
+- **Seed the data:** `bun run db:migrate:local` (once) → `bun run seed` (`wrangler d1 execute username-extractor --local --file ./seed/seed.sql`). Idempotent (`seed/seed.sql`, fixed ids + `INSERT OR REPLACE`; the owning `users` row is `INSERT OR IGNORE`). Inserts ~10 realistic Instagram leads (Dhaka/BD handles, mixed HIGH/MED tiers and `added`/`pending`/`invalid`/null Notion statuses) + one completed job with a verified/review/duplicate/failed item breakdown, so `/leads` and `/jobs` render for the test user. Timestamp units match the schema: `users.*_at` = seconds (`unixepoch('now')`), `leads`/`jobs`/`job_items.*_at` = Unix epoch **ms** (`unixepoch(...)*1000`). Extraction itself still needs a connected BYO Cloudflare account — the seed just makes the authed UI non-empty.
+- **⚠️ NEVER enable in production.** `E2E_BYPASS_AUTH` must never appear in `wrangler.jsonc` `vars`/secrets — it grants full unauthenticated access. The real Google OAuth / One Tap / passkey path is byte-for-byte unchanged; the bypass is an additive, double-gated branch.
+
 ## Gotchas
 
 - **Never create branches.** Workspace-wide rule from `~/Desktop/projects/CLAUDE.md`: parallel work uses `git worktree add ../username-extractor-<feature>` and commits land on `main`.
