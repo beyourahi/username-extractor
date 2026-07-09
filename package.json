@@ -23,7 +23,8 @@
         "db:check": "drizzle-kit check",
         "db:migrate": "wrangler d1 migrations apply username-extractor --remote",
         "db:migrate:local": "wrangler d1 migrations apply username-extractor --local",
-        "db:migrate:list": "wrangler d1 migrations list username-extractor --local"
+        "db:migrate:list": "wrangler d1 migrations list username-extractor --local",
+        "seed": "wrangler d1 execute username-extractor --local --file ./seed/seed.sql"
     },
     "devDependencies": {
         "@cloudflare/workers-types": "^4.20260625.1",
