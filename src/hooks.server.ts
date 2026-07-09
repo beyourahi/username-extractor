@@ -20,7 +20,8 @@ import { users } from "$lib/server/schema";
  *  4. SECURITY_HEADERS stamped on EVERY response (including the 401/redirect short-circuits).
  *
  * Dev escape hatch: `E2E_BYPASS_AUTH=1`/`true` (via `.dev.vars` ONLY — never wrangler.jsonc)
- * synthesizes a user so local/preview runs skip the Google round-trip.
+ * synthesizes a user so local/preview runs skip the Google round-trip. DOUBLE-GATED — the flag
+ * AND a localhost/127.0.0.1 request host — so it stays inert on the prod domain even if the flag leaks.
  *
  * Rate-limit state is per-isolate; acceptable as a soft anti-abuse measure, not a hard quota.
  */
@@ -125,8 +126,16 @@ export const handle: Handle = async ({ event, resolve }) => {
         return applySecurityHeaders(await resolve(event));
     }
 
-    // Dev/preview bypass — env-gated (NOT url-gated), lives in `.dev.vars` only.
-    if (env?.E2E_BYPASS_AUTH === "1" || env?.E2E_BYPASS_AUTH === "true") {
+    // Dev/preview bypass — DOUBLE-GATED (defense in depth); synthesizes an e2e-test-user so
+    // local/preview runs skip the Google round-trip:
+    //   (1) flag: E2E_BYPASS_AUTH=1|true — lives in `.dev.vars` (gitignored) ONLY; MUST NOT
+    //       appear in wrangler.jsonc `[vars]`/secrets. Cloudflare never uploads `.dev.vars`, so
+    //       it can't reach prod — this is the PRIMARY safety.
+    //   (2) host: request is localhost/127.0.0.1 — a SECOND factor, so even if the flag ever
+    //       leaked into a deployed env the bypass stays inert on the prod domain.
+    // NOT query-param-gated (a param is attacker-controlled; a bound env var + the request host are not).
+    const isLocalDev = event.url.hostname === "localhost" || event.url.hostname === "127.0.0.1";
+    if (isLocalDev && (env?.E2E_BYPASS_AUTH === "1" || env?.E2E_BYPASS_AUTH === "true")) {
         const now = new Date();
         const userId = "e2e-test-user";
         try {
