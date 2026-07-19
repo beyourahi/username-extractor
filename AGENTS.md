@@ -8,7 +8,7 @@ This file provides guidance to AI coding agent (the coding-agent platform) when 
 
 **Username Extractor** is the production successor to the legacy Python CLI [`extract_usernames`](https://github.com/beyourahi/extract_usernames) (now **retired & archived, read-only**). It extracts social-media usernames from batches of profile screenshots — the model **auto-detects the platform per image** (Instagram, Facebook, TikTok, YouTube, or `other`; it began Instagram-only, hence the legacy naming), including dropping a whole folder of AVIF screenshots, which are normalized to JPEG client-side and streamed up as one chunked job — deduplicates them against a lifetime leads table (**per-platform namespace** — `@john` on Instagram ≠ `@john` on TikTok), and syncs verified results to Notion. Platform logic lives in `src/lib/social/platform.ts` (`Platform` type + per-platform `cleanHandle`/`isValidFormat`/`buildProfileUrl`).
 
-**Stack:** SvelteKit 5 (Svelte 5 runes) + Bun + Tailwind v4 + Better Auth (Google OAuth + One Tap + passkey/biometric) + Cloudflare Workers (D1, R2, KV, Queues, Durable Objects, Workers AI, Analytics Engine). Per-image inference runs on each **user's own Cloudflare account** (bring-your-own, billed to them) via the Workers AI REST API.
+**Stack:** SvelteKit 2 (Svelte 5 runes) + Bun + Tailwind v4 + Better Auth (Google OAuth + One Tap + passkey/biometric) + Cloudflare Workers (D1, R2, KV, Queues, Durable Objects, Workers AI, Analytics Engine). Per-image inference runs on each **user's own Cloudflare account** (bring-your-own, billed to them) via the Workers AI REST API.
 
 The algorithmic core — Levenshtein near-duplicate detection, tier-based confidence scoring, Notion smart dedup, username cleaning — is a verbatim port of the Python implementation. Files in `src/lib/extract/` and `src/lib/notion/dedup.ts` cite line numbers from the original. **Do not change behavior in these modules casually** — any change invalidates the recorded accuracy benchmark (`docs/benchmark.md`).
 
@@ -16,14 +16,13 @@ The algorithmic core — Levenshtein near-duplicate detection, tier-based confid
 
 ```bash
 bun install
-wrangler d1 migrations apply username-extractor --local   # one-time, before first dev run
-bun run dev                  # vite dev (Workers bindings via Vite plugin, no full Workers runtime)
+bun run dev                  # vite dev (no real Workers bindings/runtime)
 bun run preview              # full build + wrangler dev — required to test Queues / DO / AI / scheduled
 bun run build                # vite build + scripts/wrap-worker.mjs (see "Composite worker" below)
-bun run deploy               # build + wrangler deploy
 bun run check                # svelte-kit sync + svelte-check (TS + a11y)
 bun run lint                 # prettier --check . && eslint .
 bun run format               # prettier --write .
+bun run sync-ds              # refresh vendored @dropout/ds from ../../dropout-design-system
 bun run test                 # vitest run (unit suite)
 bun run test:watch
 bunx vitest run src/lib/extract/__tests__/clean.test.ts   # single test file
@@ -37,7 +36,10 @@ bun run db:migrate:local     # apply migrations to local D1
 bun run db:migrate           # apply migrations to remote D1
 bun run db:migrate:list      # list applied/pending migrations against local D1
 bun run db:studio            # Drizzle Studio (requires the 3 CLOUDFLARE_* env vars, see drizzle.config.ts)
+bun run seed                 # idempotent local D1 fixtures for e2e-test-user
 ```
+
+Pushes auto-deploy through Cloudflare Workers Builds; never run the package's manual deploy escape hatch as the routine path.
 
 `bun run dev` does **not** run a real Workers runtime — Queues, the Durable Object, and `scheduled` only fire under `bun run preview` (which invokes `wrangler dev` against the built worker). For pipeline work, use preview.
 
