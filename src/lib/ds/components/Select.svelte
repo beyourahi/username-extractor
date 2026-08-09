@@ -40,7 +40,7 @@
 		onValueChange?: (value: string) => void;
 	} = $props();
 
-	const selectedLabel = $derived(items.find((it) => it.value === value)?.label ?? "");
+	const selectedLabel = $derived(items.find(it => it.value === value)?.label ?? "");
 
 	// exactOptionalPropertyTypes forbids handing bits-ui an explicit `undefined`, so
 	// only include name/id when actually provided.

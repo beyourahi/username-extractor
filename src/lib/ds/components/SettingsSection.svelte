@@ -41,7 +41,9 @@
 			</span>
 		{/if}
 		<div class="flex min-w-0 flex-col gap-1">
-			<Heading as="h2" size="title-sm" class="whitespace-normal sm:whitespace-nowrap lg:text-subtitle">{title}</Heading>
+			<Heading as="h2" size="title-sm" class="whitespace-normal sm:whitespace-nowrap lg:text-subtitle"
+				>{title}</Heading
+			>
 			{#if subtitle}
 				<span class={helperBase}>{subtitle}</span>
 			{/if}

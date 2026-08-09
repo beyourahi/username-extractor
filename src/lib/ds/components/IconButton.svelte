@@ -20,8 +20,7 @@
 		variants: {
 			tone: {
 				default: "bg-card pointer-fine:hover:bg-ink-2",
-				destructive:
-					"bg-card pointer-fine:hover:bg-destructive/10 pointer-fine:hover:text-destructive"
+				destructive: "bg-card pointer-fine:hover:bg-destructive/10 pointer-fine:hover:text-destructive"
 			}
 		},
 		defaultVariants: {
@@ -39,14 +38,7 @@
 			children: Snippet;
 		};
 
-	let {
-		tone = "default",
-		href,
-		type = "button",
-		class: className = "",
-		children,
-		...rest
-	}: Props = $props();
+	let { tone = "default", href, type = "button", class: className = "", children, ...rest }: Props = $props();
 </script>
 
 {#if href}

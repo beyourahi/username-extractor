@@ -34,9 +34,7 @@
 			{@render status()}
 		</div>
 	{/if}
-	<div
-		class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row [&>*]:w-full [&>*]:justify-center sm:[&>*]:w-auto"
-	>
+	<div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row [&>*]:w-full [&>*]:justify-center sm:[&>*]:w-auto">
 		{@render children()}
 	</div>
 </div>

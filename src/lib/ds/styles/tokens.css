@@ -91,11 +91,13 @@
 	--leading-heading: 1.25;
 	--leading-body: 1.625;
 
-	/* Fonts — Google Sans variable family (Flex sans, Code mono). */
+	/* Fonts — Apple system faces on Apple devices; Google Sans elsewhere. */
 	--font-sans:
-		"Google Sans Flex", "Google Sans Flex Fallback", system-ui, -apple-system, "Segoe UI", Roboto,
-		sans-serif;
-	--font-mono: "Google Sans Code", ui-monospace, "SF Mono", Consolas, "Courier New", monospace;
+		-apple-system, BlinkMacSystemFont, "Google Sans Flex", "Google Sans Flex Fallback", system-ui,
+		"Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+	--font-mono:
+		"SFMono-Regular", "SF Mono", "Google Sans Code", ui-monospace, Menlo, Monaco, Consolas,
+		"Liberation Mono", "Courier New", monospace;
 
 	/* Motion — one shared editorial easing. */
 	--ease: cubic-bezier(0.16, 1, 0.3, 1);

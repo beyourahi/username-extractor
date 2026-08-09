@@ -7,9 +7,9 @@
  * raised fills, white hairlines). They read as intended on dark backgrounds.
  */
 
-/** Text input / textarea / select. 16px on mobile (no iOS zoom), mono, hairline. */
+/** Text input / textarea / select. 16px on mobile (no iOS zoom), mono; borderless raised fill (§3.1). */
 export const inputBase =
-	"w-full rounded-[11px] border border-hair bg-white/[0.025] px-[15px] py-[13px] font-mono text-base text-foreground transition-[border-color,background] duration-[250ms] ease-[var(--ease)] outline-none placeholder:text-ink-muted hover:border-white/20 focus:border-white/55 focus:bg-white/[0.04] focus-visible:outline-2 focus-visible:outline-offset-[2px] focus-visible:outline-signal lg:text-xs";
+	"w-full rounded-[11px] border border-transparent bg-white/[0.06] px-[15px] py-[13px] font-mono text-base text-foreground transition-[border-color,background] duration-[250ms] ease-[var(--ease)] outline-none placeholder:text-ink-muted focus:border-white/55 focus:bg-white/[0.1] focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-signal lg:text-xs";
 
 /** Field label — mono, uppercase, micro. */
 export const labelBase = "mb-2.5 block font-mono text-micro text-ink-muted uppercase";
