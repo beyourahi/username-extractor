@@ -96,7 +96,7 @@
 		-apple-system, BlinkMacSystemFont, "Google Sans Flex", "Google Sans Flex Fallback", system-ui,
 		"Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 	--font-mono:
-		"SFMono-Regular", "SF Mono", "Google Sans Code", ui-monospace, Menlo, Monaco, Consolas,
+		ui-monospace, "SFMono-Regular", "SF Mono", "Google Sans Code", Menlo, Monaco, Consolas,
 		"Liberation Mono", "Courier New", monospace;
 
 	/* Motion — one shared editorial easing. */
