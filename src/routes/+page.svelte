@@ -215,7 +215,7 @@
                     <dl class="space-y-2 text-xs">
                         <div class="flex items-center justify-between gap-3">
                             <dt class="text-ink-muted shrink-0">Image model</dt>
-                            <dd class="text-foreground text-caption truncate text-right font-mono whitespace-nowrap">
+                            <dd class="text-foreground text-caption truncate text-right whitespace-nowrap">
                                 {data.cloudflareModel}
                             </dd>
                         </div>

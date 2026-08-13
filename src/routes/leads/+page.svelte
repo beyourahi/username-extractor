@@ -153,7 +153,7 @@
                     <button
                         type="button"
                         onclick={() => chipNav("tier", c.v)}
-                        class="sleek text-caption inline-flex h-7 shrink-0 touch-manipulation items-center rounded-full border px-3 font-mono whitespace-nowrap uppercase"
+                        class="sleek text-caption inline-flex h-7 shrink-0 touch-manipulation items-center rounded-full border px-3 whitespace-nowrap uppercase"
                         style={chipStyle((data.tier ?? "") === c.v, c.tone as "default" | "brand" | "med" | "failed")}
                     >
                         {c.l}
@@ -166,7 +166,7 @@
                     <button
                         type="button"
                         onclick={() => chipNav("notion", c.v)}
-                        class="sleek text-caption inline-flex h-7 shrink-0 touch-manipulation items-center rounded-full border px-3 font-mono whitespace-nowrap uppercase"
+                        class="sleek text-caption inline-flex h-7 shrink-0 touch-manipulation items-center rounded-full border px-3 whitespace-nowrap uppercase"
                         style={chipStyle((data.notion ?? "") === c.v, c.tone)}
                     >
                         {c.l}
@@ -174,7 +174,7 @@
                 {/each}
 
                 <div class="bg-hair mx-1 h-5 w-px"></div>
-                <label class="text-ink-muted text-caption inline-flex items-center gap-2 font-mono">
+                <label class="text-ink-muted text-caption inline-flex items-center gap-2">
                     <Switch
                         checked={Boolean(data.archived)}
                         onchange={(v) => setArchived(v)}
@@ -204,7 +204,7 @@
     {:else}
         <div class="border-hair bg-card overflow-hidden rounded-lg border">
             <div
-                class="border-hair text-ink-muted text-micro hidden gap-3 border-b px-4 py-2.5 font-mono tracking-[0.14em] uppercase lg:grid lg:grid-cols-[minmax(150px,1fr)_96px_76px_60px_140px_120px_72px]"
+                class="border-hair text-ink-muted text-micro hidden gap-3 border-b px-4 py-2.5 tracking-[0.14em] uppercase lg:grid lg:grid-cols-[minmax(150px,1fr)_96px_76px_60px_140px_120px_72px]"
             >
                 <span>Username</span>
                 <span>Platform</span>
@@ -226,13 +226,13 @@
                                 href={l.profileUrl}
                                 target="_blank"
                                 rel="noreferrer"
-                                class="text-foreground min-w-0 truncate font-mono text-sm font-semibold hover:underline"
+                                class="text-foreground min-w-0 truncate text-sm font-semibold hover:underline"
                             >
                                 {l.kind === "display_name" ? l.username : `@${l.username}`}
                             </a>
                         {:else}
                             <span
-                                class="text-foreground min-w-0 truncate font-mono text-sm font-semibold"
+                                class="text-foreground min-w-0 truncate text-sm font-semibold"
                                 title={l.kind === "display_name" ? "Display name — no profile link" : undefined}
                             >
                                 {l.kind === "display_name" ? l.username : `@${l.username}`}
@@ -241,18 +241,16 @@
                     </div>
                     <PlatformBadge platform={l.platform as Platform} size="sm" />
                     <TierBadge tier={l.tier as Tier} size="sm" />
-                    <span class="text-ink-muted font-mono text-xs tabular-nums lg:text-right"
-                        >{l.confidence.toFixed(0)}%</span
-                    >
+                    <span class="text-ink-muted text-xs tabular-nums lg:text-right">{l.confidence.toFixed(0)}%</span>
                     {#if l.sourceJobId}
                         <a
                             href={`/jobs/${l.sourceJobId}`}
-                            class="sleek text-ink-muted hover:text-foreground text-caption truncate text-left font-mono whitespace-nowrap"
+                            class="sleek text-ink-muted hover:text-foreground text-caption truncate text-left whitespace-nowrap"
                         >
                             {l.sourceJobId.slice(0, 18)}
                         </a>
                     {:else}
-                        <span class="text-ink-muted text-caption font-mono">—</span>
+                        <span class="text-ink-muted text-caption">—</span>
                     {/if}
                     <NotionBadge status={l.notionStatus as NotionStatus} size="sm" />
                     <div class="flex items-center gap-1 lg:justify-end">
@@ -288,7 +286,7 @@
                         </Button>
                     </div>
                     {#if l.createdAt}
-                        <p class="text-ink-muted text-micro col-span-full -mt-1 font-mono tabular-nums lg:hidden">
+                        <p class="text-ink-muted text-micro col-span-full -mt-1 tabular-nums lg:hidden">
                             {fmtDate(l.createdAt)}
                         </p>
                     {/if}
@@ -296,7 +294,7 @@
             {/each}
             <Pagination page={data.page} pageSize={data.pageSize} total={data.total} baseHref={baseQuery} />
         </div>
-        <p class="text-ink-muted text-caption text-center font-mono tabular-nums">
+        <p class="text-ink-muted text-caption text-center tabular-nums">
             Showing {data.leads.length} of {data.total} leads.
         </p>
     {/if}

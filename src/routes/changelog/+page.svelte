@@ -65,12 +65,12 @@
         {#each groups as group, groupIndex (group.date)}
             <section class="flex flex-col gap-6">
                 <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
-                    <span class="text-ink-muted text-micro font-mono tracking-[0.28em] uppercase tabular-nums">
+                    <span class="text-ink-muted text-micro tracking-[0.28em] uppercase tabular-nums">
                         {group.label}
                     </span>
                     {#if groupIndex === 0}
                         <span
-                            class="border-hair text-ink-muted text-micro rounded-full border px-2 py-0.5 font-mono tracking-[0.18em] whitespace-nowrap uppercase"
+                            class="border-hair text-ink-muted text-micro rounded-full border px-2 py-0.5 tracking-[0.18em] whitespace-nowrap uppercase"
                         >
                             Latest
                         </span>
@@ -80,7 +80,7 @@
                 <div class="border-hair flex flex-col gap-8 border-l pl-5 sm:pl-6">
                     {#each group.entries as entry (entry.title)}
                         <article class="flex flex-col gap-2.5">
-                            <span class="text-ink-muted text-micro block font-mono tracking-[0.22em] uppercase">
+                            <span class="text-ink-muted text-micro block tracking-[0.22em] uppercase">
                                 {entry.category}
                             </span>
                             <Heading as="h2" size="lead" class="text-balance">

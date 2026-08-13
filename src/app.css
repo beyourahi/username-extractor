@@ -24,17 +24,6 @@
 @import "./lib/ds/styles/animations.css";
 @import "tw-animate-css";
 
-/* Google Sans Flex needs a metric-matched fallback to avoid a CLS flash while the
-   variable font loads (the DS --font-sans names "Google Sans Flex Fallback"). */
-@font-face {
-    font-family: "Google Sans Flex Fallback";
-    src: local("Arial");
-    size-adjust: 98%;
-    ascent-override: 95%;
-    descent-override: 25%;
-    line-gap-override: 0%;
-}
-
 /* =============================================================================
    TOOL-EXTRAS — tokens the DS doesn't define, expressed in OKLCH so they live on
    the monochrome DS base. The brand mint is the ONE tool accent (the signal slot

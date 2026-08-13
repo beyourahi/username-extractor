@@ -6,13 +6,13 @@
 
 	/**
 	 * The one editorial CTA language, site-wide. Filled `signal` pill (primary),
-	 * hairline outline (secondary), or compact navbar size. Always a mono
+	 * hairline outline (secondary), or compact navbar size. Always an
 	 * uppercase pill with the ↗ glyph (page-navigation intent). Renders an
 	 * `<a>` when `href` is set, otherwise a `<button>`.
 	 */
 	const cta = tv(
 		{
-			base: "group relative inline-flex touch-manipulation items-center gap-[10px] overflow-hidden rounded-full font-mono font-semibold whitespace-nowrap uppercase outline-none transition-[background,color,border-color,box-shadow] duration-[450ms] ease-[var(--ease)] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-signal disabled:pointer-events-none disabled:opacity-50",
+			base: "group relative inline-flex touch-manipulation items-center gap-[10px] overflow-hidden rounded-full font-semibold whitespace-nowrap uppercase outline-none transition-[background,color,border-color,box-shadow] duration-[450ms] ease-[var(--ease)] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-signal disabled:pointer-events-none disabled:opacity-50",
 			variants: {
 				variant: {
 					primary: "bg-signal px-[28px] py-[14px] text-button text-background hover:bg-signal/90",

@@ -59,13 +59,13 @@
                         <div class="flex items-center gap-2">
                             <p class="text-body text-foreground font-semibold">Currently running</p>
                             <span
-                                class="border-brand-border text-brand text-micro inline-flex items-center gap-1.5 rounded-full border px-2 py-px font-mono uppercase"
+                                class="border-brand-border text-brand text-micro inline-flex items-center gap-1.5 rounded-full border px-2 py-px uppercase"
                             >
                                 <span class="status-dot-pulse bg-status-active h-1.5 w-1.5 rounded-full"></span>
                                 LIVE
                             </span>
                         </div>
-                        <p class="text-ink-muted mt-0.5 font-mono text-xs tabular-nums">
+                        <p class="text-ink-muted mt-0.5 text-xs tabular-nums">
                             {j.id} · {j.counts.verified}/{j.imageCount} processed
                         </p>
                     </div>
@@ -76,7 +76,7 @@
 
         <div class="border-hair bg-card overflow-hidden rounded-lg border">
             <div
-                class="border-hair text-ink-muted text-micro hidden gap-3 border-b px-4 py-2.5 font-mono tracking-[0.14em] uppercase lg:grid lg:grid-cols-[minmax(220px,1fr)_80px_110px_120px_90px_24px]"
+                class="border-hair text-ink-muted text-micro hidden gap-3 border-b px-4 py-2.5 tracking-[0.14em] uppercase lg:grid lg:grid-cols-[minmax(220px,1fr)_80px_110px_120px_90px_24px]"
             >
                 <span>Job</span>
                 <span class="text-right">Images</span>
@@ -94,59 +94,56 @@
                     >
                         <div class="min-w-0">
                             <div class="flex items-center gap-2">
-                                <span class="text-foreground font-mono text-sm font-semibold whitespace-nowrap"
+                                <span class="text-foreground text-sm font-semibold whitespace-nowrap"
                                     >{job.id.slice(0, 18)}</span
                                 >
                                 {#if job.status === "completed"}
                                     <span
-                                        class="border-status-active-border bg-status-active-bg text-status-active-fg text-micro inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-px font-mono uppercase"
+                                        class="border-status-active-border bg-status-active-bg text-status-active-fg text-micro inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-px uppercase"
                                     >
                                         <Check size={9} /> done
                                     </span>
                                 {:else if job.status === "cancelled"}
                                     <span
-                                        class="border-status-inactive-border bg-status-inactive-bg text-status-inactive-fg text-micro inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-px font-mono uppercase"
+                                        class="border-status-inactive-border bg-status-inactive-bg text-status-inactive-fg text-micro inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-px uppercase"
                                     >
                                         <X size={9} /> cancelled
                                     </span>
                                 {:else if job.status === "failed"}
                                     <span
-                                        class="border-tier-failed-border bg-tier-failed-bg text-tier-failed-fg text-micro inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-px font-mono uppercase"
+                                        class="border-tier-failed-border bg-tier-failed-bg text-tier-failed-fg text-micro inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-px uppercase"
                                     >
                                         <X size={9} /> failed
                                     </span>
                                 {/if}
                             </div>
                             <p class="text-ink-muted text-caption mt-0.5 truncate">
-                                {relTime(job.createdAt)} · <span class="font-mono">{job.vlmModel}</span>
+                                {relTime(job.createdAt)} · <span class="">{job.vlmModel}</span>
                             </p>
                         </div>
-                        <p class="text-ink-muted font-mono tabular-nums lg:text-right">{job.imageCount}</p>
-                        <div class="font-mono whitespace-nowrap lg:text-right">
+                        <p class="text-ink-muted tabular-nums lg:text-right">{job.imageCount}</p>
+                        <div class=" whitespace-nowrap lg:text-right">
                             <span class="text-brand tabular-nums">{job.counts.verified ?? 0}</span>
                             <span class="text-ink-muted tabular-nums">/{job.imageCount}</span>
                         </div>
                         <div class="flex flex-wrap items-center gap-1.5 lg:justify-end">
                             {#if (job.counts.review ?? 0) > 0}
-                                <span class="text-tier-med-fg text-caption font-mono tabular-nums" title="Review">
+                                <span class="text-tier-med-fg text-caption tabular-nums" title="Review">
                                     ↻{job.counts.review}
                                 </span>
                             {/if}
                             {#if (job.counts.failed ?? 0) > 0}
-                                <span class="text-tier-failed-fg text-caption font-mono tabular-nums" title="Failed">
+                                <span class="text-tier-failed-fg text-caption tabular-nums" title="Failed">
                                     ✗{job.counts.failed}
                                 </span>
                             {/if}
                             {#if (job.counts.verified ?? 0) === job.imageCount && job.imageCount > 0}
-                                <span
-                                    class="text-status-active-fg text-caption font-mono tabular-nums"
-                                    title="All verified"
-                                >
+                                <span class="text-status-active-fg text-caption tabular-nums" title="All verified">
                                     ✓all
                                 </span>
                             {/if}
                         </div>
-                        <p class="text-ink-muted font-mono text-xs whitespace-nowrap tabular-nums lg:text-right">
+                        <p class="text-ink-muted text-xs whitespace-nowrap tabular-nums lg:text-right">
                             {elapsedFmt(job.completedAt ? job.completedAt - job.createdAt : null)}
                         </p>
                         <ChevronRight size={14} class="text-ink-muted hidden lg:inline" />

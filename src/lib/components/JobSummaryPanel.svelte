@@ -53,7 +53,6 @@
         label: string;
         value: string | number;
         tone?: "default" | "brand" | "med" | "failed" | "muted";
-        mono?: boolean;
         showProgress?: boolean;
     };
 
@@ -62,7 +61,6 @@
             label: "Processed",
             value: `${processedCount}/${job.imageCount}`,
             tone: "default",
-            mono: true,
             showProgress: true
         },
         { label: "Verified", value: counts.verified, tone: "brand" },
@@ -86,15 +84,10 @@
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
         {#each tiles as tile (tile.label)}
             <div class="border-hair bg-card rounded-lg border p-3">
-                <p class="text-ink-muted text-micro font-mono tracking-[0.14em] whitespace-nowrap uppercase">
+                <p class="text-ink-muted text-micro tracking-[0.14em] whitespace-nowrap uppercase">
                     {tile.label}
                 </p>
-                <p
-                    class="mt-1.5 text-xl font-bold tabular-nums"
-                    style="font-family: {tile.mono ? 'var(--font-mono)' : 'inherit'}; color: {toneColor[
-                        tile.tone ?? 'default'
-                    ]};"
-                >
+                <p class="mt-1.5 text-xl font-bold tabular-nums" style="color: {toneColor[tile.tone ?? 'default']};">
                     {tile.value}
                 </p>
                 {#if tile.showProgress}
@@ -111,7 +104,7 @@
 
     {#if dedup}
         <div
-            class="border-hair bg-card text-ink-muted flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border px-3 py-2 font-mono text-xs"
+            class="border-hair bg-card text-ink-muted flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border px-3 py-2 text-xs"
         >
             <span class="text-foreground">Dedup ▸</span>
             <span>groups <span class="text-foreground tabular-nums">{dedup.duplicate_groups ?? 0}</span></span>

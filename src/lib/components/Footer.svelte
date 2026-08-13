@@ -1,5 +1,5 @@
 <!--
-    Global footer. Hairline top border, mono uppercase wide-tracked links per the
+    Global footer. Hairline top border, uppercase wide-tracked links per the
     Dropout editorial law; muted at rest, foreground on hover (fine pointers only).
     1:1 parity with the sibling tools (day-zero / invoice-generator / order-processor):
     same markup, links, and behavior. Aligns content to the shared --content-x gutter
@@ -7,7 +7,7 @@
     this tool carries no APP_CONFIG.
 -->
 <footer
-    class="border-hair text-ink-muted text-micro flex w-full flex-col items-center justify-center gap-x-6 gap-y-3 border-t px-[var(--content-x)] py-8 text-center font-mono tracking-[0.22em] uppercase sm:flex-row sm:flex-wrap sm:justify-between sm:py-10 sm:text-left"
+    class="border-hair text-ink-muted text-micro flex w-full flex-col items-center justify-center gap-x-6 gap-y-3 border-t px-[var(--content-x)] py-8 text-center tracking-[0.22em] uppercase sm:flex-row sm:flex-wrap sm:justify-between sm:py-10 sm:text-left"
 >
     <p class="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 sm:justify-start">
         <a

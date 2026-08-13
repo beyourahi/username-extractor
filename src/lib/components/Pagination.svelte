@@ -23,7 +23,7 @@
     class="text-ink-muted border-hair flex items-center justify-between gap-3 border-t px-4 py-2.5"
     aria-label="Pagination"
 >
-    <span class="text-ink-muted text-caption font-mono whitespace-nowrap tabular-nums">
+    <span class="text-ink-muted text-caption whitespace-nowrap tabular-nums">
         Page {page} / {totalPages} · {total} total
     </span>
     <div class="flex items-center gap-1.5">

@@ -330,8 +330,8 @@
                     />
                     <p class={cn(helperBase, "mt-2")}>
                         {#if cloudflareConnected}
-                            Stored: <span class="text-foreground font-mono break-all">{maskedCloudflareToken}</span> — leave
-                            blank to keep it.
+                            Stored: <span class="text-foreground break-all">{maskedCloudflareToken}</span> — leave blank to
+                            keep it.
                         {:else}
                             An API token with the <span class="text-foreground">Account · Workers AI · Read</span>
                             permission. Stored securely. You won't see it again after saving.
@@ -401,7 +401,7 @@
                                 dash.cloudflare.com/profile/api-tokens
                             </a>
                             → Create Custom Token → permission
-                            <span class="text-foreground font-mono">Account · Workers AI · Read</span>.
+                            <span class="text-foreground">Account · Workers AI · Read</span>.
                         </p>
                     {/snippet}
                     <Cta
@@ -721,7 +721,7 @@
             <div class="flex flex-col gap-1">
                 <p class="text-foreground text-sm font-medium">Import from markdown</p>
                 <p class={helperBase}>
-                    Paste the contents of your old <span class="font-mono">verified_usernames.md</span> file.
+                    Paste the contents of your old <span class="">verified_usernames.md</span> file.
                 </p>
             </div>
             <textarea

@@ -1,5 +1,9 @@
 # AGENTS.md
 
+## Branch Policy (Strict)
+
+**All work must be done on `main`. Never create a new branch unless Rahi explicitly instructs you to do so.**
+
 This file provides guidance to AI coding agent (the coding-agent platform) when working with code in this repository.
 
 ---
@@ -213,3 +217,9 @@ Bindings (declared in `wrangler.jsonc`): `DB` (D1), `R2`, `KV`, `AI` (declared b
 - **CPU limit raised to 300s** (`limits.cpu_ms` in `wrangler.jsonc`) for the queue consumer's worst-case batch. Keep an eye on this if you add expensive per-item work.
 - **Default Workers AI model is `@cf/mistralai/mistral-small-3.1-24b-instruct`** (`DEFAULT_VISION_MODEL`) — user-selectable per account via the settings picker. **Inference MUST use the chat/`image_url` schema** (`runVisionViaRest`), not the legacy `{prompt,image}` shape: modern chat-vision models (mistral, llama-4-scout, gemma, kimi) silently ignore the image in the legacy shape and hallucinate — the original `@cf/moonshotai/kimi-k2.6` default scored 0/16 for exactly this reason (M-020). mistral-small-3.1 scores 16/16 on real lead screenshots.
 - **Benchmark is paid and manual.** `bun run benchmark` invokes Workers AI per fixture and writes `docs/benchmark.md`. Intentionally not in CI. Any change to `src/lib/extract/` or `src/lib/notion/dedup.ts` should be followed by a manual re-run + commit of the updated report.
+
+<!-- SWISS-DESIGN-GLOBAL -->
+
+## Swiss Design — mandatory for all frontend/UI work
+
+For every website and web application, **always apply Swiss International Style principles to all frontend UI and design work, without exception. This is the required structural baseline, not an optional aesthetic direction.** Before creating, editing, reviewing, or auditing UI, read and follow `/Users/beyourahi/.agents/skills/swiss-design/SKILL.md`; when the stack is not Tailwind, translate the implementation syntax while preserving the principles. Enforce its grid-first, mobile-first, typographic, whitespace, hierarchy, restrained-color, responsive, and accessibility rules. Express project and client branding inside this system; brand requirements do not waive the Swiss principles. This directive supersedes conflicting optional style defaults elsewhere.

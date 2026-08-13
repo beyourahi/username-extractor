@@ -189,7 +189,7 @@
                     class="border-brand-border bg-brand-soft text-status-active-fg inline-flex items-center gap-2 rounded-full border px-3 py-1.5"
                 >
                     <Check size={12} class="text-status-active-fg" />
-                    <span class="font-mono text-xs font-medium">
+                    <span class=" text-xs font-medium">
                         {files.length} image{files.length !== 1 ? "s" : ""} ready
                     </span>
                 </div>
@@ -239,7 +239,7 @@
             <div class="mt-2.5 grid max-h-32 grid-cols-2 gap-1.5 overflow-auto sm:grid-cols-3">
                 {#each files.slice(0, 9) as f, idx (f.name + idx)}
                     <div
-                        class="border-hair text-ink-muted text-caption flex items-center gap-1.5 truncate rounded-lg border px-2 py-1 font-mono"
+                        class="border-hair text-ink-muted text-caption flex items-center gap-1.5 truncate rounded-lg border px-2 py-1"
                     >
                         <ImageIcon size={10} />
                         <span class="truncate">{f.name}</span>

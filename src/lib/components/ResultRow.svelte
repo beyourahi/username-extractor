@@ -69,7 +69,7 @@
     {/if}
 
     {#if index !== undefined}
-        <span class="text-ink-muted text-micro w-6 shrink-0 font-mono tabular-nums">
+        <span class="text-ink-muted text-micro w-6 shrink-0 tabular-nums">
             {String(index + 1).padStart(2, "0")}
         </span>
     {/if}
@@ -90,12 +90,12 @@
                         href={item.profileUrl}
                         target="_blank"
                         rel="noreferrer"
-                        class="text-foreground truncate font-mono text-sm font-semibold hover:underline"
+                        class="text-foreground truncate text-sm font-semibold hover:underline"
                     >
                         {item.kind === "display_name" ? item.username : `@${item.username}`}
                     </a>
                 {:else}
-                    <span class="text-foreground truncate font-mono text-sm font-semibold">
+                    <span class="text-foreground truncate text-sm font-semibold">
                         {item.kind === "display_name" ? item.username : `@${item.username}`}
                     </span>
                 {/if}
@@ -115,25 +115,25 @@
 
             {#if item.isDuplicate}
                 <span
-                    class="border-hair text-ink-muted text-micro rounded-full border px-1.5 py-px font-mono whitespace-nowrap uppercase"
+                    class="border-hair text-ink-muted text-micro rounded-full border px-1.5 py-px whitespace-nowrap uppercase"
                 >
                     duplicate
                 </span>
             {:else if item.isNearDuplicate}
                 <span
-                    class="border-tier-med-border text-tier-med-fg text-micro rounded-full border px-1.5 py-px font-mono whitespace-nowrap uppercase"
+                    class="border-tier-med-border text-tier-med-fg text-micro rounded-full border px-1.5 py-px whitespace-nowrap uppercase"
                 >
                     near · ed{item.editDistance ?? "?"}
                 </span>
             {/if}
         </div>
         <p class="text-ink-muted text-caption mt-0.5 truncate">
-            <span class="font-mono">{item.filename}</span>
+            <span class="">{item.filename}</span>
             {#if item.confidence !== null && item.confidence !== undefined && item.confidence > 0}
-                · <span class="font-mono tabular-nums">{item.confidence.toFixed(0)}%</span> confidence
+                · <span class=" tabular-nums">{item.confidence.toFixed(0)}%</span> confidence
             {/if}
             {#if item.isNearDuplicate && item.similarTo}
-                · matches <span class="font-mono">@{item.similarTo}</span>
+                · matches <span class="">@{item.similarTo}</span>
             {/if}
             {#if item.error}
                 · <span class="text-tier-failed-fg" title={item.error}>{item.error.slice(0, 80)}</span>

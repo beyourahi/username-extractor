@@ -3,7 +3,7 @@
 	import { cn } from "../utils";
 
 	/**
-	 * The mono, uppercase, wide-tracked section label that opens nearly every
+	 * The uppercase, wide-tracked section label that opens nearly every
 	 * Dropout section. Defaults to a `<span>`; pass `as` for semantics.
 	 */
 	let {
@@ -17,6 +17,6 @@
 	} = $props();
 </script>
 
-<svelte:element this={as} class={cn("font-mono text-micro tracking-[0.28em] text-ink-muted uppercase", className)}>
+<svelte:element this={as} class={cn("text-micro tracking-[0.28em] text-ink-muted uppercase", className)}>
 	{@render children()}
 </svelte:element>

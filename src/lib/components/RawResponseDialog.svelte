@@ -62,7 +62,7 @@
                     <Dialog.Title class="text-sm font-semibold tracking-tight text-balance"
                         >Raw model response</Dialog.Title
                     >
-                    <p class="text-ink-muted mt-1 truncate font-mono text-xs">{stem}</p>
+                    <p class="text-ink-muted mt-1 truncate text-xs">{stem}</p>
                 </div>
                 <div class="flex items-center gap-1.5">
                     <Button variant="ghost" size="sm" onclick={copy} disabled={!raw}>
