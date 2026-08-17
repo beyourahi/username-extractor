@@ -9,7 +9,7 @@
 
 /** Text input / textarea / select. 16px on mobile (no iOS zoom); borderless raised fill (§3.1). */
 export const inputBase =
-	"w-full rounded-[11px] border border-transparent bg-white/[0.06] px-[15px] py-[13px] text-base text-foreground transition-[border-color,background] duration-[250ms] ease-[var(--ease)] outline-none placeholder:text-ink-muted focus:border-white/55 focus:bg-white/[0.1] focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-signal lg:text-xs";
+	"field-control w-full border border-transparent text-base leading-6 placeholder:text-ink-muted focus:border-ring focus:surface-hover disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive lg:text-label lg:leading-5";
 
 /** Field label — uppercase, micro. */
 export const labelBase = "mb-2.5 block text-micro text-ink-muted uppercase";
@@ -36,7 +36,7 @@ export const tileUnselected =
 
 /** Choice pill (compact selectable chip). */
 export const pillBase =
-	"rounded-full border px-4 py-2 text-micro uppercase transition-colors duration-[250ms] ease-[var(--ease)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal";
+	"rounded-full border px-4 py-2 text-micro uppercase transition-colors duration-base ease-standard";
 export const pillSelected = "border-signal bg-signal font-semibold text-background";
 export const pillUnselected =
 	"border-hair text-ink-muted hover:border-white/30 hover:text-foreground";

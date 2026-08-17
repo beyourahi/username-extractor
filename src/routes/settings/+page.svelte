@@ -313,7 +313,10 @@
             icon={Cloud}
         >
             {#snippet header()}
-                <StatusBadge connected={cloudflareConnected} />
+                <StatusBadge
+                    label={cloudflareConnected ? "Connected" : "Not connected"}
+                    tone={cloudflareConnected ? "connected" : "disconnected"}
+                />
             {/snippet}
 
             <form method="POST" action="?/saveCloudflare" use:cfEnhance class="flex flex-col gap-6">

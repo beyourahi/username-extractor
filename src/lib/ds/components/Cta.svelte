@@ -12,20 +12,21 @@
 	 */
 	const cta = tv(
 		{
-			base: "group relative inline-flex touch-manipulation items-center gap-[10px] overflow-hidden rounded-full font-semibold whitespace-nowrap uppercase outline-none transition-[background,color,border-color,box-shadow] duration-[450ms] ease-[var(--ease)] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-signal disabled:pointer-events-none disabled:opacity-50",
+			base: "group relative inline-flex touch-manipulation items-center gap-2.5 overflow-hidden rounded-full font-semibold whitespace-nowrap uppercase transition-[background,color,border-color,box-shadow] duration-editorial ease-standard disabled:pointer-events-none disabled:opacity-50",
 			variants: {
 				variant: {
-					primary: "bg-signal px-[28px] py-[14px] text-button text-background hover:bg-signal/90",
+					primary: "bg-signal px-7 py-3.5 text-button text-background hover:bg-signal/90",
 					secondary:
 						"bg-secondary px-[28px] py-[14px] text-button text-secondary-foreground hover:bg-secondary/80",
-					compact: "h-9 bg-signal px-5 text-caption text-background shadow-lg hover:bg-signal/90"
+					compact:
+						"h-9 bg-signal px-5 text-button leading-5 text-background shadow-lg hover:bg-signal/90 pointer-coarse:min-h-11"
 				},
 				// Orthogonal sizing. `md` = the canonical site-wide pill (inherits the
 				// variant's padding/font). `sm` = the tighter Settings-page size — smaller
 				// padding + caption font; tailwind-merge lets it override the variant.
 				size: {
 					md: "",
-					sm: "px-5 py-2.5 text-caption"
+					sm: "px-5 py-2.5 text-button leading-5 pointer-coarse:min-h-11"
 				}
 			},
 			defaultVariants: {
@@ -68,7 +69,7 @@
 		<span
 			data-cta-dot
 			aria-hidden="true"
-			class="relative z-[2] size-[7px] shrink-0 animate-[ctaPulse_2.8s_var(--ease)_infinite] rounded-full bg-background"
+			class="bg-background relative z-[2] size-[7px] shrink-0 animate-[ctaPulse_2.8s_var(--ease)_infinite] rounded-full"
 		></span>
 	{/if}
 	<span class="relative z-[2]">{@render children()}</span>

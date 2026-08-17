@@ -27,6 +27,8 @@
 		disabled = false,
 		class: className = "",
 		contentClass = "",
+		"aria-label": ariaLabel,
+		"aria-labelledby": ariaLabelledby,
 		onValueChange
 	}: {
 		value?: string;
@@ -37,6 +39,8 @@
 		disabled?: boolean;
 		class?: string;
 		contentClass?: string;
+		"aria-label"?: string;
+		"aria-labelledby"?: string;
 		onValueChange?: (value: string) => void;
 	} = $props();
 
@@ -51,7 +55,8 @@
 <Select.Root type="single" bind:value={value as never} {disabled} onValueChange={onValueChange as never} {...rootRest}>
 	<Select.Trigger
 		{...triggerRest}
-		aria-label={placeholder}
+		aria-label={ariaLabel}
+		aria-labelledby={ariaLabelledby}
 		class={cn(
 			inputBase,
 			"data-[placeholder]:text-ink-muted flex items-center justify-between gap-2 text-left disabled:cursor-not-allowed disabled:opacity-50",
@@ -76,7 +81,7 @@
 						value={item.value}
 						label={item.label}
 						disabled={item.disabled ?? false}
-						class="text-ink-muted data-highlighted:bg-ink-2 data-highlighted:text-foreground data-[state=checked]:text-foreground ease-[var(--ease)] flex cursor-pointer items-center justify-between gap-2 rounded-[9px] px-2.5 py-2.5 text-xs transition-colors duration-150 outline-none select-none data-disabled:pointer-events-none data-disabled:opacity-40 pointer-coarse:py-3"
+						class="text-ink-muted data-highlighted:bg-ink-2 data-highlighted:text-foreground data-[state=checked]:text-foreground rounded-choice duration-fast ease-standard flex cursor-pointer items-center justify-between gap-2 px-2.5 py-2.5 text-xs transition-colors select-none data-disabled:pointer-events-none data-disabled:opacity-40 pointer-coarse:py-3"
 					>
 						{#snippet children({ selected })}
 							<span class="min-w-0 truncate">{item.label}</span>

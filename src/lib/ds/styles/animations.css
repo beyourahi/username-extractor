@@ -42,16 +42,16 @@
 /* GPU-smoothed all-purpose transition (was each app's local .sleek). */
 .sleek {
 	transform: translateZ(0);
-	transition: all 200ms ease-in-out;
+	transition: all var(--motion-base) var(--motion-ease-standard);
 }
 
 /* Color/opacity transition for status-driven surfaces. */
 .status-transition {
 	transition:
-		color 200ms ease,
-		background-color 200ms ease,
-		border-color 200ms ease,
-		opacity 200ms ease;
+		color var(--motion-base) var(--motion-ease-standard),
+		background-color var(--motion-base) var(--motion-ease-standard),
+		border-color var(--motion-base) var(--motion-ease-standard),
+		opacity var(--motion-base) var(--motion-ease-standard);
 }
 
 @keyframes ds-status-pulse {
@@ -78,7 +78,7 @@
 	}
 }
 .slide-in {
-	animation: ds-slide-in 280ms var(--ease) both;
+	animation: ds-slide-in var(--motion-slow) var(--motion-ease-decelerate) both;
 }
 
 @keyframes ds-fade-in {
@@ -90,7 +90,7 @@
 	}
 }
 .fade-in {
-	animation: ds-fade-in 200ms ease-out both;
+	animation: ds-fade-in var(--motion-base) var(--motion-ease-decelerate) both;
 }
 
 @media (prefers-reduced-motion: reduce) {

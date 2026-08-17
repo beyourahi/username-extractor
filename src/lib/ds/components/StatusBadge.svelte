@@ -9,25 +9,23 @@
 	 * one value across every tool so equivalent badges match exactly.
 	 */
 	let {
-		connected = false,
-		connectedLabel = "Connected",
-		disconnectedLabel = "Not connected",
+		label,
+		tone = "neutral",
 		class: className = ""
 	}: {
-		connected?: boolean;
-		connectedLabel?: string;
-		disconnectedLabel?: string;
+		label: string;
+		tone?: "neutral" | "connected" | "disconnected";
 		class?: string;
 	} = $props();
 </script>
 
 <span
 	class={cn(
-		"inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-micro tracking-[0.14em] whitespace-nowrap uppercase",
-		connected ? "border-status-connected/40 text-foreground" : "border-hair text-ink-muted",
+		"text-caption inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 leading-4 tracking-[0.08em] whitespace-normal uppercase",
+		tone === "connected" ? "border-status-connected/40 text-foreground" : "border-hair text-ink-muted",
 		className
 	)}
 >
-	<span class={cn("size-1.5 rounded-full", connected ? "bg-status-connected" : "bg-ink-muted")}></span>
-	{connected ? connectedLabel : disconnectedLabel}
+	<span class={cn("size-1.5 rounded-full", tone === "connected" ? "bg-status-connected" : "bg-ink-muted")}></span>
+	{label}
 </span>

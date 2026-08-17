@@ -79,13 +79,14 @@
 	--text-label: 0.875rem;
 	--text-body: 1rem;
 	--text-body-lg: 1.0625rem;
-	--text-button: 0.8125rem; /* 13px — the deliberate CTA size, between caption + label. */
+	--text-button: 0.875rem;
 	--text-lead: 1.125rem;
 	--text-subtitle: clamp(1.25rem, 1.106rem + 0.616vw, 1.5rem); /* 20 → 24px */
 	--text-title-sm: clamp(1.375rem, 1.086rem + 1.233vw, 1.875rem); /* 22 → 30px */
 	--text-title: clamp(1.75rem, 1.461rem + 1.233vw, 2.25rem); /* 28 → 36px */
 	--text-title-lg: clamp(2rem, 1.422rem + 2.465vw, 3rem); /* 32 → 48px */
 	--text-display: clamp(2.5rem, 1.778rem + 3.082vw, 3.75rem); /* 40 → 60px */
+	--text-hero: clamp(3rem, 1.75rem + 5vw, 6rem);
 
 	--leading-tight-custom: 1.2;
 	--leading-heading: 1.25;
@@ -99,6 +100,7 @@
 
 	/* Motion — one shared editorial easing. */
 	--ease: cubic-bezier(0.16, 1, 0.3, 1);
+	--motion-editorial: 450ms;
 
 	/* Weight axis: body + headings cap at 600; 700 is reserved for display
 	   numerals only. This thin value drives variable-font `wght` animation. */
@@ -198,6 +200,16 @@
 	--scrollbar-thumb: oklch(0.556 0 0 / 0.4);
 
 	--radius: 1rem;
+	--radius-control: 0.6875rem;
+	--radius-choice: 0.5625rem;
+	--spacing-field-x: 0.9375rem;
+	--spacing-field-y: 0.8125rem;
+	--spacing-shell-section: clamp(4rem, 8vw, 8rem);
+	--control-sm: 2.5rem;
+	--control-md: 2.75rem;
+	--control-lg: 3rem;
+	--dialog-max: 32rem;
+	--table-min: 42rem;
 
 	--shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
 	--shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
@@ -296,6 +308,14 @@
    bg-background, text-foreground, border-hair, shadow-lg, rounded-xl all work.
    ============================================================================= */
 @theme inline {
+	--duration-fast: var(--motion-fast);
+	--duration-base: var(--motion-base);
+	--duration-slow: var(--motion-slow);
+	--ease-standard: var(--motion-ease-standard);
+	--ease-emphasized: var(--motion-ease-emphasized);
+	--ease-decelerate: var(--motion-ease-decelerate);
+	--container-dialog: var(--dialog-max);
+	--container-table: var(--table-min);
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
 	--color-card: var(--card);
@@ -338,6 +358,9 @@
 	--shadow-lg: var(--shadow-lg);
 	--shadow-xl: var(--shadow-xl);
 	--shadow-2xl: var(--shadow-2xl);
+	--radius-control: var(--radius-control);
+	--radius-choice: var(--radius-choice);
+	--duration-editorial: var(--motion-editorial);
 }
 
 /* =============================================================================
@@ -360,14 +383,13 @@
 		font-family: inherit;
 	}
 
-	/* Focus outline is intentionally removed system-wide — a deliberate Dropout
-	   decision: the browser's default focus ring lingers after a click / after
-	   navigating back to a tab, which reads as a bug. Off for ALL Dropout products;
-	   this is the canonical default — do not reintroduce per-product. */
-	:focus,
-	:focus-visible,
-	:focus-within {
-		outline: none !important;
+	:focus:not(:focus-visible) {
+		outline: none;
+	}
+
+	:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 3px;
 	}
 
 	button:not(:disabled),
@@ -433,4 +455,34 @@
 }
 @utility surface-input {
 	background-color: var(--surface-input);
+}
+
+@utility marketing-shell {
+	width: 100%;
+	max-width: var(--maxw);
+	margin-inline: auto;
+	padding-inline: var(--shell-x);
+}
+@utility app-shell {
+	width: 100%;
+	max-width: var(--content-max);
+	margin-inline: auto;
+	padding-inline: var(--content-x);
+}
+@utility settings-shell {
+	width: 100%;
+	max-width: var(--settings-max);
+}
+@utility section-block {
+	padding-block: var(--spacing-shell-section);
+}
+@utility field-control {
+	min-height: var(--control-md);
+	border-radius: var(--radius-control);
+	padding: var(--spacing-field-y) var(--spacing-field-x);
+	background-color: var(--surface-input);
+	color: var(--foreground);
+	transition:
+		border-color var(--motion-base) var(--motion-ease-standard),
+		background-color var(--motion-base) var(--motion-ease-standard);
 }

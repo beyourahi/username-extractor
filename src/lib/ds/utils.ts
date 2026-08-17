@@ -39,7 +39,8 @@ export const twMergeConfig = {
 						"title-sm",
 						"title",
 						"title-lg",
-						"display"
+						"display",
+						"hero"
 					]
 				}
 			]

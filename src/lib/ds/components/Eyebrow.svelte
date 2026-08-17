@@ -17,6 +17,6 @@
 	} = $props();
 </script>
 
-<svelte:element this={as} class={cn("text-micro tracking-[0.28em] text-ink-muted uppercase", className)}>
+<svelte:element this={as} class={cn("text-micro text-ink-muted tracking-[0.28em] uppercase", className)}>
 	{@render children()}
 </svelte:element>
