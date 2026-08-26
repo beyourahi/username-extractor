@@ -34,3 +34,4 @@ npm-debug.log*
 # Screenshots (per workspace CLAUDE.md)
 tmp_screenshots/
 .playwright-mcp/
+.playwright-cli/
