@@ -26,7 +26,7 @@ export { default as SettingsActions } from "./components/SettingsActions.svelte"
 export { default as SettingsSaveBar } from "./components/SettingsSaveBar.svelte";
 export { default as Select } from "./components/Select.svelte";
 export { default as StatusBadge } from "./components/StatusBadge.svelte";
-export { default as Button } from "./components/Button.svelte";
+export { default as Button, buttonVariants } from "./components/Button.svelte";
 export { default as Field } from "./components/Field.svelte";
 export { default as Textarea } from "./components/Textarea.svelte";
 export { default as NativeSelect } from "./components/NativeSelect.svelte";
