@@ -87,6 +87,7 @@
 		{type}
 		disabled={inactive}
 		aria-busy={loading || undefined}
+		{onclick}
 		class={cn(buttonVariants({ variant, size }), className)}
 		{...rest}
 	>

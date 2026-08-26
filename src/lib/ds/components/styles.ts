@@ -9,7 +9,7 @@
 
 /** Text input / textarea / select. 16px on mobile (no iOS zoom); borderless raised fill (§3.1). */
 export const inputBase =
-	"field-control w-full border border-transparent text-base leading-6 placeholder:text-ink-muted focus:border-ring focus:surface-hover disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive lg:text-label lg:leading-5";
+	"field-control w-full border-2 border-transparent text-base leading-6 placeholder:text-ink-muted focus:border-ring focus:outline-none focus:surface-hover disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive lg:text-label lg:leading-5";
 
 /** Field label — uppercase, micro. */
 export const labelBase = "mb-2.5 block text-micro text-ink-muted uppercase";

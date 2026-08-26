@@ -33,4 +33,5 @@ test("Button keeps native and inert-link behavior", () => {
 	assert.match(source, /tabindex=\{inactive \? -1 : tabindex\}/);
 	assert.match(source, /aria-busy=\{loading \|\| undefined\}/);
 	assert.match(source, /disabled=\{inactive\}/);
+	assert.match(source, /<button[\s\S]*\{onclick\}[\s\S]*class=/);
 });
