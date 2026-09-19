@@ -8,11 +8,11 @@
 @keyframes ctaPulse {
 	0%,
 	100% {
-		box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.45);
+		box-shadow: 0 0 0 0 color-mix(in oklch, var(--signal) 45%, transparent);
 		opacity: 0.85;
 	}
 	50% {
-		box-shadow: 0 0 0 6px rgba(255, 255, 255, 0);
+		box-shadow: 0 0 0 6px color-mix(in oklch, var(--signal) 0%, transparent);
 		opacity: 1;
 	}
 }
@@ -42,7 +42,13 @@
 /* GPU-smoothed all-purpose transition (was each app's local .sleek). */
 .sleek {
 	transform: translateZ(0);
-	transition: all var(--motion-base) var(--motion-ease-standard);
+	transition:
+		color var(--motion-base) var(--motion-ease-standard),
+		background-color var(--motion-base) var(--motion-ease-standard),
+		border-color var(--motion-base) var(--motion-ease-standard),
+		box-shadow var(--motion-base) var(--motion-ease-standard),
+		opacity var(--motion-base) var(--motion-ease-standard),
+		transform var(--motion-base) var(--motion-ease-standard);
 }
 
 /* Color/opacity transition for status-driven surfaces. */
@@ -64,7 +70,7 @@
 	}
 }
 .status-dot-pulse {
-	animation: ds-status-pulse 2.5s ease-in-out infinite;
+	animation: ds-status-pulse var(--motion-status-pulse) ease-in-out infinite;
 }
 
 @keyframes ds-slide-in {

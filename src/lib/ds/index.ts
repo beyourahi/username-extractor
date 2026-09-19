@@ -1,46 +1,65 @@
 /**
  * @dropout/ds — public entry point.
  *
- * Token styles ship separately and must be imported once by the consumer:
- *     import "@dropout/ds/tokens.css";
- *     import "@dropout/ds/animations.css"; // optional, for <Cta dot> + sheen
+ * Products consume the vendored source through this barrel. Import tokens once
+ * from `styles/tokens.css`; generic controls live in `ui`, Dropout language in
+ * `signature`, and reusable compositions in `patterns`.
  */
 export { cn } from "./utils";
+export { Button, buttonVariants } from "./ui/button";
+export { default as Input } from "./ui/input/input.svelte";
+export { default as Textarea } from "./ui/textarea/textarea.svelte";
 export {
-	isPlatformAuthenticatorAvailable,
-	detectPlatform,
-	biometricLabel,
-	biometricLabelFor,
-	type Platform
-} from "./biometric";
-
-export { default as Cta } from "./components/Cta.svelte";
-export { default as IconButton } from "./components/IconButton.svelte";
-export { default as Heading } from "./components/Heading.svelte";
-export { default as Eyebrow } from "./components/Eyebrow.svelte";
-export { default as Input } from "./components/Input.svelte";
-export { default as Tile } from "./components/Tile.svelte";
-export { default as SettingsSection } from "./components/SettingsSection.svelte";
-export { default as SettingsRow } from "./components/SettingsRow.svelte";
-export { default as SettingsActions } from "./components/SettingsActions.svelte";
-export { default as SettingsSaveBar } from "./components/SettingsSaveBar.svelte";
-export { default as Select } from "./components/Select.svelte";
-export { default as StatusBadge } from "./components/StatusBadge.svelte";
-export { default as Button, buttonVariants } from "./components/Button.svelte";
-export { default as Field } from "./components/Field.svelte";
-export { default as Textarea } from "./components/Textarea.svelte";
-export { default as NativeSelect } from "./components/NativeSelect.svelte";
-export { default as Checkbox } from "./components/Checkbox.svelte";
-export { default as Radio } from "./components/Radio.svelte";
-export { default as Alert } from "./components/Alert.svelte";
-export { default as Dialog } from "./components/Dialog.svelte";
-export { default as DataTable } from "./components/DataTable.svelte";
-export { default as EmptyState } from "./components/EmptyState.svelte";
-export { default as Spinner } from "./components/Spinner.svelte";
+	Alert,
+	Checkbox,
+	Combobox,
+	DataTable,
+	Dialog,
+	EmptyState,
+	Field,
+	MultiSelect,
+	NativeSelect,
+	Radio,
+	Select,
+	Spinner
+} from "./ui";
+export { default as Cta } from "./signature/Cta.svelte";
+export { default as IconButton } from "./signature/IconButton.svelte";
+export { default as Heading } from "./signature/Heading.svelte";
+export { default as Eyebrow } from "./signature/Eyebrow.svelte";
+export { default as StatusBadge } from "./signature/StatusBadge.svelte";
+export { default as Tile } from "./signature/Tile.svelte";
+export { default as SettingsSection } from "./patterns/SettingsSection.svelte";
+export { default as SettingsRow } from "./patterns/SettingsRow.svelte";
+export { default as SettingsActions } from "./patterns/SettingsActions.svelte";
+export { default as SettingsSaveBar } from "./patterns/SettingsSaveBar.svelte";
 export { motion, prefersReducedMotion } from "./motion";
-export { BROWSER_THEME_COLOR, emailPresentation } from "./presentation";
-export { renderFatalError } from "./fatal-error";
-
+export {
+	AlertDialog,
+	Badge,
+	Breadcrumb,
+	Card,
+	CheckboxPrimitive,
+	Command,
+	ContextMenu,
+	DialogPrimitive,
+	Drawer,
+	DropdownMenu,
+	InputGroup,
+	InputOTP,
+	Pagination,
+	Popover,
+	Progress,
+	RadioGroup,
+	SelectPrimitive,
+	Sheet,
+	Skeleton,
+	Sonner,
+	Switch,
+	Table,
+	Tabs,
+	Tooltip
+} from "./ui";
 export {
 	inputBase,
 	labelBase,
@@ -53,4 +72,4 @@ export {
 	pillBase,
 	pillSelected,
 	pillUnselected
-} from "./components/styles";
+} from "./styles/recipes";

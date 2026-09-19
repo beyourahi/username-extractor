@@ -31,11 +31,9 @@
         inputBase,
         bodyBase,
         helperBase,
-        metaBase,
-        isPlatformAuthenticatorAvailable,
-        detectPlatform,
-        biometricLabel
+        metaBase
     } from "$lib/ds";
+    import { isPlatformAuthenticatorAvailable, detectPlatform, biometricLabel } from "$lib/ds/adapters";
     import Switch from "$lib/components/Switch.svelte";
     import TextInput from "$lib/components/TextInput.svelte";
 
